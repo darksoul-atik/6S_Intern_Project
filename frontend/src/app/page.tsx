@@ -56,7 +56,8 @@ export default function Home() {
             <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2.5 py-1 rounded-full">
               Day 1 • Foundation
             </span>
-            <span className="text-xs text-slate-400">Dev Community</span>
+            <span className="text-xs font-semibold tracking-wide text-slate-400">DevPulse</span>
+
           </div>
           <h1 className="text-2xl font-bold text-white mt-3">
             System Health & Diagnostics

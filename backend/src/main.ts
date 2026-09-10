@@ -15,16 +15,17 @@ async function bootstrap() {
 
   // Setup Swagger API Documentation
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Dev Community API')
-    .setDescription('Interactive OpenAPI documentation for Dev Community REST endpoints')
+    .setTitle('DevPulse API')
+    .setDescription('Interactive OpenAPI documentation for DevPulse REST endpoints')
     .setVersion('1.0')
     .addTag('Health', 'Health and system diagnostic endpoints')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, document, {
-    customSiteTitle: 'Dev Community API Docs',
+    customSiteTitle: 'DevPulse API Docs',
   });
+
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 5000);
