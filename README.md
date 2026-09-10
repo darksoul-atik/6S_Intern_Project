@@ -137,3 +137,8 @@ The frontend boots at `http://localhost:3000`.
 
 2. **Frontend UI Verification**:
    Navigate to `http://localhost:3000` in your web browser. The dashboard displays real-time connection status to both the backend API and MongoDB with a live re-check trigger.
+
+3. **Interactive Swagger API Documentation**:
+   Navigate to `http://localhost:5000/docs` in your browser to explore and test the interactive OpenAPI documentation for all backend routes (including `GET /health`).
+   - OpenAPI JSON Schema: `http://localhost:5000/docs-json`
+
