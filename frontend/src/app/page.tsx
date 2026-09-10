@@ -1,69 +1,157 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { apiClient } from '@/lib/api';
+
+interface HealthData {
+  status: string;
+  db: 'connected' | 'disconnected';
+}
 
 export default function Home() {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [apiConnected, setApiConnected] = useState<boolean | null>(null);
+  const [dbStatus, setDbStatus] = useState<string>('unknown');
+  const [lastChecked, setLastChecked] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const checkHealth = async () => {
+    setLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const response = await apiClient<HealthData>('/health');
+      if (response.success && response.data) {
+        setApiConnected(true);
+        setDbStatus(response.data.db);
+      } else {
+        setApiConnected(false);
+        setDbStatus('unknown');
+      }
+    } catch (err: unknown) {
+      setApiConnected(false);
+      setDbStatus('unknown');
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Unable to connect to backend'
+      );
+    } finally {
+      setLoading(false);
+      setLastChecked(new Date().toLocaleTimeString());
+    }
+  };
+
+  useEffect(() => {
+    checkHealth();
+  }, []);
+
+  const apiUrl =
+    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 font-sans">
+      <div className="max-w-xl w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl space-y-6">
+        {/* Header */}
+        <div className="border-b border-slate-800 pb-6">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2.5 py-1 rounded-full">
+              Day 1 • Foundation
+            </span>
+            <span className="text-xs text-slate-400">Dev Community</span>
+          </div>
+          <h1 className="text-2xl font-bold text-white mt-3">
+            System Health & Diagnostics
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-sm text-slate-400 mt-1">
+            Validates live communication between the Next.js client and NestJS API with Mongoose.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Status Indicators */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* API Status */}
+          <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between">
+            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+              API Connection
+            </span>
+            <div className="mt-3 flex items-center space-x-2">
+              <span
+                className={`w-3 h-3 rounded-full ${
+                  loading
+                    ? 'bg-amber-400 animate-pulse'
+                    : apiConnected
+                    ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
+                    : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]'
+                }`}
+              />
+              <span className="text-base font-semibold text-white">
+                {loading
+                  ? 'Checking...'
+                  : apiConnected
+                  ? 'API connected'
+                  : 'API unreachable'}
+              </span>
+            </div>
+            <span className="text-xs text-slate-500 mt-2 font-mono truncate">
+              {apiUrl}
+            </span>
+          </div>
+
+          {/* Database Status */}
+          <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between">
+            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+              Database (Mongoose)
+            </span>
+            <div className="mt-3 flex items-center space-x-2">
+              <span
+                className={`w-3 h-3 rounded-full ${
+                  loading
+                    ? 'bg-amber-400 animate-pulse'
+                    : dbStatus === 'connected'
+                    ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
+                    : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]'
+                }`}
+              />
+              <span className="text-base font-semibold text-white">
+                {loading
+                  ? 'Checking...'
+                  : dbStatus === 'connected'
+                  ? 'DB connected'
+                  : dbStatus === 'disconnected'
+                  ? 'DB disconnected'
+                  : 'Unknown'}
+              </span>
+            </div>
+            <span className="text-xs text-slate-500 mt-2 font-mono">
+              MongoDB Atlas via Mongoose
+            </span>
+          </div>
         </div>
-      </main>
-    </div>
+
+        {/* Error Callout if API unreachable */}
+        {errorMessage && !loading && (
+          <div className="p-3.5 bg-rose-950/40 border border-rose-800/60 rounded-xl text-rose-300 text-xs">
+            <span className="font-semibold">Connection Error:</span> {errorMessage}
+          </div>
+        )}
+
+        {/* Actions & Metadata */}
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 border-t border-slate-800">
+          <div>
+            {lastChecked && (
+              <span>
+                Last check: <span className="font-mono text-slate-300">{lastChecked}</span>
+              </span>
+            )}
+          </div>
+          <button
+            onClick={checkHealth}
+            disabled={loading}
+            className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-medium rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed shadow-md"
+          >
+            {loading ? 'Testing Connection...' : 'Re-check Status'}
+          </button>
+        </div>
+      </div>
+    </main>
   );
 }
