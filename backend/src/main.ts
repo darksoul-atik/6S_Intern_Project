@@ -1,14 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { INestApplication } from '@nestjs/common';
 import { AppModule } from './app.module.js';
 
-async function bootstrap() {
+let appInstance: INestApplication | null = null;
+
+async function createApp(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for Next.js frontend
+  // Enable CORS
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
@@ -26,7 +29,12 @@ async function bootstrap() {
     customSiteTitle: 'DevPulse API Docs',
   });
 
+  return app;
+}
 
+// Local server bootstrap
+if (process.env.VERCEL !== '1') {
+  const app = await createApp();
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 5000);
 
@@ -34,6 +42,16 @@ async function bootstrap() {
   console.log(`Backend server running on http://localhost:${port}`);
   console.log(`Swagger documentation available at http://localhost:${port}/docs`);
 }
-await bootstrap();
+
+// Vercel Serverless Function Handler
+export default async function handler(req: unknown, res: unknown) {
+  if (!appInstance) {
+    appInstance = await createApp();
+    await appInstance.init();
+  }
+  const expressInstance = appInstance.getHttpAdapter().getInstance();
+  return expressInstance(req, res);
+}
+
 
 
