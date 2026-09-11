@@ -12,6 +12,8 @@ import { AuthService } from './auth.service.js';
 import { SignupDto } from './dto/signup.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
+import { RolesGuard } from './guards/roles.guard.js';
+import { Roles } from './decorators/roles.decorator.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from './strategies/jwt.strategy.js';
 
@@ -89,6 +91,39 @@ export class AuthController {
         email: user.email,
         role: user.role,
       },
+    };
+  }
+
+  @Get('admin-check')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Sample admin-only endpoint',
+    description:
+      'Requires valid JWT authentication and role "admin". Returns 403 Forbidden for normal users.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Admin access verified successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Missing or invalid Bearer token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden resource: Requires elevated privileges',
+  })
+  getAdminCheck(@CurrentUser() user: AuthenticatedUser) {
+    return {
+      data: {
+        id: user.userId,
+        email: user.email,
+        role: user.role,
+        adminAccess: true,
+      },
+      message: 'Admin authorization verified',
     };
   }
 }
