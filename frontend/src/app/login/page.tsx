@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,7 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login: setAuthUser, isAuthenticated } = useAuth();
+  const { login: setAuthUser } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,14 +21,11 @@ function LoginForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
-  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [capsLockOn, setCapsLockOn] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (searchParams.get('registered') === 'true') {
-      setInfoMessage('Account created successfully! Please sign in with your new credentials.');
-    }
-  }, [searchParams]);
+  const infoMessage = searchParams.get('registered') === 'true'
+    ? 'Account created successfully! Please sign in with your new credentials.'
+    : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

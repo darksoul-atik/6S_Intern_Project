@@ -25,6 +25,9 @@ export const MeshGradientBackground: React.FC<MeshGradientBackgroundProps> = ({
   const springX = useSpring(mouseX, { damping: 30, stiffness: 100 });
   const springY = useSpring(mouseY, { damping: 30, stiffness: 100 });
 
+  const cursorLeft = useTransform(springX, [0, 1], ['0%', '100%']);
+  const cursorTop = useTransform(springY, [0, 1], ['0%', '100%']);
+
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!interactive) return;
     const { clientX, clientY } = e;
@@ -77,8 +80,8 @@ export const MeshGradientBackground: React.FC<MeshGradientBackgroundProps> = ({
         <motion.div
           className="absolute w-[500px] h-[500px] rounded-full pointer-events-none opacity-40 mix-blend-screen"
           style={{
-            left: useTransform(springX, [0, 1], ['0%', '100%']),
-            top: useTransform(springY, [0, 1], ['0%', '100%']),
+            left: cursorLeft,
+            top: cursorTop,
             transform: 'translate(-50%, -50%)',
             background: `radial-gradient(circle, ${colors[0]} 0%, transparent 70%)`,
             filter: `blur(${blur}px)`,

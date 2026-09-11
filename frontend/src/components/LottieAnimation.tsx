@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useSyncExternalStore } from 'react';
 import { Lottie } from 'lottie-react';
 
 interface LottieAnimationProps {
@@ -10,19 +10,21 @@ interface LottieAnimationProps {
   autoplay?: boolean;
 }
 
+const subscribe = () => () => {};
+
 export function LottieAnimation({
   animationData,
   className = 'w-16 h-16',
   loop = true,
   autoplay = true,
 }: LottieAnimationProps) {
-  const [mounted, setMounted] = useState(false);
+  const isMounted = useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
+  if (!isMounted) {
     return <div className={className} />;
   }
 

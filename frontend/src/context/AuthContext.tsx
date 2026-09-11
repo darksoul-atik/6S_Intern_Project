@@ -44,8 +44,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    let active = true;
+    const initAuth = async () => {
+      try {
+        const res = await apiClient<UserSession>('/api/auth/me');
+        if (!active) return;
+        if (res.success && res.data) {
+          setUser(res.data);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        if (active) setUser(null);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+    initAuth();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const login = useCallback((userData: UserSession) => {
     setUser(userData);
