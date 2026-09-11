@@ -403,32 +403,59 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.25 }}
-            className="relative rounded-3xl border border-white/10 bg-[#090d16]/95 p-6 text-xs text-zinc-400 backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(15,23,42,0.25),0_0_0_1px_rgba(255,255,255,0.06)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-left overflow-hidden"
+            className="relative rounded-3xl border border-white/10 bg-[#090d16]/95 p-6 sm:p-7 text-xs text-zinc-400 backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(15,23,42,0.25),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden text-left"
           >
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
-            <div>
-              <span className="text-zinc-500 block text-[11px]">Active User ID</span>
-              <span className="font-mono text-zinc-200 font-semibold text-xs">{user?.id || '—'}</span>
-            </div>
-            <div>
-              <span className="text-zinc-500 block text-[11px]">Registered Email</span>
-              <span className="font-mono text-zinc-200 font-semibold text-xs">{user?.email || '—'}</span>
-            </div>
-            <div>
-              <span className="text-zinc-500 block text-[11px]">Token Transport</span>
-              <span className="font-mono text-indigo-300 font-semibold text-xs">httpOnly Cookie (devpulse_token)</span>
-            </div>
-            <div>
-              <span className="text-zinc-500 block text-[11px]">Effective Role</span>
-              <span
-                className={`font-mono text-xs font-bold uppercase px-2.5 py-1 rounded-md ${
-                  user?.role === 'admin'
-                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                    : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                }`}
-              >
-                {user?.role || '—'}
-              </span>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-center">
+              {/* Item 1: Active User ID */}
+              <div className="space-y-1">
+                <span className="text-zinc-500 block text-[11px] font-medium tracking-wide uppercase">
+                  Active User ID
+                </span>
+                <span className="font-mono text-zinc-200 font-semibold text-xs block truncate" title={user?.id}>
+                  {user?.id || '—'}
+                </span>
+              </div>
+
+              {/* Item 2: Registered Email */}
+              <div className="space-y-1">
+                <span className="text-zinc-500 block text-[11px] font-medium tracking-wide uppercase">
+                  Registered Email
+                </span>
+                <span className="font-mono text-zinc-200 font-semibold text-xs block truncate" title={user?.email}>
+                  {user?.email || '—'}
+                </span>
+              </div>
+
+              {/* Item 3: Token Transport */}
+              <div className="space-y-1">
+                <span className="text-zinc-500 block text-[11px] font-medium tracking-wide uppercase">
+                  Token Transport
+                </span>
+                <span className="font-mono text-indigo-300 font-semibold text-xs block truncate">
+                  httpOnly Cookie (devpulse_token)
+                </span>
+              </div>
+
+              {/* Item 4: Effective Role Badge */}
+              <div className="space-y-1">
+                <span className="text-zinc-500 block text-[11px] font-medium tracking-wide uppercase">
+                  Effective Role
+                </span>
+                <div className="inline-flex items-center">
+                  <span
+                    className={`inline-flex items-center space-x-1.5 font-mono text-xs font-bold uppercase px-3 py-1 rounded-lg border shadow-sm ${
+                      user?.role === 'admin'
+                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.2)]'
+                        : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
+                    }`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${user?.role === 'admin' ? 'bg-purple-400' : 'bg-emerald-400'}`} />
+                    <span>{user?.role || 'user'}</span>
+                  </span>
+                </div>
+              </div>
             </div>
           </motion.div>
         </div>
