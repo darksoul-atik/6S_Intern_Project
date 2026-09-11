@@ -134,22 +134,6 @@ export default function SignupPage() {
             <p className="text-sm sm:text-base text-zinc-400 font-normal leading-relaxed max-w-md">
               Create your profile to publish engineering insights, discuss architectural decisions, and collaborate with world-class engineers.
             </p>
-
-            {/* Feature Badges */}
-            <div className="grid grid-cols-2 gap-3 pt-2 max-w-md">
-              <div className="flex items-center space-x-2.5 rounded-xl border border-white/5 bg-white/[0.03] p-3 text-xs text-zinc-300 backdrop-blur-md">
-                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-400">
-                  ✓
-                </div>
-                <span>Curated Dev Feed</span>
-              </div>
-              <div className="flex items-center space-x-2.5 rounded-xl border border-white/5 bg-white/[0.03] p-3 text-xs text-zinc-300 backdrop-blur-md">
-                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
-                  ✓
-                </div>
-                <span>JWT Secured Sessions</span>
-              </div>
-            </div>
           </motion.div>
 
           {/* Right Column: Sleek Glassmorphism Signup Card */}

@@ -150,12 +150,6 @@ function LoginForm() {
             <p className="text-sm sm:text-base text-zinc-400 font-normal leading-relaxed max-w-md">
               A modern platform engineered for developers to exchange technical insights, debate architecture, and build the future of software together.
             </p>
-
-            {/* Live Security Indicator */}
-            <div className="inline-flex items-center space-x-2.5 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs text-zinc-300 backdrop-blur-md">
-              <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>JWT Authentication & Role-Based Authorization Active</span>
-            </div>
           </motion.div>
 
           {/* Right Column: Sleek Glassmorphism Login Card */}
