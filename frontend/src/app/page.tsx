@@ -7,11 +7,6 @@ import { apiClient, ApiError } from '@/lib/api';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
 import { useAuth } from '@/context/AuthContext';
 
-interface HealthData {
-  status: string;
-  db: 'connected' | 'disconnected';
-}
-
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,9 +27,6 @@ function HomeContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
   const [toast, setToast] = useState<string | null>(null);
-  const [healthStatus, setHealthStatus] = useState<string>('checking');
-  const [dbStatus, setDbStatus] = useState<'connected' | 'disconnected'>('connected');
-
   // Sync mode from query param if provided (e.g. ?mode=signup)
   useEffect(() => {
     const mode = searchParams.get('mode');
@@ -42,20 +34,6 @@ function HomeContent() {
       setAuthMode(mode);
     }
   }, [searchParams]);
-
-  // Health check diagnostics telemetry
-  useEffect(() => {
-    apiClient<HealthData>('/health')
-      .then((res) => {
-        if (res.success && res.data) {
-          setHealthStatus('operational');
-          setDbStatus(res.data.db);
-        }
-      })
-      .catch(() => {
-        setHealthStatus('offline');
-      });
-  }, []);
 
   const handleTabSwitch = (mode: 'signin' | 'signup') => {
     setAuthMode(mode);
@@ -202,16 +180,10 @@ function HomeContent() {
               A modern platform engineered for developers to exchange technical insights, debate architecture, and build the future of software together.
             </p>
 
-            {/* Live System Diagnostics Pill */}
+            {/* Live Security Indicator */}
             <div className="inline-flex items-center space-x-2.5 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs text-zinc-300 backdrop-blur-md">
-              <span
-                className={`flex h-2.5 w-2.5 rounded-full ${
-                  healthStatus === 'operational' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
-                }`}
-              />
-              <span>
-                System: {healthStatus === 'operational' ? 'All Systems Operational' : 'Connecting to API...'} (DB: {dbStatus})
-              </span>
+              <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>JWT Authentication & Role-Based Authorization</span>
             </div>
           </motion.div>
 
