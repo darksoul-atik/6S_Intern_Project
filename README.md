@@ -3,7 +3,7 @@
 > **Next-Generation Full-Stack Developer Community & Collaboration Hub**  
 > *(Intern Project — 7-Day Sprint)*
 
-DevPulse is a high-performance, engineering-first developer community platform engineered as a clean, unified monorepo. It features a scalable **NestJS** backend integrated with **MongoDB** via **Mongoose** for resilient domain logic, alongside a modern **Next.js** App Router frontend styled with **Tailwind CSS**, **Framer Motion**, and **Google Inter** typography for a fluid, reactive developer experience.
+DevPulse is a high-performance, engineering-first developer community platform engineered as a clean, unified monorepo. It features a scalable **NestJS** backend integrated with **MongoDB** via **Mongoose** for resilient domain logic, alongside a modern **Next.js 16** App Router frontend styled with **Tailwind CSS**, **Framer Motion**, frosted white glassmorphism, **Google Inter & Manrope** typography, and pure **React Icons** for a fluid, reactive developer experience.
 
 ---
 
@@ -12,7 +12,7 @@ DevPulse is a high-performance, engineering-first developer community platform e
 | Day | Milestone | Focus Areas | Status |
 |:---:|---|---|:---:|
 | **Day 1** | **Foundation, Health Check, OpenAPI & UI** | Monorepo scaffolding, NestJS + Next.js App Router setup, Mongoose Atlas integration, live DB connection diagnostics (`/health`), interactive Swagger UI (`/docs`), generic typed API client (`lib/api.ts`), interactive Framer Motion `MeshGradientBackground` with cursor physics, and a sleek 2-column DevPulse login interface in Google Inter font. | ✅ **Completed** |
-| **Day 2** | **Auth, Identity & Security** | User schema (Mongoose) with role field (`admin` \| `user`), shared response envelopes (`TransformInterceptor` & `HttpExceptionFilter`), `POST /auth/signup` with bcrypt hashing, `POST /auth/login` issuing signed JWTs, Passport `JwtAuthGuard`, `RolesGuard` + `@Roles()` decorator, admin bootstrap CLI seed script, Next.js BFF `httpOnly` cookie persistence, route protection middleware, frontend `/signup`, `/login`, and `/dashboard` pages with dynamic header badges. | ✅ **Completed** |
+| **Day 2** | **Auth, Identity & Security** | User schema (Mongoose) with role field (`admin` \| `user`), shared response envelopes (`TransformInterceptor` & `HttpExceptionFilter`), `POST /auth/signup` with bcrypt hashing, `POST /auth/login` issuing signed JWTs, Passport `JwtAuthGuard`, `RolesGuard` + `@Roles()` decorator, admin bootstrap CLI seed script, Next.js BFF `httpOnly` cookie persistence, route protection middleware, frontend `/signup`, `/login`, and `/dashboard` pages with dynamic header badges, frosted white glassmorphic cards, Google Inter & Manrope typography, pure React Icons (zero emojis), Lottie micro-animations, instant flicker-free logout to `/`, and xs/sm/md responsiveness. | ✅ **Completed** |
 | **Day 3** | **Profiles & Account Management** | Extended user schema (bio, avatars, tech tags, socials), profile CRUD APIs, account settings dashboard, and dynamic `/profile/[username]` routing. | ⏳ *Upcoming* |
 | **Day 4** | **Content Engine & Markdown Posts** | Markdown post editor with live preview, tags & categories, post CRUD operations, cursor/page pagination, and unified home feed. | ⏳ *Upcoming* |
 | **Day 5** | **Community Engagement & Socials** | Threaded/nested comments system, polymorphic reactions (likes, stars, bookmarks), and optimistic UI interaction feedback. | ⏳ *Upcoming* |
@@ -23,8 +23,8 @@ DevPulse is a high-performance, engineering-first developer community platform e
 
 ## 🛠️ Tech Stack Summary
 
-- **Backend**: [NestJS](https://nestjs.com/) (Node.js, TypeScript), [Mongoose](https://mongoosejs.com/) (MongoDB ODM), `@nestjs/config`, `@nestjs/swagger`, `passport-jwt`, `bcryptjs`, `class-validator`
-- **Frontend**: [Next.js](https://nextjs.org/) (React 19, TypeScript, App Router), [Tailwind CSS](https://tailwindcss.com/), [Framer Motion](https://www.framer.com/motion/), Google Inter Font
+- **Backend**: [NestJS](https://nestjs.com/) (Node.js, TypeScript), [Mongoose](https://mongoosejs.com/) (MongoDB ODM), `@nestjs/config`, `@nestjs/swagger`, `passport-jwt`, `bcryptjs`, `class-validator`, `vitest`
+- **Frontend**: [Next.js 16](https://nextjs.org/) (React 19, TypeScript, App Router), [Tailwind CSS](https://tailwindcss.com/), [Framer Motion](https://www.framer.com/motion/), [Lottie React](https://github.com/Gamote/lottie-react), [React Icons (Feather Icons)](https://react-icons.github.io/react-icons/icons/fi/), Google Inter & Manrope Fonts
 - **Database**: MongoDB (Atlas cloud cluster or local MongoDB)
 - **API Documentation**: OpenAPI 3.0 / Swagger UI at `/docs`
 - **Package Manager**: npm
@@ -48,6 +48,12 @@ DevPulse is a high-performance, engineering-first developer community platform e
   1. **Zero Attack Surface**: A public HTTP endpoint (even if protected by a shared secret or header) is exposed to network scans, brute-force attacks, and credential leaks. A CLI script runs entirely out-of-band in a trusted execution environment (terminal, container init, or CI/CD deployment pipeline).
   2. **Strict Principle of Least Privilege**: Creating high-privilege administrative accounts is an operational concern, not an application-layer user action.
   3. **Idempotence & Safety**: The script inspects the database: if the specified `ADMIN_EMAIL` already exists with role `admin`, it reports status without altering credentials; if the user exists under role `user`, it safely promotes them; if no user exists, it hashes `ADMIN_PASSWORD` via `bcrypt` (10 rounds) and creates the user with `role: 'admin'`.
+
+#### Decision C: Refined Developer UI & Design System
+- **Frosted White Glassmorphism**: High-contrast, multi-layer frosted cards (`bg-white/55`, `backdrop-blur-3xl`, `backdrop-saturate-200`, specular rim highlights) positioned on a dark glassmorphic shell.
+- **Typography & Iconography**: Google Inter for readable data and Manrope for bold typography; SVG vectors via `react-icons/fi` replacing whimsical emojis.
+- **Single-Source Action Hierarchy**: Diagnostic verification actions trigger directly from the Welcome Developer banner, eliminating duplicate buttons and keeping the diagnostic cards clean and responsive.
+- **Instantaneous Logout Experience**: Direct transition to root (`/`) with instant local state reset and background session revocation, preventing white flashes or page reload spinners.
 
 ---
 
@@ -87,10 +93,32 @@ Implemented via global `TransformInterceptor` and `HttpExceptionFilter` in NestJ
 | `GET` | `/auth/admin-check` | Admin Role | Protected route: requires `role: 'admin'` (403 for standard users) |
 
 #### Frontend BFF Route Handlers (`frontend/src/app/api/auth/*`):
-- `POST /api/auth/login`: Proxies to NestJS, writes `httpOnly` cookie `devpulse_token`.
+- `POST /api/auth/login`: Proxies credentials to NestJS, writes `httpOnly` cookie `devpulse_token`.
 - `POST /api/auth/logout`: Clears `devpulse_token` cookie and terminates session.
 - `GET /api/auth/me`: Reads cookie, forwards Bearer token to NestJS `/auth/me`.
 - `GET /api/auth/admin-check`: Reads cookie, forwards Bearer token to NestJS `/auth/admin-check`.
+
+---
+
+### 4. Testing API Routes in Hoppscotch / Postman
+
+You can test all endpoints in Hoppscotch (`https://hoppscotch.io`) or Postman directly against the backend (`http://localhost:5000`):
+
+1. **Signup (`POST http://localhost:5000/auth/signup`)**:
+   - Header: `Content-Type: application/json`
+   - Body: `{"name":"Dev User","email":"user@devpulse.io","password":"Password123"}`
+2. **Login (`POST http://localhost:5000/auth/login`)**:
+   - Header: `Content-Type: application/json`
+   - Body: `{"email":"user@devpulse.io","password":"Password123"}`
+   - Copy the `accessToken` string from the JSON response.
+3. **Verify User Session (`GET http://localhost:5000/auth/me`)**:
+   - Auth tab: Choose **Bearer Token**, paste the `accessToken`.
+   - Expected Response: `200 OK` with user profile object.
+4. **Test Admin Access (`GET http://localhost:5000/auth/admin-check`)**:
+   - Auth tab: Choose **Bearer Token**, paste the `accessToken`.
+   - Expected Response: `403 Forbidden` for standard users, or `200 OK` for admin (`admin@devpulse.io`).
+5. **Interactive Swagger Docs**:
+   - Open your browser to `http://localhost:5000/docs` to execute requests directly with interactive schemas.
 
 ---
 
@@ -178,7 +206,14 @@ npm run seed:admin
 ```
 *Creates initial admin account (`admin@devpulse.io`). Rerunning proves idempotency.*
 
-### 2. Live API Diagnostics (cURL)
+### 2. Automated Test Suite
+```bash
+cd backend
+npm test
+```
+*Runs Vitest test suite covering auth service, controllers, strategies, guards, interceptors, and filters (20/20 passing).*
+
+### 3. Live API Diagnostics (cURL)
 ```bash
 # 1. User Signup
 curl -X POST http://localhost:5000/auth/signup \
@@ -203,16 +238,17 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <USER_TOKE
 curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOKEN>"
 ```
 
-### 3. Web UI Flow
-1. Navigate to `http://localhost:3000/signup`:
+### 4. Web UI Flow
+1. **Navigate to `http://localhost:3000/signup`**:
    - Register a new account. Notice error validation alerts and success auto-redirect to `/login`.
-2. Sign in at `http://localhost:3000/login`:
+2. **Sign in at `http://localhost:3000/login`**:
    - Authenticate with your new user credentials.
    - Automatically establishes the `httpOnly` cookie and redirects to `/dashboard`.
-3. Test the Protected Dashboard (`http://localhost:3000/dashboard`):
-   - Check the **Navbar**: shows your user name/email and role badge (`USER` or `ADMIN`).
-   - Click **"Verify Identity via /auth/me"**: displays live verified JWT claims.
-   - Click **"Test Admin Privilege (/auth/admin-check)"**: displays formatted `403 FORBIDDEN` for standard user, or `200 OK` for admin.
-4. Test Logout:
-   - Click **"Sign Out"**: clears the `httpOnly` session and redirects to `/login`.
+3. **Explore the Protected Dashboard (`http://localhost:3000/dashboard`)**:
+   - **Navbar**: Shows your user email and dynamic role badge (`USER` or `ADMIN`).
+   - **Welcome Developer Banner**: Interactive card with Lottie vector animation and quick-test buttons.
+   - Click **"Verify Session Identity"**: Populates the User Identity Check card with live decoded JWT claims.
+   - Click **"Verify Admin Privileges"**: Populates the Admin Access Verification card with formatted `403 FORBIDDEN` for standard users, or `200 OK` for administrators.
+4. **Instant Logout**:
+   - Click **"Sign Out"**: Clears the `httpOnly` session and immediately transitions to the root landing page (`/`) without page reload or spinner flash.
    - Attempting to revisit `/dashboard` triggers server-side middleware redirect to `/login`.
