@@ -12,10 +12,6 @@ import {
 } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 import { apiClient, ApiError } from '@/lib/api';
-import { LottieAnimation } from '@/components/LottieAnimation';
-import developerBadgeLottie from '@/assets/lottie/developer-badge.json';
-import shieldPulseLottie from '@/assets/lottie/shield-pulse.json';
-import successBurstLottie from '@/assets/lottie/success-burst.json';
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
@@ -156,25 +152,18 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Title, Subtitle & Lottie Illustration */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                <div className="space-y-2 max-w-2xl">
-                  <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold font-manrope tracking-tight text-slate-900 leading-tight">
-                    Welcome back,{' '}
-                    <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
-                      {user?.name || 'Developer'}
-                    </span>
-                  </h1>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-sans">
-                    You are securely signed in with an <strong className="text-slate-800 font-semibold">httpOnly</strong> session cookie.
-                    Manage your authenticated session and explore role permissions below.
-                  </p>
-                </div>
-
-                {/* Dynamic Lottie Holographic Badge */}
-                <div className="hidden sm:flex shrink-0 items-center justify-center p-2 rounded-3xl bg-white/70 border border-white/90 shadow-md backdrop-blur-2xl">
-                  <LottieAnimation animationData={developerBadgeLottie} className="w-20 h-20 sm:w-24 sm:h-24" />
-                </div>
+              {/* Title & Subtitle (Clean layout without box/dot) */}
+              <div className="space-y-2 max-w-3xl">
+                <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold font-manrope tracking-tight text-slate-900 leading-tight">
+                  Welcome back,{' '}
+                  <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
+                    {user?.name || 'Developer'}
+                  </span>
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-sans">
+                  You are securely signed in with an <strong className="text-slate-800 font-semibold">httpOnly</strong> session cookie.
+                  Manage your authenticated session and explore role permissions below.
+                </p>
               </div>
 
               {/* Action Buttons */}
@@ -278,7 +267,7 @@ export default function DashboardPage() {
                     >
                       <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-emerald-400 text-[10px]">
                         <div className="flex items-center space-x-2">
-                          <LottieAnimation animationData={successBurstLottie} className="w-5 h-5" loop={false} />
+                          <FiCheckCircle className="h-3.5 w-3.5 text-emerald-400" />
                           <span className="font-semibold">Status: 200 OK</span>
                         </div>
                         <span className="text-slate-400">User Verified</span>
@@ -326,8 +315,8 @@ export default function DashboardPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center space-x-2.5">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/80 border border-white/90 shadow-xs backdrop-blur-md overflow-hidden">
-                      <LottieAnimation animationData={shieldPulseLottie} className="w-8 h-8" />
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 border border-white/90 text-purple-600 shadow-xs backdrop-blur-md">
+                      <FiShield className="h-4 w-4" />
                     </div>
                     <h3 className="text-base sm:text-lg font-bold font-manrope text-slate-900 tracking-tight">
                       Admin Access Verification
@@ -356,7 +345,7 @@ export default function DashboardPage() {
                     >
                       <div className="flex items-center space-x-2 font-mono text-[11px]">
                         {adminResult?.success ? (
-                          <LottieAnimation animationData={successBurstLottie} className="w-5 h-5 shrink-0" loop={false} />
+                          <FiCheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
                         ) : (
                           <FiAlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
                         )}
