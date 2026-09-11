@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUserPlus, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiUserPlus, FiEye, FiEyeOff, FiX, FiAlertTriangle, FiCheck } from 'react-icons/fi';
 import { apiClient, ApiError } from '@/lib/api';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
 
@@ -69,14 +69,12 @@ export default function SignupPage() {
       }
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setErrorMessage(err.message);
+        setErrorMessage(err.message || 'Registration failed. Please review your input.');
         if (err.errors && err.errors.length > 0) {
           setFieldErrors(err.errors);
         }
-      } else if (err instanceof Error) {
-        setErrorMessage(err.message);
       } else {
-        setErrorMessage('Failed to connect to backend server. Please verify backend is running.');
+        setErrorMessage('An unexpected network or server error occurred.');
       }
     } finally {
       setIsLoading(false);
@@ -90,20 +88,23 @@ export default function SignupPage() {
       blur={130}
       interactive
     >
-      <div className="flex items-center justify-center min-h-screen px-6 py-12 lg:px-16 font-sans">
-        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
+      <div className="flex min-h-screen items-center justify-center px-4 sm:px-6 lg:px-12 py-8 sm:py-12 font-sans overflow-x-hidden">
+        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
-          {/* Left Column: Brand, Motto & Community Pillars */}
+          {/* Left Column: Brand Hero Identity */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="lg:col-span-6 space-y-7 text-left"
+            className="lg:col-span-6 space-y-6 text-center lg:text-left"
           >
-            {/* Logo */}
-            <Link href="/" className="inline-flex items-center space-x-3.5 group">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-[1px] shadow-[0_0_24px_rgba(99,102,241,0.4)] transition-transform group-hover:scale-105">
-                <div className="flex h-full w-full items-center justify-center rounded-[11px] bg-[#080a10]">
+            {/* Brand Logo Link */}
+            <Link
+              href="/"
+              className="inline-flex items-center space-x-3 group"
+            >
+              <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-[1px] shadow-[0_0_24px_rgba(99,102,241,0.4)] transition-transform group-hover:scale-105">
+                <div className="flex h-full w-full items-center justify-center rounded-[15px] bg-[#080a10]">
                   <svg
                     className="h-5 w-5 text-indigo-400"
                     viewBox="0 0 24 24"
@@ -117,21 +118,21 @@ export default function SignupPage() {
                   </svg>
                 </div>
               </div>
-              <span className="text-2xl font-bold tracking-tight text-white">
+              <span className="text-2xl sm:text-3xl font-bold font-manrope tracking-tight text-white">
                 DevPulse
               </span>
             </Link>
 
             {/* Motto */}
-            <h1 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-white leading-[1.12]">
-              Join the future of{' '}
+            <h1 className="text-3xl xs:text-4xl sm:text-5xl font-bold font-manrope tracking-tight text-white leading-[1.12]">
+              Where code meets{' '}
               <span className="bg-gradient-to-r from-indigo-300 via-purple-300 to-emerald-300 bg-clip-text text-transparent">
-                software collaboration.
+                collective intelligence.
               </span>
             </h1>
 
             {/* Passage */}
-            <p className="text-sm sm:text-base text-zinc-400 font-normal leading-relaxed max-w-md">
+            <p className="text-sm sm:text-base text-zinc-300 font-sans font-normal leading-relaxed max-w-md mx-auto lg:mx-0">
               Create your profile to publish engineering insights, discuss architectural decisions, and collaborate with world-class engineers.
             </p>
           </motion.div>
@@ -143,17 +144,17 @@ export default function SignupPage() {
             transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="lg:col-span-6 w-full max-w-md mx-auto"
           >
-            <div className="relative rounded-3xl border border-white/10 bg-zinc-950/60 p-8 sm:p-10 backdrop-blur-2xl shadow-[0_24px_64px_rgba(0,0,0,0.56)]">
+            <div className="relative rounded-3xl border border-white/10 bg-zinc-950/60 p-5 sm:p-8 md:p-10 backdrop-blur-2xl shadow-[0_24px_64px_rgba(0,0,0,0.56)]">
               {/* Card Ambient Glow Accent */}
               <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none" />
               <div className="absolute -bottom-12 -left-12 h-32 w-32 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
 
               {/* Header */}
-              <div className="space-y-2 mb-7 text-left">
-                <h2 className="text-2xl font-bold tracking-tight text-white">
+              <div className="space-y-1.5 mb-6 text-left">
+                <h2 className="text-xl sm:text-2xl font-bold font-manrope tracking-tight text-white">
                   Create an account
                 </h2>
-                <p className="text-xs sm:text-sm text-zinc-400">
+                <p className="text-xs sm:text-sm text-zinc-400 font-sans">
                   Enter your details below to register your DevPulse identity
                 </p>
               </div>
@@ -169,10 +170,10 @@ export default function SignupPage() {
                   >
                     <div className="flex items-start space-x-2">
                       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-500/20 text-red-400 text-xs font-bold">
-                        ✕
+                        <FiX className="h-3.5 w-3.5" />
                       </span>
                       <div>
-                        <p className="font-semibold text-red-300">Something went wrong</p>
+                        <p className="font-semibold text-red-300 font-manrope">Something went wrong</p>
                         <p className="mt-0.5">{errorMessage}</p>
                         {fieldErrors.length > 0 && (
                           <ul className="mt-1 list-disc list-inside space-y-0.5 text-red-300/90">
@@ -195,10 +196,10 @@ export default function SignupPage() {
                   >
                     <div className="flex items-start space-x-2">
                       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold">
-                        ⚠️
+                        <FiAlertTriangle className="h-3.5 w-3.5" />
                       </span>
                       <div>
-                        <p className="font-semibold text-amber-300">Notice</p>
+                        <p className="font-semibold text-amber-300 font-manrope">Notice</p>
                         <p className="mt-0.5">{warningMessage}</p>
                       </div>
                     </div>
@@ -213,10 +214,10 @@ export default function SignupPage() {
                     className="mb-5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-200 backdrop-blur-md flex items-center space-x-2 text-left shadow-[0_0_20px_rgba(16,185,129,0.15)]"
                   >
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold">
-                      ✓
+                      <FiCheck className="h-3.5 w-3.5" />
                     </span>
                     <div>
-                      <p className="font-semibold text-emerald-300">Success</p>
+                      <p className="font-semibold text-emerald-300 font-manrope">Success</p>
                       <p className="mt-0.5">{successMessage}</p>
                     </div>
                   </motion.div>
@@ -227,7 +228,7 @@ export default function SignupPage() {
               <form onSubmit={handleSubmit} className="space-y-4 text-left">
                 {/* Full Name */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-zinc-300">
+                  <label className="text-xs font-medium text-zinc-300 font-sans">
                     Full Name
                   </label>
                   <input
@@ -237,13 +238,13 @@ export default function SignupPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Alex Chen"
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-sans"
                   />
                 </div>
 
                 {/* Email */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-zinc-300">
+                  <label className="text-xs font-medium text-zinc-300 font-sans">
                     Email Address
                   </label>
                   <input
@@ -255,13 +256,13 @@ export default function SignupPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@work-email.com"
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-sans"
                   />
                 </div>
 
                 {/* Password */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-zinc-300">
+                  <label className="text-xs font-medium text-zinc-300 font-sans">
                     Password
                   </label>
                   <div className="relative">
@@ -280,7 +281,7 @@ export default function SignupPage() {
                       onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       placeholder="Minimum 6 characters"
-                      className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 pr-10 text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 pr-10 text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-sans"
                     />
                     <button
                       type="button"
@@ -297,11 +298,11 @@ export default function SignupPage() {
                   </div>
                   {capsLockOn && (
                     <div className="flex items-center space-x-1.5 text-[11px] text-amber-400 mt-1.5">
-                      <span>⚠️</span>
+                      <FiAlertTriangle className="h-3.5 w-3.5" />
                       <span>Caps Lock is ON</span>
                     </div>
                   )}
-                  <p className="text-[11px] text-zinc-500">
+                  <p className="text-[11px] text-zinc-500 font-sans">
                     Must be at least 6 characters. Never stored in plain text.
                   </p>
                 </div>
@@ -311,7 +312,7 @@ export default function SignupPage() {
                   id="signup-submit-btn"
                   type="submit"
                   disabled={isLoading}
-                  className="w-full rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 py-3.5 text-sm font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all hover:shadow-[0_0_28px_rgba(99,102,241,0.6)] hover:brightness-110 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center space-x-2 mt-2 cursor-pointer"
+                  className="w-full rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 py-3.5 text-xs sm:text-sm font-semibold font-manrope text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all hover:shadow-[0_0_28px_rgba(99,102,241,0.6)] hover:brightness-110 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center space-x-2 mt-2 cursor-pointer"
                 >
                   {isLoading ? (
                     <>
@@ -328,11 +329,11 @@ export default function SignupPage() {
               </form>
 
               {/* Login Switch */}
-              <div className="mt-6 text-center text-xs text-zinc-400">
+              <div className="mt-6 text-center text-xs text-zinc-400 font-sans">
                 Already have an account?{' '}
                 <Link
                   href="/login"
-                  className="font-medium text-indigo-400 hover:text-indigo-300 underline underline-offset-4 transition-colors"
+                  className="font-semibold font-manrope text-indigo-400 hover:text-indigo-300 underline underline-offset-4 transition-colors"
                 >
                   Sign in
                 </Link>
