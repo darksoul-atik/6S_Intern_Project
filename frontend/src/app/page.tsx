@@ -30,6 +30,13 @@ export default function Home() {
       });
   }, []);
 
+  // Redirect authenticated users to the dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated, router]);
+
   // Auth UI state
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState<string>('');
