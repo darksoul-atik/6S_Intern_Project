@@ -84,8 +84,9 @@ export function Navbar() {
               {/* Logout Button */}
               <button
                 id="navbar-logout-btn"
+                type="button"
                 onClick={() => logout()}
-                className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/20 hover:border-red-500/40 transition-all active:scale-95"
+                className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/20 hover:border-red-500/40 transition-all active:scale-95 cursor-pointer"
               >
                 Logout
               </button>
