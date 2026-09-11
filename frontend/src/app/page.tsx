@@ -462,7 +462,9 @@ function HomeContent() {
                       </label>
                       <div className="relative rounded-xl border border-white/[0.08] bg-zinc-900/50 hover:border-white/[0.14] focus-within:border-indigo-500/80 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
                         <input
+                          name="email"
                           type="email"
+                          autoComplete="email"
                           value={email}
                           onChange={(e) => {
                             setEmail(e.target.value);
@@ -493,7 +495,9 @@ function HomeContent() {
                       </div>
                       <div className="relative rounded-xl border border-white/[0.08] bg-zinc-900/50 hover:border-white/[0.14] focus-within:border-indigo-500/80 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
                         <input
+                          name="password"
                           type={showPassword ? 'text' : 'password'}
+                          autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
                           value={password}
                           onChange={(e) => {
                             setPassword(e.target.value);

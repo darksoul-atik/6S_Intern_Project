@@ -258,7 +258,9 @@ function LoginForm() {
                   </label>
                   <input
                     id="login-email"
+                    name="email"
                     type="email"
+                    autoComplete="email"
                     required
                     value={email}
                     onChange={(e) => {
@@ -280,7 +282,9 @@ function LoginForm() {
                   <div className="relative">
                     <input
                       id="login-password"
+                      name="password"
                       type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
                       required
                       value={password}
                       onChange={(e) => {

@@ -54,7 +54,7 @@ export class AuthService {
 
     // Hash the password with bcrypt (never store or log plain text)
     const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(signupDto.password, saltRounds);
+    const passwordHash = await bcrypt.hash(signupDto.password.trim(), saltRounds);
 
     // Explicitly enforce role as 'user' for public signup
     const newUser = await this.usersService.create({
@@ -63,6 +63,8 @@ export class AuthService {
       passwordHash,
       role: 'user',
     });
+
+    console.log(`[AuthService.signup] User created: "${normalizedEmail}" (${newUser.role})`);
 
     return {
       data: {
@@ -80,20 +82,38 @@ export class AuthService {
   async login(
     loginDto: LoginDto,
   ): Promise<{ data: LoginResponseData; message: string }> {
-    const normalizedEmail = loginDto.email.toLowerCase().trim();
+    const normalizedEmail = loginDto.email?.toLowerCase()?.trim();
+    console.log(`[AuthService.login] Login attempt for email: "${normalizedEmail}"`);
 
     const user = await this.usersService.findByEmail(normalizedEmail);
     if (!user) {
+      console.warn(`[AuthService.login] FAILED: User not found in DB for email "${normalizedEmail}"`);
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const isPasswordValid = await bcrypt.compare(
+    // Compare with exact password first
+    let isPasswordValid = await bcrypt.compare(
       loginDto.password,
       user.passwordHash,
     );
+
+    // If exact comparison failed, also test trimmed password (handles accidental copy-paste or mobile keyboard trailing spaces)
+    if (!isPasswordValid && loginDto.password && loginDto.password.trim() !== loginDto.password) {
+      isPasswordValid = await bcrypt.compare(
+        loginDto.password.trim(),
+        user.passwordHash,
+      );
+      if (isPasswordValid) {
+        console.log(`[AuthService.login] Password matched via trimmed fallback for "${normalizedEmail}"`);
+      }
+    }
+
     if (!isPasswordValid) {
+      console.warn(`[AuthService.login] FAILED: Invalid password for email "${normalizedEmail}" (provided password length: ${loginDto.password?.length})`);
       throw new UnauthorizedException('Invalid email or password');
     }
+
+    console.log(`[AuthService.login] SUCCESS: "${normalizedEmail}" (role: ${user.role}) authenticated successfully`);
 
     // Construct JWT payload containing sub (userId), email, and role
     const payload: JwtPayload = {
