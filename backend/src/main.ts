@@ -1,13 +1,28 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import type { INestApplication } from '@nestjs/common';
+import { ValidationPipe, type INestApplication } from '@nestjs/common';
 import { AppModule } from './app.module.js';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 
 let appInstance: INestApplication | null = null;
 
 async function createApp(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule);
+
+  // Enable global input validation with class-validator
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  // Global standard response envelope interceptor & exception filter
+  app.useGlobalInterceptors(new TransformInterceptor());
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   // Enable CORS
   app.enableCors({
