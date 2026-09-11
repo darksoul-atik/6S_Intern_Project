@@ -12,7 +12,7 @@ DevPulse is a high-performance, engineering-first developer community platform e
 | Day | Milestone | Focus Areas | Status |
 |:---:|---|---|:---:|
 | **Day 1** | **Foundation, Health Check, OpenAPI & UI** | Monorepo scaffolding, NestJS + Next.js App Router setup, Mongoose Atlas integration, live DB connection diagnostics (`/health`), interactive Swagger UI (`/docs`), generic typed API client (`lib/api.ts`), interactive Framer Motion `MeshGradientBackground` with cursor physics, and a sleek 2-column DevPulse login interface in Google Inter font. | ✅ **Completed** |
-| **Day 2** | **Auth, Identity & Security** | JWT-based authentication & refresh tokens, password hashing with bcrypt, registration/login endpoints, NestJS route guards, and live auth state integration. | ⏳ *Upcoming* |
+| **Day 2** | **Auth, Identity & Security** | User schema (Mongoose) with role field (`admin` \| `user`), shared response envelopes (`TransformInterceptor` & `HttpExceptionFilter`), `POST /auth/signup` with bcrypt hashing, `POST /auth/login` issuing signed JWTs, Passport `JwtAuthGuard`, `RolesGuard` + `@Roles()` decorator, admin bootstrap CLI seed script, Next.js BFF `httpOnly` cookie persistence, route protection middleware, frontend `/signup`, `/login`, and `/dashboard` pages with dynamic header badges. | ✅ **Completed** |
 | **Day 3** | **Profiles & Account Management** | Extended user schema (bio, avatars, tech tags, socials), profile CRUD APIs, account settings dashboard, and dynamic `/profile/[username]` routing. | ⏳ *Upcoming* |
 | **Day 4** | **Content Engine & Markdown Posts** | Markdown post editor with live preview, tags & categories, post CRUD operations, cursor/page pagination, and unified home feed. | ⏳ *Upcoming* |
 | **Day 5** | **Community Engagement & Socials** | Threaded/nested comments system, polymorphic reactions (likes, stars, bookmarks), and optimistic UI interaction feedback. | ⏳ *Upcoming* |
@@ -23,44 +23,74 @@ DevPulse is a high-performance, engineering-first developer community platform e
 
 ## 🛠️ Tech Stack Summary
 
-- **Backend**: [NestJS](https://nestjs.com/) (Node.js, TypeScript), [Mongoose](https://mongoosejs.com/) (MongoDB ODM), `@nestjs/config`, `@nestjs/swagger`
-- **Frontend**: [Next.js](https://nextjs.org/) (React, TypeScript, App Router), [Tailwind CSS](https://tailwindcss.com/), [Framer Motion](https://www.framer.com/motion/), Google Inter Font
+- **Backend**: [NestJS](https://nestjs.com/) (Node.js, TypeScript), [Mongoose](https://mongoosejs.com/) (MongoDB ODM), `@nestjs/config`, `@nestjs/swagger`, `passport-jwt`, `bcryptjs`, `class-validator`
+- **Frontend**: [Next.js](https://nextjs.org/) (React 19, TypeScript, App Router), [Tailwind CSS](https://tailwindcss.com/), [Framer Motion](https://www.framer.com/motion/), Google Inter Font
 - **Database**: MongoDB (Atlas cloud cluster or local MongoDB)
-- **API Documentation**: OpenAPI 3.0 / Swagger UI
+- **API Documentation**: OpenAPI 3.0 / Swagger UI at `/docs`
 - **Package Manager**: npm
 
 ---
 
-## 📋 Prerequisites
+## 🔐 Day 2 — Authentication, Authorization & Security Architecture
 
-- **Node.js**: `v20.x` or `v22.x` (tested on `v22.15.1`)
-- **npm**: `v10.x` or `v11.x`
-- **MongoDB**: Active MongoDB database instance (MongoDB Atlas connection string or local instance at `mongodb://localhost:27017`)
+### 1. Key Architectural Decisions
+
+#### Decision A: Token Persistence via `httpOnly` Cookies (Next.js BFF Pattern)
+- **Chosen Approach**: The JWT access token is stored in an **`httpOnly`**, **`Secure`**, **`SameSite=Lax`** cookie (`devpulse_token`) managed via Next.js Route Handlers (`app/api/auth/*`).
+- **Why this was chosen over `localStorage`**:
+  1. **Maximum XSS Immunity**: `httpOnly` cookies cannot be accessed or stolen by client-side JavaScript (`document.cookie`), neutralizing cross-site scripting token exfiltration risks.
+  2. **Server-Side Route Protection**: Next.js Edge `middleware.ts` can immediately inspect the cookie before rendering, redirecting unauthenticated visitors to `/login` without UI flicker or client layout shifts.
+  3. **Decoupled Backend Architecture**: Next.js acts as a secure BFF (Backend-For-Frontend) proxy, extracting the cookie and forwarding it to the NestJS API as a standard `Authorization: Bearer <token>` header. This ensures NestJS remains a pure REST API compatible with mobile or external API clients.
+
+#### Decision B: Admin Bootstrap via Idempotent CLI Seed Script
+- **Chosen Approach**: Provisioning the initial administrator is executed through a dedicated CLI seed script (`npm run seed:admin` / `backend/src/scripts/seed-admin.ts`).
+- **Why this was chosen over an HTTP Bootstrap Endpoint**:
+  1. **Zero Attack Surface**: A public HTTP endpoint (even if protected by a shared secret or header) is exposed to network scans, brute-force attacks, and credential leaks. A CLI script runs entirely out-of-band in a trusted execution environment (terminal, container init, or CI/CD deployment pipeline).
+  2. **Strict Principle of Least Privilege**: Creating high-privilege administrative accounts is an operational concern, not an application-layer user action.
+  3. **Idempotence & Safety**: The script inspects the database: if the specified `ADMIN_EMAIL` already exists with role `admin`, it reports status without altering credentials; if the user exists under role `user`, it safely promotes them; if no user exists, it hashes `ADMIN_PASSWORD` via `bcrypt` (10 rounds) and creates the user with `role: 'admin'`.
 
 ---
 
-## 📁 Monorepo Layout
+### 2. Shared Response Envelope Convention
 
+Implemented via global `TransformInterceptor` and `HttpExceptionFilter` in NestJS across **all endpoints** (including `/health`):
+
+#### Success Envelope:
+```json
+{
+  "success": true,
+  "data": {},
+  "message": "Optional human-readable feedback"
+}
 ```
-dev-community/
-├── backend/               # NestJS + Mongoose API server
-│   ├── src/
-│   │   ├── health/        # Health check module, controller, service, & DTOs
-│   │   ├── app.module.ts  # Root application module wiring Mongoose & Config
-│   │   └── main.ts        # Bootstrap, CORS, Swagger, and port configuration
-│   ├── .env.example       # Backend environment variables template
-│   └── package.json
-├── frontend/              # Next.js App Router frontend
-│   ├── src/
-│   │   ├── app/           # App Router pages, layout, and global styles
-│   │   ├── components/    # Reusable UI components (MeshGradientBackground)
-│   │   └── lib/           # Shared utilities (generic apiClient helper)
-│   ├── .env.example       # Frontend environment variables template
-│   └── package.json
-├── .gitignore             # Root monorepo ignore rules (strictly ignores secrets)
-├── README.md              # Project documentation, roadmap & run guide
-└── AI_USAGE.md            # LLM & AI assistance audit log
+
+#### Error Envelope:
+```json
+{
+  "success": false,
+  "statusCode": 400,
+  "message": "Human-readable error description",
+  "errors": ["Validation error detail 1", "Validation error detail 2"]
+}
 ```
+
+---
+
+### 3. API Endpoints Reference
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `GET` | `/health` | Public | Live database connection diagnostics |
+| `POST` | `/auth/signup` | Public | Register new user (`role: 'user'`), bcrypt hash password |
+| `POST` | `/auth/login` | Public | Validate credentials, issue signed JWT `{ sub, email, role }` |
+| `GET` | `/auth/me` | Bearer JWT | Protected route: returns current authenticated user identity |
+| `GET` | `/auth/admin-check` | Admin Role | Protected route: requires `role: 'admin'` (403 for standard users) |
+
+#### Frontend BFF Route Handlers (`frontend/src/app/api/auth/*`):
+- `POST /api/auth/login`: Proxies to NestJS, writes `httpOnly` cookie `devpulse_token`.
+- `POST /api/auth/logout`: Clears `devpulse_token` cookie and terminates session.
+- `GET /api/auth/me`: Reads cookie, forwards Bearer token to NestJS `/auth/me`.
+- `GET /api/auth/admin-check`: Reads cookie, forwards Bearer token to NestJS `/auth/admin-check`.
 
 ---
 
@@ -68,16 +98,17 @@ dev-community/
 
 ### Backend (`backend/.env`)
 
-Copy `backend/.env.example` to `backend/.env`:
-
 | Variable | Description | Example / Default |
 |---|---|---|
 | `PORT` | Port on which the NestJS HTTP API listens | `5000` |
 | `MONGODB_URI` | MongoDB connection URI (Atlas or local) | `mongodb+srv://<user>:<pass>@cluster.mongodb.net/dev_community` |
+| `JWT_SECRET` | Secret key used to sign and verify JWT tokens | `devpulse_super_secret_jwt_key_intern_2026_dev` |
+| `JWT_EXPIRES_IN` | JWT token lifespan / expiration | `7d` |
+| `ADMIN_NAME` | Display name for bootstrapped administrator | `DevPulse Administrator` |
+| `ADMIN_EMAIL` | Email address for bootstrapped administrator | `admin@devpulse.io` |
+| `ADMIN_PASSWORD` | Password for bootstrapped administrator | `Admin@SecurePass2026` |
 
 ### Frontend (`frontend/.env.local`)
-
-Copy `frontend/.env.example` to `frontend/.env.local`:
 
 | Variable | Description | Example / Default |
 |---|---|---|
@@ -103,16 +134,19 @@ cd backend
 
 # 1. Configure environment
 cp .env.example .env
-# Edit .env with your MongoDB connection string and desired port (default 5000)
+# Verify your MONGODB_URI and JWT_SECRET
 
 # 2. Install dependencies
 npm install
 
-# 3. Start development server
+# 3. Bootstrap initial admin account (Optional/Recommended)
+npm run seed:admin
+
+# 4. Start development server
 npm run start:dev
 ```
 
-The backend boots at `http://localhost:5000` (or your configured `PORT`).
+The backend boots at `http://localhost:5000` (Swagger docs at `http://localhost:5000/docs`).
 
 ### 3. Frontend Setup & Run
 
@@ -123,7 +157,6 @@ cd frontend
 
 # 1. Configure environment
 cp .env.example .env.local
-# Verify NEXT_PUBLIC_API_URL points to http://localhost:5000
 
 # 2. Install dependencies
 npm install
@@ -136,27 +169,50 @@ The frontend boots at `http://localhost:3000`.
 
 ---
 
-## 🔍 Verification & Diagnostics
+## 🔍 Day 2 Verification Guide
 
-1. **Direct Backend Health Check**:
-   ```bash
-   curl http://localhost:5000/health
-   ```
-   **Expected Response:**
-   ```json
-   {
-     "success": true,
-     "data": {
-       "status": "ok",
-       "db": "connected"
-     }
-   }
-   ```
-   *(The `db` field dynamically reflects live Mongoose connection state: `connected` or `disconnected`)*.
+### 1. Admin Account Bootstrap
+```bash
+cd backend
+npm run seed:admin
+```
+*Creates initial admin account (`admin@devpulse.io`). Rerunning proves idempotency.*
 
-2. **Interactive Swagger API Documentation**:
-   Navigate to `http://localhost:5000/docs` in your browser to inspect and interact with the OpenAPI documentation.
-   - OpenAPI JSON Schema: `http://localhost:5000/docs-json`
+### 2. Live API Diagnostics (cURL)
+```bash
+# 1. User Signup
+curl -X POST http://localhost:5000/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Sarah Connor","email":"sarah@devpulse.io","password":"SecurePassword123"}'
 
-3. **Frontend Experience**:
-   Navigate to `http://localhost:3000` in your web browser. Experience the fluid `MeshGradientBackground` with spring-based cursor tracking physics, custom DevPulse logo branding, motto, and the sleek 2-column glassmorphism authentication interface.
+# 2. User Login
+curl -X POST http://localhost:5000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"sarah@devpulse.io","password":"SecurePassword123"}'
+
+# 3. Verify /auth/me without token -> 401 Unauthorized
+curl http://localhost:5000/auth/me
+
+# 4. Verify /auth/me with Bearer token -> 200 OK
+curl http://localhost:5000/auth/me -H "Authorization: Bearer <TOKEN>"
+
+# 5. Verify /auth/admin-check with user token -> 403 Forbidden
+curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <USER_TOKEN>"
+
+# 6. Verify /auth/admin-check with admin token -> 200 OK
+curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOKEN>"
+```
+
+### 3. Web UI Flow
+1. Navigate to `http://localhost:3000/signup`:
+   - Register a new account. Notice error validation alerts and success auto-redirect to `/login`.
+2. Sign in at `http://localhost:3000/login`:
+   - Authenticate with your new user credentials.
+   - Automatically establishes the `httpOnly` cookie and redirects to `/dashboard`.
+3. Test the Protected Dashboard (`http://localhost:3000/dashboard`):
+   - Check the **Navbar**: shows your user name/email and role badge (`USER` or `ADMIN`).
+   - Click **"Verify Identity via /auth/me"**: displays live verified JWT claims.
+   - Click **"Test Admin Privilege (/auth/admin-check)"**: displays formatted `403 FORBIDDEN` for standard user, or `200 OK` for admin.
+4. Test Logout:
+   - Click **"Sign Out"**: clears the `httpOnly` session and redirects to `/login`.
+   - Attempting to revisit `/dashboard` triggers server-side middleware redirect to `/login`.
