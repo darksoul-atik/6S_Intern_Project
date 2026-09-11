@@ -86,11 +86,9 @@ export class AuthController {
   })
   getMe(@CurrentUser() user: AuthenticatedUser) {
     return {
-      data: {
-        id: user.userId,
-        email: user.email,
-        role: user.role,
-      },
+      id: user.userId,
+      email: user.email,
+      role: user.role,
     };
   }
 

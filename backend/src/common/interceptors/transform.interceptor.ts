@@ -34,21 +34,19 @@ export class TransformInterceptor<T>
           return resData as StandardSuccessResponse<T>;
         }
 
-        // If response contains an explicit message along with data payload
+        // If response contains a data property (with or without message)
         if (
           resData &&
           typeof resData === 'object' &&
-          'data' in resData &&
-          'message' in resData
+          'data' in resData
         ) {
-          const { data, message, ...rest } = resData as {
+          const { data, message } = resData as {
             data: T;
             message?: string;
-            [key: string]: unknown;
           };
           const response: StandardSuccessResponse<T> = {
             success: true,
-            data: { ...data, ...rest },
+            data,
           };
           if (message) {
             response.message = message;
