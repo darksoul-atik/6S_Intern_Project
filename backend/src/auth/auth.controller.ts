@@ -1,14 +1,19 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
+  UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service.js';
 import { SignupDto } from './dto/signup.dto.js';
 import { LoginDto } from './dto/login.dto.js';
+import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
+import { CurrentUser } from './decorators/current-user.decorator.js';
+import type { AuthenticatedUser } from './strategies/jwt.strategy.js';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -59,5 +64,31 @@ export class AuthController {
   })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get current authenticated user identity',
+    description:
+      'Extracts and returns verified user identity (id, email, role) from the provided JWT Bearer token.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User authenticated, returns identity payload',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Missing or invalid Bearer token',
+  })
+  getMe(@CurrentUser() user: AuthenticatedUser) {
+    return {
+      data: {
+        id: user.userId,
+        email: user.email,
+        role: user.role,
+      },
+    };
   }
 }

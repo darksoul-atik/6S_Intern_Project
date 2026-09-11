@@ -36,7 +36,9 @@ async function createApp(): Promise<INestApplication> {
     .setTitle('DevPulse API')
     .setDescription('Interactive OpenAPI documentation for DevPulse REST endpoints')
     .setVersion('1.0')
+    .addBearerAuth()
     .addTag('Health', 'Health and system diagnostic endpoints')
+    .addTag('Auth', 'Authentication and authorization endpoints')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
