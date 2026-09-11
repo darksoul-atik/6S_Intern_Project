@@ -42,16 +42,6 @@ export function Navbar() {
 
           {/* Nav Links */}
           <nav className="hidden sm:flex items-center space-x-1">
-            <Link
-              href="/"
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                pathname === '/'
-                  ? 'bg-white/10 text-white'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
-              }`}
-            >
-              Overview
-            </Link>
             {isAuthenticated && (
               <Link
                 href="/dashboard"
