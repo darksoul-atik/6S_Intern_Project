@@ -8,8 +8,8 @@ export function Navbar() {
   const pathname = usePathname();
   const { user, isAuthenticated, logout, isLoading } = useAuth();
 
-  // Hide navbar on dedicated full-screen auth pages (login & signup) to prevent duplication
-  if (pathname === '/login' || pathname === '/signup') {
+  // Hide navbar on public landing and auth pages (root, login, signup) to prevent duplication
+  if (pathname === '/' || pathname === '/login' || pathname === '/signup') {
     return null;
   }
 
