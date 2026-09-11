@@ -66,10 +66,10 @@ function HomeContent() {
 
     try {
       if (authMode === 'signup') {
-        // 1. Direct Signup Call to Backend POST /auth/signup
-        await apiClient<{
+        // Call BFF route handler (/api/auth/signup) to create user, issue JWT, and set cookie
+        const signupRes = await apiClient<{
           user: { id: string; name: string; email: string; role: string };
-        }>('/auth/signup', {
+        }>('/api/auth/signup', {
           method: 'POST',
           body: JSON.stringify({
             name: name.trim(),
@@ -78,22 +78,10 @@ function HomeContent() {
           }),
         });
 
-        // 2. Seamless Auto-Login: Call BFF route handler to write httpOnly cookie
-        const loginRes = await apiClient<{
-          user: { id: string; name: string; email: string; role: string };
-        }>('/api/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({
-            email: email.trim().toLowerCase(),
-            password,
-          }),
-        });
-
-        if (loginRes.success && loginRes.data?.user) {
-          setAuthUser(loginRes.data.user);
+        if (signupRes.success && signupRes.data?.user) {
+          setAuthUser(signupRes.data.user);
         }
 
-        // 3. Direct route to dashboard (no duplicate signup page!)
         router.push('/dashboard');
       } else {
         // Direct Sign In Call via BFF route handler (/api/auth/login)

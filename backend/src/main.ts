@@ -24,9 +24,9 @@ async function createApp(): Promise<INestApplication> {
   app.useGlobalInterceptors(new TransformInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // Enable CORS
+  // Enable CORS with dynamic origin reflection for credentials: true support
   app.enableCors({
-    origin: '*',
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });

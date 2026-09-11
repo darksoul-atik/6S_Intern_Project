@@ -42,9 +42,9 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      // Calls backend signup endpoint: POST /auth/signup
-      const response = await apiClient<{ id: string; name: string; email: string; role: string }>(
-        '/auth/signup',
+      // Calls BFF signup endpoint: POST /api/auth/signup
+      const response = await apiClient<{ id?: string; user?: { id: string; name: string; email: string; role: string } }>(
+        '/api/auth/signup',
         {
           method: 'POST',
           body: JSON.stringify({
