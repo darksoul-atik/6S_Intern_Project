@@ -8,6 +8,11 @@ export function Navbar() {
   const pathname = usePathname();
   const { user, isAuthenticated, logout, isLoading } = useAuth();
 
+  // Hide navbar on dedicated full-screen auth pages (login & signup) to prevent duplication
+  if (pathname === '/login' || pathname === '/signup') {
+    return null;
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-zinc-950/70 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 lg:px-12">
