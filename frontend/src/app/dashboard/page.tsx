@@ -280,26 +280,6 @@ export default function DashboardPage() {
                 </AnimatePresence>
               </div>
 
-              {/* User Test Button */}
-              <button
-                id="btn-test-me"
-                type="button"
-                onClick={handleTestMe}
-                disabled={meLoading}
-                className="mt-6 w-full rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-600 hover:from-indigo-500 hover:via-indigo-400 hover:to-blue-500 py-3.5 px-4 text-xs sm:text-sm font-semibold font-manrope text-white shadow-[0_10px_24px_-4px_rgba(79,70,229,0.35),inset_0_1px_1px_rgba(255,255,255,0.3)] hover:shadow-[0_14px_30px_-4px_rgba(79,70,229,0.45)] hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center space-x-2 border border-indigo-400/40 cursor-pointer"
-              >
-                {meLoading ? (
-                  <>
-                    <div className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Verifying Session...</span>
-                  </>
-                ) : (
-                  <>
-                    <FiUser className="h-4 w-4" />
-                    <span>Verify User Session</span>
-                  </>
-                )}
-              </button>
             </motion.div>
 
             {/* Card 2: Role Authorization Card (Frosted Glassmorphic) */}
@@ -364,26 +344,6 @@ export default function DashboardPage() {
                 </AnimatePresence>
               </div>
 
-              {/* Admin Test Button */}
-              <button
-                id="btn-test-admin"
-                type="button"
-                onClick={handleTestAdmin}
-                disabled={adminLoading}
-                className="mt-6 w-full rounded-2xl bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:via-violet-500 hover:to-indigo-500 py-3.5 px-4 text-xs sm:text-sm font-semibold font-manrope text-white shadow-[0_10px_24px_-4px_rgba(147,51,234,0.35),inset_0_1px_1px_rgba(255,255,255,0.3)] hover:shadow-[0_14px_30px_-4px_rgba(147,51,234,0.45)] hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center space-x-2 border border-purple-400/40 cursor-pointer"
-              >
-                {adminLoading ? (
-                  <>
-                    <div className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Evaluating Permissions...</span>
-                  </>
-                ) : (
-                  <>
-                    <FiShield className="h-4 w-4" />
-                    <span>Test Admin Access</span>
-                  </>
-                )}
-              </button>
             </motion.div>
           </div>
         </div>
