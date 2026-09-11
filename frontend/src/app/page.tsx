@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { FiLogIn, FiUserPlus, FiArrowRight, FiLayout } from 'react-icons/fi';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
 import { useAuth } from '@/context/AuthContext';
 
@@ -57,7 +58,7 @@ export default function HomePage() {
             A modern platform engineered for developers to exchange technical insights, debate architecture, and build the future of software together.
           </p>
 
-          {/* Centered Action Buttons (Placed after the texts) */}
+          {/* Centered Action Buttons (Placed directly after the texts) */}
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
             {isLoading ? (
               <div className="h-12 w-48 rounded-2xl bg-white/10 animate-pulse" />
@@ -67,13 +68,14 @@ export default function HomePage() {
                 <Link
                   href="/dashboard"
                   id="hero-dashboard-btn"
-                  className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white text-sm font-semibold shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center space-x-2 border border-indigo-400/30 cursor-pointer"
+                  className="group px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white text-sm font-semibold shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center space-x-2.5 border border-indigo-400/30 cursor-pointer"
                 >
+                  <FiLayout className="h-4 w-4 text-emerald-200" />
                   <span>Go to Dashboard</span>
-                  <span className="text-xs font-mono bg-black/20 px-2 py-0.5 rounded-md text-white/90">
+                  <span className="text-xs font-mono bg-black/25 px-2 py-0.5 rounded-md text-white/90">
                     {user.name || user.email}
                   </span>
-                  <span>→</span>
+                  <FiArrowRight className="h-4 w-4 text-white/80 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
 
                 <Link
@@ -84,57 +86,30 @@ export default function HomePage() {
                 </Link>
               </div>
             ) : (
-              /* Public Call-To-Action: Sign In & Sign Up */
+              /* Public Call-To-Action: Sign In & Sign Up with React Icons */
               <>
                 {/* Sign In Button */}
                 <Link
                   href="/login"
                   id="hero-signin-btn"
-                  className="w-full sm:w-auto min-w-[170px] px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-600 hover:from-indigo-500 hover:via-indigo-400 hover:to-blue-500 text-white text-sm font-semibold shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-center space-x-2.5 border border-indigo-400/30 cursor-pointer"
+                  className="group w-full sm:w-auto min-w-[170px] px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-600 hover:from-indigo-500 hover:via-indigo-400 hover:to-blue-500 text-white text-sm font-semibold shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-center space-x-2.5 border border-indigo-400/30 cursor-pointer"
                 >
+                  <FiLogIn className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
                   <span>Sign In</span>
-                  <svg
-                    className="h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                    <polyline points="10 17 15 12 10 7" />
-                    <line x1="15" y1="12" x2="3" y2="12" />
-                  </svg>
                 </Link>
 
                 {/* Sign Up Button */}
                 <Link
                   href="/signup"
                   id="hero-signup-btn"
-                  className="w-full sm:w-auto min-w-[170px] px-8 py-3.5 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] text-white text-sm font-semibold border border-white/15 hover:border-white/30 backdrop-blur-2xl shadow-xl hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-center space-x-2 cursor-pointer"
+                  className="group w-full sm:w-auto min-w-[170px] px-8 py-3.5 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] text-white text-sm font-semibold border border-white/15 hover:border-white/30 backdrop-blur-2xl shadow-xl hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-center space-x-2.5 cursor-pointer"
                 >
+                  <FiUserPlus className="h-4 w-4 text-indigo-300" />
                   <span>Sign Up</span>
-                  <span className="text-zinc-400 font-normal">→</span>
+                  <FiArrowRight className="h-3.5 w-3.5 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </>
             )}
-          </div>
-
-          {/* Subtle Feature Indicators */}
-          <div className="pt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-zinc-400">
-            <div className="flex items-center space-x-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 backdrop-blur-md">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              <span>Next.js 16 & NestJS</span>
-            </div>
-            <div className="flex items-center space-x-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 backdrop-blur-md">
-              <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
-              <span>JWT & Roles Authorization</span>
-            </div>
-            <div className="flex items-center space-x-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 backdrop-blur-md">
-              <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
-              <span>MongoDB Atlas</span>
-            </div>
           </div>
         </motion.div>
       </div>
