@@ -6,10 +6,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiClient, ApiError } from '@/lib/api';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
+import { useAuth } from '@/context/AuthContext';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { login: setAuthUser, isAuthenticated } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -71,7 +73,9 @@ function LoginForm() {
       });
 
       if (response.success) {
-        // Redirect to dashboard on successful authentication
+        if (response.data?.user) {
+          setAuthUser(response.data.user);
+        }
         router.push('/dashboard');
         router.refresh();
       }

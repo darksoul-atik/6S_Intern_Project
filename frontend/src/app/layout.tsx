@@ -14,6 +14,8 @@ export const metadata: Metadata = {
   description: 'A modern developer community and technical collaboration platform.',
 };
 
+import { AuthProvider } from '@/context/AuthContext';
+
 export default function RootLayout({
   children,
 }: {
@@ -22,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full bg-[#020205] text-white font-sans selection:bg-indigo-500/30 selection:text-white">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
