@@ -57,6 +57,29 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## 🛡️ Admin Bootstrap Strategy
+
+### Chosen Approach: CLI Seed Script (`npm run seed:admin`)
+
+Self-service admin registration via public APIs is strictly disabled to prevent unauthorized privilege escalation. To provision the initial administrator, DevPulse utilizes a dedicated, idempotent CLI seed script (`src/scripts/seed-admin.ts`).
+
+#### Why a CLI Seed Script instead of an HTTP Bootstrap Endpoint?
+1. **Zero Attack Surface**: A public HTTP endpoint (even if protected by a shared secret or header) is exposed to network scans, brute-force attacks, and credential leaks. A CLI script runs entirely out-of-band in a trusted execution environment (terminal, container init, or CI/CD deployment pipeline).
+2. **Strict Principle of Least Privilege**: Creating high-privilege administrative accounts is an operational concern, not an application-layer user action.
+3. **Idempotence & Safety**: The script inspects the database: if the specified `ADMIN_EMAIL` already exists with role `admin`, it reports status without altering credentials; if the user exists under role `user`, it safely promotes them; if no user exists, it hashes `ADMIN_PASSWORD` via `bcrypt` (10 rounds) and creates the user with `role: 'admin'`.
+
+#### Usage:
+1. Configure administrative credentials in `backend/.env` (or override via environment variables):
+   ```env
+   ADMIN_NAME="DevPulse Administrator"
+   ADMIN_EMAIL="admin@devpulse.io"
+   ADMIN_PASSWORD="YourSecurePasswordHere"
+   ```
+2. Execute the seed command:
+   ```bash
+   npm run seed:admin
+   ```
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
