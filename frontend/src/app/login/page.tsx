@@ -18,8 +18,10 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [capsLockOn, setCapsLockOn] = useState<boolean>(false);
 
   useEffect(() => {
     if (searchParams.get('registered') === 'true') {
@@ -30,14 +32,15 @@ function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setWarningMessage(null);
     setFieldErrors([]);
 
     if (!email.trim() || !email.includes('@')) {
-      setErrorMessage('Please enter a valid email address.');
+      setWarningMessage('Please enter a valid email address (e.g. name@domain.com).');
       return;
     }
     if (!password) {
-      setErrorMessage('Please enter your password.');
+      setWarningMessage('Please enter your password to continue.');
       return;
     }
 
@@ -205,22 +208,15 @@ function LoginForm() {
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 p-3.5 text-xs text-red-200 backdrop-blur-md text-left"
+                    className="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 p-3.5 text-xs text-red-200 backdrop-blur-md text-left shadow-[0_0_20px_rgba(239,68,68,0.15)]"
                   >
                     <div className="flex items-start space-x-2">
-                      <svg
-                        className="h-4 w-4 text-red-400 mt-0.5 shrink-0"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-500/20 text-red-400 text-xs font-bold">
+                        ✕
+                      </span>
                       <div>
-                        <p className="font-medium">{errorMessage}</p>
+                        <p className="font-semibold text-red-300">Something went wrong</p>
+                        <p className="mt-0.5">{errorMessage}</p>
                         {fieldErrors.length > 0 && (
                           <ul className="mt-1 list-disc list-inside space-y-0.5 text-red-300/90">
                             {fieldErrors.map((err, i) => (
@@ -228,6 +224,25 @@ function LoginForm() {
                             ))}
                           </ul>
                         )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {warningMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-200 backdrop-blur-md text-left shadow-[0_0_20px_rgba(245,158,11,0.15)]"
+                  >
+                    <div className="flex items-start space-x-2">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold">
+                        ⚠️
+                      </span>
+                      <div>
+                        <p className="font-semibold text-amber-300">Notice</p>
+                        <p className="mt-0.5">{warningMessage}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -246,7 +261,10 @@ function LoginForm() {
                     type="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (warningMessage) setWarningMessage(null);
+                    }}
                     placeholder="name@work-email.com"
                     className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                   />
@@ -265,7 +283,12 @@ function LoginForm() {
                       type={showPassword ? 'text' : 'password'}
                       required
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (warningMessage) setWarningMessage(null);
+                      }}
+                      onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
+                      onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       placeholder="••••••••••••"
                       className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 pr-10 text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                     />
@@ -287,6 +310,12 @@ function LoginForm() {
                       )}
                     </button>
                   </div>
+                  {capsLockOn && (
+                    <div className="flex items-center space-x-1.5 text-[11px] text-amber-400 mt-1.5">
+                      <span>⚠️</span>
+                      <span>Caps Lock is ON</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Submit Button */}

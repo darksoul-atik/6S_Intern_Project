@@ -21,12 +21,24 @@ function HomeContent() {
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [rememberMe, setRememberMe] = useState<boolean>(true);
+  const [capsLockOn, setCapsLockOn] = useState<boolean>(false);
 
   // Status & feedback
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'info' | 'warning' | 'success' } | null>(null);
+
+  // Auto-dismiss toast after 4 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
   // Sync mode from query param if provided (e.g. ?mode=signup)
   useEffect(() => {
     const mode = searchParams.get('mode');
@@ -38,27 +50,57 @@ function HomeContent() {
   const handleTabSwitch = (mode: 'signin' | 'signup') => {
     setAuthMode(mode);
     setErrorMessage(null);
+    setWarningMessage(null);
+    setSuccessMessage(null);
     setFieldErrors([]);
     setToast(null);
   };
 
+  const handlePasswordKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    setCapsLockOn(e.getModifierState('CapsLock'));
+  };
+
+  // Password strength calculation
+  const getPasswordStrength = (pass: string) => {
+    if (!pass) return null;
+    if (pass.length < 6) {
+      return { score: 1, label: 'Weak — minimum 6 characters required', color: 'bg-red-500 text-red-400' };
+    }
+    let score = 1;
+    if (pass.length >= 8) score++;
+    if (/[A-Z]/.test(pass) && /[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9]/.test(pass)) score++;
+
+    if (score <= 2) {
+      return { score: 2, label: 'Fair — add numbers & special characters', color: 'bg-amber-500 text-amber-400' };
+    }
+    return { score: 3, label: 'Strong password', color: 'bg-emerald-500 text-emerald-400' };
+  };
+
+  const passwordStrength = getPasswordStrength(password);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setWarningMessage(null);
+    setSuccessMessage(null);
     setFieldErrors([]);
-    setToast(null);
 
-    // Client-side validations
+    // Client-side validations with specific alert triggers
     if (authMode === 'signup' && !name.trim()) {
-      setErrorMessage('Please enter your full name.');
+      setWarningMessage('Please enter your full name before creating an account.');
       return;
     }
     if (!email.trim() || !email.includes('@')) {
-      setErrorMessage('Please enter a valid email address.');
+      setWarningMessage('Please enter a valid email address (e.g., alex@domain.com).');
       return;
     }
-    if (!password || password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters.');
+    if (!password) {
+      setWarningMessage('Please provide your password.');
+      return;
+    }
+    if (authMode === 'signup' && password.length < 6) {
+      setWarningMessage('Password must be at least 6 characters long to meet security standards.');
       return;
     }
 
@@ -66,7 +108,7 @@ function HomeContent() {
 
     try {
       if (authMode === 'signup') {
-        // Call BFF route handler (/api/auth/signup) to create user, issue JWT, and set cookie
+        // Call BFF route handler (/api/auth/signup)
         const signupRes = await apiClient<{
           user: { id: string; name: string; email: string; role: string };
         }>('/api/auth/signup', {
@@ -79,10 +121,14 @@ function HomeContent() {
         });
 
         if (signupRes.success && signupRes.data?.user) {
+          setSuccessMessage('Account created successfully! Launching your developer portal...');
           setAuthUser(signupRes.data.user);
+          setTimeout(() => {
+            router.push('/dashboard');
+          }, 900);
+        } else {
+          router.push('/dashboard');
         }
-
-        router.push('/dashboard');
       } else {
         // Direct Sign In Call via BFF route handler (/api/auth/login)
         const loginRes = await apiClient<{
@@ -96,20 +142,23 @@ function HomeContent() {
         });
 
         if (loginRes.success && loginRes.data?.user) {
+          setSuccessMessage('Signed in successfully! Redirecting to dashboard...');
           setAuthUser(loginRes.data.user);
+          setTimeout(() => {
+            router.push('/dashboard');
+          }, 700);
+        } else {
+          router.push('/dashboard');
         }
-
-        // Direct route to dashboard
-        router.push('/dashboard');
       }
     } catch (err) {
       if (err instanceof ApiError) {
-        setErrorMessage(err.message || 'Authentication failed. Please check your credentials.');
+        setErrorMessage(err.message || 'Authentication failed. Please verify your credentials.');
         if (err.errors && err.errors.length > 0) {
           setFieldErrors(err.errors);
         }
       } else {
-        setErrorMessage('Failed to connect to backend server. Please verify backend is running.');
+        setErrorMessage('Unable to communicate with authentication services. Please verify backend is active.');
       }
     } finally {
       setIsLoading(false);
@@ -243,12 +292,29 @@ function HomeContent() {
               ) : (
                 /* Unauthenticated Auth Form */
                 <>
-                  {/* Toast Notification */}
-                  {toast && (
-                    <div className="mb-5 rounded-xl border border-indigo-500/30 bg-indigo-950/60 p-3 text-xs text-indigo-200 backdrop-blur-md">
-                      {toast}
-                    </div>
-                  )}
+                  {/* Floating Toast Notification */}
+                  <AnimatePresence>
+                    {toast && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        className="mb-5 flex items-center justify-between rounded-xl border border-indigo-500/30 bg-indigo-950/70 p-3 text-xs text-indigo-200 backdrop-blur-md shadow-lg"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span className="text-indigo-400">ℹ️</span>
+                          <span>{toast.message}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setToast(null)}
+                          className="text-indigo-400 hover:text-indigo-200 ml-2 text-xs"
+                        >
+                          ✕
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   {/* Header */}
                   <div className="mb-6 text-left">
@@ -288,26 +354,73 @@ function HomeContent() {
                     </button>
                   </div>
 
-                  {/* Error Alert Display */}
+                  {/* Dynamic Alert Messages (Success, Error, Warning) */}
                   <AnimatePresence mode="wait">
+                    {/* SUCCESS ALERT */}
+                    {successMessage && (
+                      <motion.div
+                        key="success-alert"
+                        initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                        className="mb-5 overflow-hidden rounded-2xl border border-emerald-500/40 bg-emerald-950/40 p-4 backdrop-blur-md text-left shadow-[0_0_24px_rgba(16,185,129,0.15)]"
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold mt-0.5">
+                            ✓
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-xs font-bold text-emerald-300">Success</h4>
+                            <p className="text-xs text-emerald-200/90 mt-0.5 leading-relaxed">{successMessage}</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* ERROR ALERT */}
                     {errorMessage && (
                       <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mb-5 overflow-hidden rounded-xl border border-red-500/30 bg-red-950/40 p-3.5 backdrop-blur-md text-left"
+                        key="error-alert"
+                        initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                        className="mb-5 overflow-hidden rounded-2xl border border-red-500/40 bg-red-950/40 p-4 backdrop-blur-md text-left shadow-[0_0_24px_rgba(239,68,68,0.15)]"
                       >
-                        <div className="flex items-start space-x-2.5">
-                          <span className="text-red-400 text-sm">⚠</span>
-                          <div className="flex-1 text-xs text-red-200">
-                            <p className="font-semibold">{errorMessage}</p>
+                        <div className="flex items-start space-x-3">
+                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-500/20 text-red-400 text-xs font-bold mt-0.5">
+                            ✕
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-xs font-bold text-red-300">Something went wrong</h4>
+                            <p className="text-xs text-red-200/90 mt-0.5 leading-relaxed">{errorMessage}</p>
                             {fieldErrors.length > 0 && (
-                              <ul className="mt-1.5 list-disc list-inside space-y-0.5 text-[11px] text-red-300/90">
+                              <ul className="mt-2 list-disc list-inside space-y-1 text-[11px] text-red-300/80">
                                 {fieldErrors.map((err, i) => (
                                   <li key={i}>{err}</li>
                                 ))}
                               </ul>
                             )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* WARNING ALERT */}
+                    {warningMessage && (
+                      <motion.div
+                        key="warning-alert"
+                        initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                        className="mb-5 overflow-hidden rounded-2xl border border-amber-500/40 bg-amber-950/40 p-4 backdrop-blur-md text-left shadow-[0_0_24px_rgba(245,158,11,0.15)]"
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold mt-0.5">
+                            ⚠️
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-xs font-bold text-amber-300">Notice</h4>
+                            <p className="text-xs text-amber-200/90 mt-0.5 leading-relaxed">{warningMessage}</p>
                           </div>
                         </div>
                       </motion.div>
@@ -330,7 +443,10 @@ function HomeContent() {
                           <input
                             type="text"
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            onChange={(e) => {
+                              setName(e.target.value);
+                              if (warningMessage) setWarningMessage(null);
+                            }}
                             required
                             placeholder="e.g. Alex Turing"
                             className="w-full bg-transparent px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none font-normal"
@@ -348,7 +464,10 @@ function HomeContent() {
                         <input
                           type="email"
                           value={email}
-                          onChange={(e) => setEmail(e.target.value)}
+                          onChange={(e) => {
+                            setEmail(e.target.value);
+                            if (warningMessage) setWarningMessage(null);
+                          }}
                           required
                           placeholder="name@domain.com"
                           className="w-full bg-transparent px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none font-normal"
@@ -365,7 +484,7 @@ function HomeContent() {
                         {authMode === 'signin' && (
                           <button
                             type="button"
-                            onClick={() => setToast('Password recovery engine activates in next release.')}
+                            onClick={() => setToast({ message: 'Password recovery will be available in next release.', type: 'info' })}
                             className="text-[11px] font-medium text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
                           >
                             Forgot password?
@@ -376,7 +495,12 @@ function HomeContent() {
                         <input
                           type={showPassword ? 'text' : 'password'}
                           value={password}
-                          onChange={(e) => setPassword(e.target.value)}
+                          onChange={(e) => {
+                            setPassword(e.target.value);
+                            if (warningMessage) setWarningMessage(null);
+                          }}
+                          onKeyDown={handlePasswordKey}
+                          onKeyUp={handlePasswordKey}
                           required
                           placeholder={authMode === 'signup' ? 'Min 6 characters' : 'Enter password'}
                           className="w-full bg-transparent px-3.5 py-2.5 pr-10 text-xs text-white placeholder-zinc-500 focus:outline-none font-mono tracking-wider"
@@ -398,6 +522,37 @@ function HomeContent() {
                           )}
                         </button>
                       </div>
+
+                      {/* Caps Lock Warning */}
+                      {capsLockOn && (
+                        <div className="flex items-center space-x-1.5 text-[11px] text-amber-400 mt-1.5">
+                          <span>⚠️</span>
+                          <span>Caps Lock is ON</span>
+                        </div>
+                      )}
+
+                      {/* Live Password Strength Meter (Sign Up mode) */}
+                      {authMode === 'signup' && password.length > 0 && passwordStrength && (
+                        <div className="mt-2 space-y-1.5">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-zinc-400">Strength:</span>
+                            <span className={`font-semibold ${passwordStrength.color.split(' ')[1]}`}>
+                              {passwordStrength.label}
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden flex space-x-1">
+                            <div className={`h-full flex-1 rounded-full transition-all ${
+                              passwordStrength.score >= 1 ? passwordStrength.color.split(' ')[0] : 'bg-transparent'
+                            }`} />
+                            <div className={`h-full flex-1 rounded-full transition-all ${
+                              passwordStrength.score >= 2 ? passwordStrength.color.split(' ')[0] : 'bg-transparent'
+                            }`} />
+                            <div className={`h-full flex-1 rounded-full transition-all ${
+                              passwordStrength.score >= 3 ? passwordStrength.color.split(' ')[0] : 'bg-transparent'
+                            }`} />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Remember Me (Sign In mode only) */}
@@ -426,7 +581,7 @@ function HomeContent() {
                       {isLoading ? (
                         <>
                           <div className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>{authMode === 'signin' ? 'Signing in...' : 'Creating account...'}</span>
+                          <span>{authMode === 'signin' ? 'Verifying...' : 'Creating profile...'}</span>
                         </>
                       ) : (
                         <span>{authMode === 'signin' ? 'Sign in' : 'Create account'}</span>
@@ -447,7 +602,7 @@ function HomeContent() {
                     <div className="mt-4 grid grid-cols-2 gap-3">
                       <button
                         type="button"
-                        onClick={() => setToast('GitHub OAuth activates in next release.')}
+                        onClick={() => setToast({ message: 'GitHub OAuth will be enabled in next milestone.', type: 'info' })}
                         className="flex items-center justify-center space-x-2 rounded-xl border border-white/[0.08] bg-zinc-900/40 hover:bg-zinc-900/80 hover:border-white/[0.16] py-2.5 text-xs font-medium text-zinc-300 transition-all duration-200 cursor-pointer"
                       >
                         <svg className="h-4 w-4 fill-current text-white" viewBox="0 0 24 24">
@@ -458,7 +613,7 @@ function HomeContent() {
 
                       <button
                         type="button"
-                        onClick={() => setToast('Google OAuth activates in next release.')}
+                        onClick={() => setToast({ message: 'Google OAuth will be enabled in next milestone.', type: 'info' })}
                         className="flex items-center justify-center space-x-2 rounded-xl border border-white/[0.08] bg-zinc-900/40 hover:bg-zinc-900/80 hover:border-white/[0.16] py-2.5 text-xs font-medium text-zinc-300 transition-all duration-200 cursor-pointer"
                       >
                         <svg className="h-4 w-4" viewBox="0 0 24 24">
