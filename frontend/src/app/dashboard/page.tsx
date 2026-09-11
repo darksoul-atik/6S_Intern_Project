@@ -1,14 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { apiClient, ApiError } from '@/lib/api';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
 
 export default function DashboardPage() {
-  const { user, logout, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
 
   const [meResult, setMeResult] = useState<Record<string, unknown> | null>(null);
   const [meLoading, setMeLoading] = useState(false);
@@ -95,69 +94,6 @@ export default function DashboardPage() {
     >
       <div className="min-h-screen px-6 py-10 lg:px-16 font-sans">
         <div className="max-w-6xl mx-auto space-y-8">
-          
-          {/* Top Header Bar */}
-          <motion.div
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border border-white/10 bg-zinc-950/60 px-6 py-4 backdrop-blur-2xl shadow-xl"
-          >
-            {/* Brand Logo */}
-            <Link href="/" className="flex items-center space-x-3 group">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-[1px] shadow-[0_0_20px_rgba(99,102,241,0.35)] transition-transform group-hover:scale-105">
-                <div className="flex h-full w-full items-center justify-center rounded-[11px] bg-[#080a10]">
-                  <svg
-                    className="h-4 w-4 text-indigo-400"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                  </svg>
-                </div>
-              </div>
-              <div>
-                <span className="text-lg font-bold tracking-tight text-white block">
-                  DevPulse
-                </span>
-                <span className="text-[10px] text-zinc-400 block -mt-1">
-                  Developer Portal
-                </span>
-              </div>
-            </Link>
-
-            {/* User Session Chip & Logout */}
-            <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end">
-              <div className="flex items-center space-x-2 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-1.5 backdrop-blur-md">
-                <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs text-zinc-200 font-medium">
-                  {user?.name || user?.email}
-                </span>
-                <span
-                  className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${
-                    user?.role === 'admin'
-                      ? 'bg-gradient-to-r from-indigo-500/30 to-purple-500/30 text-indigo-300 border border-indigo-400/30'
-                      : 'bg-zinc-800 text-zinc-300 border border-zinc-700'
-                  }`}
-                >
-                  {user?.role || 'user'}
-                </span>
-              </div>
-
-              <button
-                id="dashboard-logout-btn"
-                onClick={() => logout()}
-                className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/20 hover:border-red-500/40 transition-all active:scale-95"
-              >
-                Sign Out
-              </button>
-            </div>
-          </motion.div>
-
           {/* Welcome Banner */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
