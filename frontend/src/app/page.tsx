@@ -5,12 +5,18 @@ import { motion } from 'framer-motion';
 import { apiClient } from '@/lib/api';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
 
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+
 interface HealthData {
   status: string;
   db: 'connected' | 'disconnected';
 }
 
 export default function Home() {
+  const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
+
   // Silent health telemetry (Preserves Day 1 contract under the hood)
   useEffect(() => {
     apiClient<HealthData>('/health')
@@ -26,20 +32,19 @@ export default function Home() {
 
   // Auth UI state
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
-  const [email, setEmail] = useState<string>('alex.chen@devpulse.io');
-  const [password, setPassword] = useState<string>('••••••••••••');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [rememberMe, setRememberMe] = useState<boolean>(true);
   const [toast, setToast] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setToast(
-      authMode === 'signin'
-        ? 'Interface preview: Authentication engine activates on Day 2.'
-        : 'Interface preview: User registration arrives on Day 2.'
-    );
-    setTimeout(() => setToast(null), 4000);
+    if (authMode === 'signin') {
+      router.push('/login');
+    } else {
+      router.push('/signup');
+    }
   };
 
   return (
