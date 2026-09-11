@@ -8,6 +8,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service.js';
 import { SignupDto } from './dto/signup.dto.js';
+import { LoginDto } from './dto/login.dto.js';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -35,5 +36,28 @@ export class AuthController {
   })
   async signup(@Body() signupDto: SignupDto) {
     return this.authService.signup(signupDto);
+  }
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Authenticate user and issue JWT',
+    description:
+      'Validates credentials and issues a signed JWT containing user ID, email, and role.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Authentication successful, JWT token issued',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation failed on input fields',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid email or password',
+  })
+  async login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
   }
 }
