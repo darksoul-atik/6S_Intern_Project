@@ -169,11 +169,13 @@ export default function ProfileViewPage({ params }: PageProps) {
     : 'DP';
 
   const memberSince = profile.createdAt
-    ? new Date(profile.createdAt).toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      })
+    ? (() => {
+        const d = new Date(profile.createdAt);
+        const day = d.getDate();
+        const month = d.toLocaleDateString('en-US', { month: 'long' });
+        const year = d.getFullYear();
+        return `${day} ${month} , ${year}`;
+      })()
     : null;
 
   return (
@@ -313,68 +315,6 @@ export default function ProfileViewPage({ params }: PageProps) {
             </div>
           </motion.div>
 
-          {/* DaisyUI-Themed Community Impact Stats Component */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.05 }}
-            className="stats shadow-sm w-full rounded-3xl border border-white/80 bg-white/65 p-2 sm:p-3 backdrop-blur-3xl backdrop-saturate-200 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100/90"
-          >
-            {/* Stat 1: Reactions */}
-            <div className="stat flex items-center justify-between p-4 sm:p-6">
-              <div>
-                <div className="stat-title text-xs font-bold uppercase tracking-wider text-slate-400 font-manrope">
-                  Reactions Received
-                </div>
-                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 mt-1">
-                  {profile.reactionsCount || 0}
-                </div>
-                <div className="stat-desc text-[11px] text-slate-500 font-sans mt-0.5">
-                  Across all community posts
-                </div>
-              </div>
-              <div className="stat-figure text-rose-500 bg-rose-50 p-3 rounded-2xl border border-rose-100/80 shadow-2xs">
-                <FiHeart className="h-6 w-6 stroke-current" />
-              </div>
-            </div>
-
-            {/* Stat 2: Posts Made */}
-            <div className="stat flex items-center justify-between p-4 sm:p-6">
-              <div>
-                <div className="stat-title text-xs font-bold uppercase tracking-wider text-slate-400 font-manrope">
-                  Posts Published
-                </div>
-                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 mt-1">
-                  {profile.postsCount || 0}
-                </div>
-                <div className="stat-desc text-[11px] text-slate-500 font-sans mt-0.5">
-                  Technical articles & discussions
-                </div>
-              </div>
-              <div className="stat-figure text-indigo-600 bg-indigo-50 p-3 rounded-2xl border border-indigo-100/80 shadow-2xs">
-                <FiFileText className="h-6 w-6 stroke-current" />
-              </div>
-            </div>
-
-            {/* Stat 3: #1 Ranked Posts */}
-            <div className="stat flex items-center justify-between p-4 sm:p-6">
-              <div>
-                <div className="stat-title text-xs font-bold uppercase tracking-wider text-slate-400 font-manrope">
-                  Ranked #1 Honors
-                </div>
-                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 mt-1">
-                  {profile.topRankedCount || 0}
-                </div>
-                <div className="stat-desc text-[11px] text-slate-500 font-sans mt-0.5">
-                  Leaderboard first-place victories
-                </div>
-              </div>
-              <div className="stat-figure text-amber-500 bg-amber-50 p-3 rounded-2xl border border-amber-100/80 shadow-2xs">
-                <FiTrendingUp className="h-6 w-6 stroke-current" />
-              </div>
-            </div>
-          </motion.div>
-
           {/* Two-Column Grid: Skills & Work Experiences */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
             {/* Skills Column (1 col) */}
@@ -476,6 +416,68 @@ export default function ProfileViewPage({ params }: PageProps) {
               )}
             </motion.div>
           </div>
+
+          {/* DaisyUI-Themed Community Impact Stats Component (Under Skills & Experience) */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.25 }}
+            className="stats shadow-sm w-full rounded-3xl border border-white/80 bg-white/65 p-2 sm:p-3 backdrop-blur-3xl backdrop-saturate-200 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100/90"
+          >
+            {/* Stat 1: Reactions */}
+            <div className="stat flex items-center space-x-4 p-4 sm:p-6">
+              <div className="stat-figure text-rose-500 bg-rose-50 p-3.5 rounded-2xl border border-rose-100/80 shadow-2xs shrink-0">
+                <FiHeart className="h-6 w-6 stroke-current" />
+              </div>
+              <div>
+                <div className="stat-title text-xs font-bold uppercase tracking-wider text-slate-400 font-manrope">
+                  Reactions Received
+                </div>
+                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 mt-0.5">
+                  {profile.reactionsCount || 0}
+                </div>
+                <div className="stat-desc text-[11px] text-slate-500 font-sans mt-0.5">
+                  Across all community posts
+                </div>
+              </div>
+            </div>
+
+            {/* Stat 2: Posts Made */}
+            <div className="stat flex items-center space-x-4 p-4 sm:p-6">
+              <div className="stat-figure text-indigo-600 bg-indigo-50 p-3.5 rounded-2xl border border-indigo-100/80 shadow-2xs shrink-0">
+                <FiFileText className="h-6 w-6 stroke-current" />
+              </div>
+              <div>
+                <div className="stat-title text-xs font-bold uppercase tracking-wider text-slate-400 font-manrope">
+                  Posts Published
+                </div>
+                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 mt-0.5">
+                  {profile.postsCount || 0}
+                </div>
+                <div className="stat-desc text-[11px] text-slate-500 font-sans mt-0.5">
+                  Technical articles & discussions
+                </div>
+              </div>
+            </div>
+
+            {/* Stat 3: #1 Ranked Posts */}
+            <div className="stat flex items-center space-x-4 p-4 sm:p-6">
+              <div className="stat-figure text-amber-500 bg-amber-50 p-3.5 rounded-2xl border border-amber-100/80 shadow-2xs shrink-0">
+                <FiTrendingUp className="h-6 w-6 stroke-current" />
+              </div>
+              <div>
+                <div className="stat-title text-xs font-bold uppercase tracking-wider text-slate-400 font-manrope">
+                  Ranked #1 Honors
+                </div>
+                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 mt-0.5">
+                  {profile.topRankedCount || 0}
+                </div>
+                <div className="stat-desc text-[11px] text-slate-500 font-sans mt-0.5">
+                  Leaderboard first-place victories
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>
