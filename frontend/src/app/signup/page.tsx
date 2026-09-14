@@ -124,7 +124,7 @@ export default function SignupPage() {
             </Link>
 
             {/* Motto */}
-            <h1 className="text-3xl xs:text-4xl sm:text-5xl font-bold font-manrope tracking-tight text-white leading-[1.12]">
+            <h1 className="text-2xl min-[400px]:text-3xl sm:text-4xl md:text-5xl font-bold font-manrope tracking-tight text-white leading-[1.14]">
               Join the frontier of{' '}
               <span className="bg-gradient-to-r from-emerald-300 via-teal-300 to-indigo-300 bg-clip-text text-transparent">
                 modern engineering.
@@ -132,7 +132,7 @@ export default function SignupPage() {
             </h1>
 
             {/* Passage */}
-            <p className="text-sm sm:text-base text-zinc-300 font-sans font-normal leading-relaxed max-w-md mx-auto lg:mx-0">
+            <p className="text-xs min-[400px]:text-sm sm:text-base text-zinc-300 font-sans font-normal leading-relaxed max-w-md mx-auto lg:mx-0">
               Create your developer account to publish technical insights, discuss architectural decisions, and collaborate with world-class engineers.
             </p>
           </motion.div>
@@ -144,13 +144,13 @@ export default function SignupPage() {
             transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="lg:col-span-6 w-full max-w-md mx-auto"
           >
-            <div className="relative rounded-3xl border border-white/10 bg-zinc-950/60 p-5 sm:p-8 md:p-10 backdrop-blur-2xl shadow-[0_24px_64px_rgba(0,0,0,0.56)]">
+            <div className="relative rounded-3xl border border-white/10 bg-zinc-950/60 p-4 min-[400px]:p-6 sm:p-8 md:p-10 backdrop-blur-2xl shadow-[0_24px_64px_rgba(0,0,0,0.56)]">
               {/* Card Ambient Glow Accent */}
               <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none" />
               <div className="absolute -bottom-12 -left-12 h-32 w-32 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
 
               {/* Header */}
-              <div className="space-y-1.5 mb-6 text-left">
+              <div className="space-y-1.5 mb-5 sm:mb-6 text-left">
                 <h2 className="text-xl sm:text-2xl font-bold font-manrope tracking-tight text-white">
                   Create an account
                 </h2>
@@ -238,7 +238,7 @@ export default function SignupPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Alex Chen"
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-sans"
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 sm:px-4 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-sans"
                   />
                 </div>
 
@@ -256,7 +256,7 @@ export default function SignupPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@work-email.com"
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-sans"
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 sm:px-4 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-sans"
                   />
                 </div>
 
@@ -281,7 +281,7 @@ export default function SignupPage() {
                       onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       placeholder="Minimum 6 characters"
-                      className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 pr-10 text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-sans"
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.04] pl-3.5 sm:pl-4 pr-11 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-sans"
                     />
                     <button
                       type="button"

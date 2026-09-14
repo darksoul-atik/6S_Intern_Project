@@ -122,7 +122,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="relative rounded-3xl border border-white/70 bg-white/55 p-6 sm:p-8 md:p-10 backdrop-blur-3xl backdrop-saturate-200 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8),inset_0_1px_2px_rgba(255,255,255,0.95)] overflow-hidden text-left"
+            className="relative rounded-3xl border border-white/70 bg-white/55 p-4 sm:p-8 md:p-10 backdrop-blur-3xl backdrop-saturate-200 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8),inset_0_1px_2px_rgba(255,255,255,0.95)] overflow-hidden text-left"
           >
             {/* Specular highlight rim */}
             <div className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95" />
@@ -152,9 +152,9 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Title & Subtitle (Clean layout without box/dot) */}
+              {/* Title & Subtitle */}
               <div className="space-y-2 max-w-3xl">
-                <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold font-manrope tracking-tight text-slate-900 leading-tight">
+                <h1 className="text-xl min-[400px]:text-2xl sm:text-3xl md:text-4xl font-bold font-manrope tracking-tight text-slate-900 leading-tight">
                   Welcome back,{' '}
                   <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
                     {user?.name || 'Developer'}
@@ -174,7 +174,7 @@ export default function DashboardPage() {
                   type="button"
                   onClick={handleTestMe}
                   disabled={meLoading}
-                  className="group relative flex-1 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-600 hover:from-indigo-500 hover:via-indigo-400 hover:to-blue-500 p-4 text-left shadow-[0_12px_28px_-6px_rgba(79,70,229,0.35),inset_0_1px_1px_rgba(255,255,255,0.35)] hover:shadow-[0_16px_36px_-6px_rgba(79,70,229,0.5)] hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] border border-indigo-400/40 cursor-pointer disabled:opacity-60"
+                  className="group relative flex-1 flex flex-col min-[480px]:flex-row items-start min-[480px]:items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-600 hover:from-indigo-500 hover:via-indigo-400 hover:to-blue-500 p-3.5 sm:p-4 text-left shadow-[0_12px_28px_-6px_rgba(79,70,229,0.35),inset_0_1px_1px_rgba(255,255,255,0.35)] hover:shadow-[0_16px_36px_-6px_rgba(79,70,229,0.5)] hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] border border-indigo-400/40 cursor-pointer disabled:opacity-60"
                 >
                   <div className="flex items-center space-x-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20 border border-white/25 shadow-inner group-hover:scale-105 transition-transform">
@@ -189,7 +189,7 @@ export default function DashboardPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs font-mono text-indigo-100 bg-black/25 px-2.5 py-1 rounded-lg border border-white/10 self-end xs:self-auto">
+                  <div className="flex items-center gap-1.5 text-xs font-mono text-indigo-100 bg-black/25 px-2.5 py-1 rounded-lg border border-white/10 self-stretch min-[480px]:self-auto justify-center">
                     <span>{meLoading ? 'Calling...' : 'GET /auth/me'}</span>
                     <FiArrowRight className="h-3 w-3 text-indigo-200" />
                   </div>
@@ -201,7 +201,7 @@ export default function DashboardPage() {
                   type="button"
                   onClick={handleTestAdmin}
                   disabled={adminLoading}
-                  className="group relative flex-1 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:via-violet-500 hover:to-indigo-500 p-4 text-left shadow-[0_12px_28px_-6px_rgba(147,51,234,0.35),inset_0_1px_1px_rgba(255,255,255,0.35)] hover:shadow-[0_16px_36px_-6px_rgba(147,51,234,0.5)] hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] border border-purple-400/40 cursor-pointer disabled:opacity-60"
+                  className="group relative flex-1 flex flex-col min-[480px]:flex-row items-start min-[480px]:items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:via-violet-500 hover:to-indigo-500 p-3.5 sm:p-4 text-left shadow-[0_12px_28px_-6px_rgba(147,51,234,0.35),inset_0_1px_1px_rgba(255,255,255,0.35)] hover:shadow-[0_16px_36px_-6px_rgba(147,51,234,0.5)] hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] border border-purple-400/40 cursor-pointer disabled:opacity-60"
                 >
                   <div className="flex items-center space-x-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20 border border-white/25 shadow-inner group-hover:scale-105 transition-transform">
@@ -216,7 +216,7 @@ export default function DashboardPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs font-mono text-purple-100 bg-black/25 px-2.5 py-1 rounded-lg border border-white/10 self-end xs:self-auto">
+                  <div className="flex items-center gap-1.5 text-xs font-mono text-purple-100 bg-black/25 px-2.5 py-1 rounded-lg border border-white/10 self-stretch min-[480px]:self-auto justify-center">
                     <span>{adminLoading ? 'Checking...' : 'GET /admin-check'}</span>
                     <FiArrowRight className="h-3 w-3 text-purple-200" />
                   </div>
@@ -233,18 +233,18 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.15 }}
-              className="relative rounded-3xl border border-white/70 bg-white/55 p-5 sm:p-7 md:p-8 backdrop-blur-3xl backdrop-saturate-200 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8),inset_0_1px_2px_rgba(255,255,255,0.95)] flex flex-col justify-between text-left overflow-hidden"
+              className="relative rounded-3xl border border-white/70 bg-white/55 p-4 sm:p-7 md:p-8 backdrop-blur-3xl backdrop-saturate-200 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8),inset_0_1px_2px_rgba(255,255,255,0.95)] flex flex-col justify-between text-left overflow-hidden min-w-0"
             >
               <div className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95" />
               <div className="absolute -top-16 -right-16 h-40 w-40 rounded-full bg-indigo-300/20 blur-3xl pointer-events-none" />
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center space-x-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2.5 min-w-0">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 border border-white/90 text-indigo-600 shadow-xs backdrop-blur-md">
                       <FiUser className="h-4 w-4" />
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold font-manrope text-slate-900 tracking-tight">
+                    <h3 className="text-base sm:text-lg font-bold font-manrope text-slate-900 tracking-tight truncate">
                       User Identity Check
                     </h3>
                   </div>
@@ -263,16 +263,16 @@ export default function DashboardPage() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="mt-3 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/90 p-4 font-mono text-[11px] text-slate-200 backdrop-blur-2xl shadow-xl"
+                      className="mt-3 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/90 p-3.5 sm:p-4 font-mono text-[11px] text-slate-200 backdrop-blur-2xl shadow-xl"
                     >
                       <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-emerald-400 text-[10px]">
                         <div className="flex items-center space-x-2">
-                          <FiCheckCircle className="h-3.5 w-3.5 text-emerald-400" />
+                          <FiCheckCircle className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                           <span className="font-semibold">Status: 200 OK</span>
                         </div>
                         <span className="text-slate-400">User Verified</span>
                       </div>
-                      <pre className="overflow-x-auto text-[10px] sm:text-[11px] text-slate-300">
+                      <pre className="max-h-56 sm:max-h-72 overflow-x-auto text-[10px] sm:text-[11px] text-slate-300">
                         {JSON.stringify(meResult, null, 2)}
                       </pre>
                     </motion.div>
@@ -287,18 +287,18 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="relative rounded-3xl border border-white/70 bg-white/55 p-5 sm:p-7 md:p-8 backdrop-blur-3xl backdrop-saturate-200 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8),inset_0_1px_2px_rgba(255,255,255,0.95)] flex flex-col justify-between text-left overflow-hidden"
+              className="relative rounded-3xl border border-white/70 bg-white/55 p-4 sm:p-7 md:p-8 backdrop-blur-3xl backdrop-saturate-200 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8),inset_0_1px_2px_rgba(255,255,255,0.95)] flex flex-col justify-between text-left overflow-hidden min-w-0"
             >
               <div className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95" />
               <div className="absolute -top-16 -right-16 h-40 w-40 rounded-full bg-purple-300/20 blur-3xl pointer-events-none" />
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center space-x-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2.5 min-w-0">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 border border-white/90 text-purple-600 shadow-xs backdrop-blur-md">
                       <FiShield className="h-4 w-4" />
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold font-manrope text-slate-900 tracking-tight">
+                    <h3 className="text-base sm:text-lg font-bold font-manrope text-slate-900 tracking-tight truncate">
                       Admin Access Verification
                     </h3>
                   </div>
@@ -317,7 +317,7 @@ export default function DashboardPage() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className={`mt-3 rounded-2xl border p-4 text-xs shadow-lg backdrop-blur-xl ${
+                      className={`mt-3 rounded-2xl border p-3.5 sm:p-4 text-xs shadow-lg backdrop-blur-xl ${
                         adminResult?.success
                           ? 'border-emerald-200/80 bg-emerald-50/80 text-emerald-900'
                           : 'border-rose-200/80 bg-rose-50/80 text-rose-900'
@@ -335,7 +335,7 @@ export default function DashboardPage() {
                         <span className="truncate">{adminResult?.message}</span>
                       </div>
                       {Boolean(adminResult?.data) && (
-                        <pre className="mt-2 overflow-x-auto text-[10px] sm:text-[11px] text-slate-200 bg-slate-950/90 p-3 rounded-xl border border-slate-800 font-mono shadow-inner">
+                        <pre className="mt-2 max-h-56 sm:max-h-72 overflow-x-auto text-[10px] sm:text-[11px] text-slate-200 bg-slate-950/90 p-3 rounded-xl border border-slate-800 font-mono shadow-inner">
                           {JSON.stringify(adminResult?.data, null, 2)}
                         </pre>
                       )}

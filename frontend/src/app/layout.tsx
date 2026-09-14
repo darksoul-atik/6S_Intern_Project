@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter, Manrope } from 'next/font/google';
 import './globals.css';
 
@@ -19,6 +19,13 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: 'DevPulse — Where Code Meets Community',
   description: 'A modern developer community and technical collaboration platform.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#07090e',
 };
 
 import { AuthProvider } from '@/context/AuthContext';

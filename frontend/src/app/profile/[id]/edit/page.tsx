@@ -607,13 +607,14 @@ export default function EditProfilePage({ params }: EditPageProps) {
       <div className="relative z-10 px-4 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-12">
         <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
           {/* Header Navigation */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
             <Link
               href={`/profile/${profileId || 'me'}`}
-              className="inline-flex items-center space-x-2 text-xs font-semibold font-manrope text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-slate-200/70 rounded-xl px-3.5 py-2 backdrop-blur-md shadow-xs transition-all"
+              className="inline-flex items-center space-x-1.5 sm:space-x-2 text-xs font-semibold font-manrope text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-slate-200/70 rounded-xl px-3 sm:px-3.5 py-2 backdrop-blur-md shadow-xs transition-all"
             >
               <FiArrowLeft className="h-3.5 w-3.5" />
-              <span>Back to Profile View</span>
+              <span className="hidden sm:inline">Back to Profile View</span>
+              <span className="sm:hidden">View Profile</span>
             </Link>
 
             <span className="text-xs font-medium text-slate-600 bg-white/60 px-3 py-1.5 rounded-xl border border-slate-200/60 font-manrope">
@@ -625,10 +626,10 @@ export default function EditProfilePage({ params }: EditPageProps) {
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-3xl border border-white/80 bg-white/65 p-6 sm:p-8 backdrop-blur-3xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+            className="rounded-3xl border border-white/80 bg-white/65 p-4 sm:p-7 md:p-8 backdrop-blur-3xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
           >
             <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold font-manrope text-slate-900">
                 Edit Developer Profile
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 mt-1 font-sans">
@@ -636,7 +637,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
               </p>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 shrink-0">
               {profile.role === 'admin' ? (
                 <span
                   id="profile-role-badge"
@@ -662,7 +663,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-3xl border border-white/80 bg-white/60 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] space-y-6"
+            className="rounded-3xl border border-white/80 bg-white/60 p-4 sm:p-7 md:p-8 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] space-y-6"
           >
             <div className="flex items-center space-x-2.5 pb-2 border-b border-slate-100">
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600">
@@ -1092,7 +1093,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative w-full max-w-lg rounded-3xl border border-white/80 bg-white p-6 sm:p-8 backdrop-blur-2xl shadow-2xl space-y-5 text-left"
+              className="relative w-full max-w-lg rounded-3xl border border-white/80 bg-white p-4 sm:p-7 md:p-8 backdrop-blur-2xl shadow-2xl space-y-4 sm:space-y-5 text-left max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center space-x-2.5">
@@ -1134,7 +1135,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
                     onChange={(e) => setExpTitle(e.target.value)}
                     required
                     placeholder="e.g. Senior Software Engineer"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans"
                   />
                 </div>
 
@@ -1152,11 +1153,11 @@ export default function EditProfilePage({ params }: EditPageProps) {
                     onChange={(e) => setExpCompany(e.target.value)}
                     required
                     placeholder="e.g. Google, Acme Inc."
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {/* Start Date */}
                   <div>
                     <label
@@ -1174,7 +1175,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
                         onChange={(e) => setExpFrom(e.target.value)}
                         onClick={() => fromPickerRef.current?.showPicker?.()}
                         required
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-3.5 pr-10 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-sans cursor-pointer"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-3.5 pr-10 py-2.5 text-base sm:text-sm text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-sans cursor-pointer"
                       />
                       <button
                         type="button"
@@ -1230,7 +1231,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
                             value={expTo}
                             onChange={(e) => setExpTo(e.target.value)}
                             onClick={() => toPickerRef.current?.showPicker?.()}
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-3.5 pr-10 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-sans cursor-pointer"
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-3.5 pr-10 py-2.5 text-base sm:text-sm text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-sans cursor-pointer"
                           />
                           <button
                             type="button"
@@ -1274,7 +1275,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
                     value={expDescription}
                     onChange={(e) => setExpDescription(e.target.value)}
                     placeholder="Describe your responsibilities, architectures designed, and impact..."
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-sans"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-sans"
                   />
                 </div>
 

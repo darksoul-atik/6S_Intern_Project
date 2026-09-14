@@ -100,15 +100,15 @@ export function Navbar() {
               <Link
                 href="/profile/me"
                 id="navbar-user-badge-link"
-                className="flex items-center space-x-2 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] px-2.5 sm:px-3 py-1.5 backdrop-blur-md shadow-xs transition-colors group cursor-pointer"
+                className="flex items-center space-x-1.5 sm:space-x-2 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] px-2 sm:px-3 py-1.5 backdrop-blur-md shadow-xs transition-colors group cursor-pointer"
               >
                 <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                <span className="text-xs font-medium text-zinc-200 group-hover:text-white max-w-[100px] min-[400px]:max-w-[150px] sm:max-w-[200px] md:max-w-none truncate font-sans">
+                <span className="text-xs font-medium text-zinc-200 group-hover:text-white max-w-[70px] min-[360px]:max-w-[95px] min-[420px]:max-w-[140px] sm:max-w-[200px] md:max-w-none truncate font-sans">
                   {user.name || user.email}
                 </span>
                 <span
                   id="navbar-user-role-badge"
-                  className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full font-mono ${
+                  className={`hidden min-[400px]:inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full font-mono shrink-0 ${
                     user.role === 'admin'
                       ? 'bg-gradient-to-r from-indigo-500/30 via-purple-500/30 to-emerald-500/30 text-indigo-300 border border-indigo-400/30 shadow-[0_0_12px_rgba(99,102,241,0.2)]'
                       : 'bg-zinc-800 text-zinc-300 border border-zinc-700'
@@ -123,9 +123,10 @@ export function Navbar() {
                 id="navbar-logout-btn"
                 type="button"
                 onClick={() => logout()}
-                className="rounded-xl border border-red-500/20 bg-red-500/10 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-red-300 hover:bg-red-500/20 hover:border-red-500/40 hover:text-red-200 transition-all active:scale-95 cursor-pointer shadow-xs"
+                className="rounded-xl border border-red-500/20 bg-red-500/10 px-2 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-red-300 hover:bg-red-500/20 hover:border-red-500/40 hover:text-red-200 transition-all active:scale-95 cursor-pointer shadow-xs shrink-0"
               >
-                Logout
+                <span className="hidden min-[360px]:inline">Logout</span>
+                <span className="min-[360px]:hidden">Exit</span>
               </button>
 
               {/* Mobile Menu Toggle Button */}
@@ -133,7 +134,7 @@ export function Navbar() {
                 type="button"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-label="Toggle navigation menu"
-                className="sm:hidden p-2 rounded-xl border border-white/10 bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
+                className="sm:hidden p-2 rounded-xl border border-white/10 bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/10 transition-colors shrink-0"
               >
                 {mobileMenuOpen ? <FiX className="h-4 w-4" /> : <FiMenu className="h-4 w-4" />}
               </button>
@@ -142,13 +143,13 @@ export function Navbar() {
             <div className="flex items-center space-x-2">
               <Link
                 href="/login"
-                className="rounded-xl border border-white/10 bg-white/[0.04] px-3 sm:px-4 py-2 text-xs font-semibold font-manrope text-zinc-300 hover:bg-white/[0.08] hover:text-white transition-all"
+                className="rounded-xl border border-white/10 bg-white/[0.04] px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs font-semibold font-manrope text-zinc-300 hover:bg-white/[0.08] hover:text-white transition-all"
               >
                 Sign In
               </Link>
               <Link
                 href="/signup"
-                className="rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-500 px-3 sm:px-4 py-2 text-xs font-semibold font-manrope text-white shadow-[0_0_16px_rgba(99,102,241,0.3)] hover:shadow-[0_0_22px_rgba(99,102,241,0.5)] hover:brightness-110 transition-all"
+                className="rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-500 px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs font-semibold font-manrope text-white shadow-[0_0_16px_rgba(99,102,241,0.3)] hover:shadow-[0_0_22px_rgba(99,102,241,0.5)] hover:brightness-110 transition-all"
               >
                 Sign Up
               </Link>
@@ -163,7 +164,7 @@ export function Navbar() {
           <Link
             href="/dashboard"
             onClick={() => setMobileMenuOpen(false)}
-            className={`block rounded-xl px-3.5 py-2 text-xs font-semibold font-manrope transition-colors ${
+            className={`flex items-center min-h-[44px] rounded-xl px-4 py-2.5 text-xs font-semibold font-manrope transition-colors ${
               pathname.startsWith('/dashboard')
                 ? 'bg-white/10 text-white shadow-xs'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
@@ -174,7 +175,7 @@ export function Navbar() {
           <Link
             href="/profile/me"
             onClick={() => setMobileMenuOpen(false)}
-            className={`block rounded-xl px-3.5 py-2 text-xs font-semibold font-manrope transition-colors ${
+            className={`flex items-center min-h-[44px] rounded-xl px-4 py-2.5 text-xs font-semibold font-manrope transition-colors ${
               pathname.startsWith('/profile')
                 ? 'bg-white/10 text-white shadow-xs'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
@@ -186,7 +187,7 @@ export function Navbar() {
             <Link
               href="/admin/users"
               onClick={() => setMobileMenuOpen(false)}
-              className={`block rounded-xl px-3.5 py-2 text-xs font-semibold font-manrope transition-colors ${
+              className={`flex items-center min-h-[44px] rounded-xl px-4 py-2.5 text-xs font-semibold font-manrope transition-colors ${
                 pathname.startsWith('/admin')
                   ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 shadow-xs'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'

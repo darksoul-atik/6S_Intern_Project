@@ -337,21 +337,22 @@ export default function ProfileViewPage({ params }: PageProps) {
       <div className="relative z-10 px-4 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-12">
         <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8">
           {/* Top Navigation Bar */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
             <Link
               href="/dashboard"
-              className="inline-flex items-center space-x-2 text-xs font-semibold font-manrope text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-slate-200/70 rounded-xl px-3.5 py-2 backdrop-blur-md shadow-xs transition-all"
+              className="inline-flex items-center space-x-1.5 sm:space-x-2 text-xs font-semibold font-manrope text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-slate-200/70 rounded-xl px-3 sm:px-3.5 py-2 backdrop-blur-md shadow-xs transition-all"
             >
               <FiArrowLeft className="h-3.5 w-3.5" />
-              <span>Back to Dashboard</span>
+              <span className="hidden sm:inline">Back to Dashboard</span>
+              <span className="sm:hidden">Dashboard</span>
             </Link>
 
-            <div className="flex items-center space-x-2.5">
+            <div className="flex items-center space-x-2 sm:space-x-2.5">
               <button
                 type="button"
                 onClick={handleShare}
                 id="share-profile-btn"
-                className="inline-flex items-center space-x-1.5 text-xs font-semibold font-manrope text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-slate-200/70 rounded-xl px-3.5 py-2 backdrop-blur-md shadow-xs transition-all cursor-pointer"
+                className="inline-flex items-center space-x-1.5 text-xs font-semibold font-manrope text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-slate-200/70 rounded-xl px-3 sm:px-3.5 py-2 backdrop-blur-md shadow-xs transition-all cursor-pointer"
               >
                 {copied ? (
                   <>
@@ -361,7 +362,8 @@ export default function ProfileViewPage({ params }: PageProps) {
                 ) : (
                   <>
                     <FiShare2 className="h-3.5 w-3.5" />
-                    <span>Share Profile</span>
+                    <span className="hidden min-[380px]:inline">Share Profile</span>
+                    <span className="min-[380px]:hidden">Share</span>
                   </>
                 )}
               </button>
@@ -370,7 +372,7 @@ export default function ProfileViewPage({ params }: PageProps) {
                 <Link
                   href={`/profile/${profileId}/edit`}
                   id="edit-profile-btn"
-                  className="inline-flex items-center space-x-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-4 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
+                  className="inline-flex items-center space-x-1.5 sm:space-x-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-3 sm:px-4 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
                 >
                   <FiEdit3 className="h-3.5 w-3.5 text-indigo-400" />
                   <span>Edit Profile</span>
@@ -407,16 +409,16 @@ export default function ProfileViewPage({ params }: PageProps) {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="relative rounded-3xl border border-white/80 bg-white/65 p-6 sm:p-8 md:p-10 backdrop-blur-3xl backdrop-saturate-200 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8),inset_0_1px_2px_rgba(255,255,255,0.95)] overflow-hidden"
+            className="relative rounded-3xl border border-white/80 bg-white/65 p-4 sm:p-7 md:p-10 backdrop-blur-3xl backdrop-saturate-200 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8),inset_0_1px_2px_rgba(255,255,255,0.95)] overflow-hidden"
           >
             <div className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white to-transparent opacity-95" />
             <div className="absolute -top-20 -right-20 h-56 w-56 rounded-full bg-indigo-300/20 blur-3xl pointer-events-none" />
 
-            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-6">
+            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-5 sm:gap-6">
               {/* Avatar Ring with Middle-Aligned Photo Controls */}
               <div className="flex flex-col items-center justify-center gap-2.5 shrink-0 self-center">
                 <div className="relative group">
-                  <div className="flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-3xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-emerald-500 p-[2px] shadow-[0_8px_30px_rgba(99,102,241,0.35)] overflow-hidden">
+                  <div className="flex h-20 w-20 min-[400px]:h-24 min-[400px]:w-24 sm:h-28 sm:w-28 items-center justify-center rounded-3xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-emerald-500 p-[2px] shadow-[0_8px_30px_rgba(99,102,241,0.35)] overflow-hidden">
                     {profile.avatarUrl ? (
                       <img
                         src={profile.avatarUrl}
@@ -497,16 +499,16 @@ export default function ProfileViewPage({ params }: PageProps) {
               </div>
 
               {/* Developer Info */}
-              <div className="flex-1 space-y-2 text-center sm:text-left">
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-manrope tracking-tight text-slate-900">
+              <div className="flex-1 space-y-2 text-center sm:text-left min-w-0">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-3">
+                  <h1 className="text-xl min-[400px]:text-2xl sm:text-3xl md:text-4xl font-extrabold font-manrope tracking-tight text-slate-900 break-words">
                     {profile.name}
                   </h1>
 
                   {profile.role === 'admin' ? (
                     <span
                       id="profile-role-badge"
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-manrope bg-purple-50/90 text-purple-700 border border-purple-200/90 shadow-2xs"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-manrope bg-purple-50/90 text-purple-700 border border-purple-200/90 shadow-2xs shrink-0"
                     >
                       <FiShield className="h-3.5 w-3.5 text-purple-600 shrink-0" />
                       <span>Administrator</span>
@@ -514,7 +516,7 @@ export default function ProfileViewPage({ params }: PageProps) {
                   ) : (
                     <span
                       id="profile-role-badge"
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-manrope bg-slate-100/90 text-slate-700 border border-slate-200/90 shadow-2xs hover:bg-slate-100 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-manrope bg-slate-100/90 text-slate-700 border border-slate-200/90 shadow-2xs hover:bg-slate-100 transition-colors shrink-0"
                     >
                       <FiCheckCircle className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
                       <span>Verified User</span>
@@ -523,21 +525,21 @@ export default function ProfileViewPage({ params }: PageProps) {
                 </div>
 
                 {profile.title && (
-                  <p className="text-sm sm:text-base font-medium text-indigo-600 font-manrope ml-1 sm:ml-1.5 tracking-normal">
+                  <p className="text-xs sm:text-sm md:text-base font-medium text-indigo-600 font-manrope ml-0.5 sm:ml-1 tracking-normal">
                     {profile.title}
                   </p>
                 )}
 
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-slate-600 font-sans pt-0.5">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-4 text-xs text-slate-600 font-sans pt-0.5">
                   {profile.email && (
                     <div className="flex items-center space-x-1.5">
-                      <FiMail className="h-3.5 w-3.5 text-slate-400" />
-                      <span>{profile.email}</span>
+                      <FiMail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate max-w-[200px] min-[400px]:max-w-[260px] sm:max-w-none">{profile.email}</span>
                     </div>
                   )}
                   {memberSince && (
                     <div className="flex items-center space-x-1.5">
-                      <FiCalendar className="h-3.5 w-3.5 text-slate-400" />
+                      <FiCalendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                       <span>Member since {memberSince}</span>
                     </div>
                   )}
@@ -547,13 +549,13 @@ export default function ProfileViewPage({ params }: PageProps) {
           </motion.div>
 
           {/* Two-Column Grid: Skills & Work Experiences (Clean View Route) */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-8">
             {/* Skills Column (1 col) */}
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="rounded-3xl border border-white/80 bg-white/60 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] space-y-5"
+              className="rounded-3xl border border-white/80 bg-white/60 p-4 sm:p-6 md:p-8 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] space-y-4 sm:space-y-5"
             >
               <div className="flex items-center space-x-2.5 pb-3 border-b border-slate-100">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600">
@@ -565,11 +567,11 @@ export default function ProfileViewPage({ params }: PageProps) {
               </div>
 
               {profile.skills && profile.skills.length > 0 ? (
-                <div className="flex flex-wrap gap-2 pt-1">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1">
                   {profile.skills.map((skill) => (
                     <span
                       key={skill}
-                      className="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-xs font-medium font-sans text-slate-700 border border-slate-200/80 shadow-2xs hover:shadow-xs hover:border-indigo-300 hover:text-indigo-600 transition-all"
+                      className="inline-flex items-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-white/90 hover:bg-white text-xs font-medium font-sans text-slate-700 border border-slate-200/80 shadow-2xs hover:shadow-xs hover:border-indigo-300 hover:text-indigo-600 transition-all"
                     >
                       {skill}
                     </span>
@@ -594,7 +596,7 @@ export default function ProfileViewPage({ params }: PageProps) {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="lg:col-span-2 rounded-3xl border border-white/80 bg-white/60 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] space-y-5"
+              className="lg:col-span-2 rounded-3xl border border-white/80 bg-white/60 p-4 sm:p-6 md:p-8 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] space-y-4 sm:space-y-5"
             >
               <div className="flex items-center space-x-2.5 pb-3 border-b border-slate-100">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600">

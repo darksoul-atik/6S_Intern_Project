@@ -378,32 +378,32 @@ export default function AdminUsersPage() {
             </button>
           </div>
         </div>        {/* KPI Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
           {/* Card 1: Total */}
-          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-5 backdrop-blur-md shadow-xs min-w-0">
+          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3 sm:p-4 md:p-5 backdrop-blur-md shadow-xs min-w-0">
             <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope gap-1">
               <span className="truncate">Total Users</span>
               <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                 <FiUsers className="h-3.5 w-3.5" />
               </div>
             </div>
-            <div className="mt-1.5 sm:mt-2 text-xl sm:text-3xl font-bold font-manrope text-slate-900 tracking-tight">
+            <div className="mt-1 sm:mt-2 text-lg min-[400px]:text-xl sm:text-3xl font-bold font-manrope text-slate-900 tracking-tight">
               {totalUsers}
             </div>
             <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block truncate">
-              Across whole platform
+              Across platform
             </span>
           </div>
 
           {/* Card 2: Active */}
-          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-5 backdrop-blur-md shadow-xs min-w-0">
+          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3 sm:p-4 md:p-5 backdrop-blur-md shadow-xs min-w-0">
             <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope gap-1">
               <span className="truncate">Active Accounts</span>
               <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                 <FiUserCheck className="h-3.5 w-3.5" />
               </div>
             </div>
-            <div className="mt-1.5 sm:mt-2 text-xl sm:text-3xl font-bold font-manrope text-emerald-600 tracking-tight">
+            <div className="mt-1 sm:mt-2 text-lg min-[400px]:text-xl sm:text-3xl font-bold font-manrope text-emerald-600 tracking-tight">
               {activeCount}
             </div>
             <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block truncate">
@@ -412,14 +412,14 @@ export default function AdminUsersPage() {
           </div>
 
           {/* Card 3: Deleted / Blocked */}
-          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-5 backdrop-blur-md shadow-xs min-w-0">
+          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3 sm:p-4 md:p-5 backdrop-blur-md shadow-xs min-w-0">
             <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope gap-1">
               <span className="truncate">Deleted Accounts</span>
               <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
                 <FiUserX className="h-3.5 w-3.5" />
               </div>
             </div>
-            <div className="mt-1.5 sm:mt-2 text-xl sm:text-3xl font-bold font-manrope text-rose-600 tracking-tight">
+            <div className="mt-1 sm:mt-2 text-lg min-[400px]:text-xl sm:text-3xl font-bold font-manrope text-rose-600 tracking-tight">
               {deletedCount}
             </div>
             <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block truncate">
@@ -428,14 +428,14 @@ export default function AdminUsersPage() {
           </div>
 
           {/* Card 4: Admins */}
-          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-5 backdrop-blur-md shadow-xs min-w-0">
+          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3 sm:p-4 md:p-5 backdrop-blur-md shadow-xs min-w-0">
             <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope gap-1">
               <span className="truncate">Admins</span>
               <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
                 <FiShield className="h-3.5 w-3.5" />
               </div>
             </div>
-            <div className="mt-1.5 sm:mt-2 text-xl sm:text-3xl font-bold font-manrope text-purple-700 tracking-tight">
+            <div className="mt-1 sm:mt-2 text-lg min-[400px]:text-xl sm:text-3xl font-bold font-manrope text-purple-700 tracking-tight">
               {adminCount}
             </div>
             <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block truncate">
@@ -454,7 +454,7 @@ export default function AdminUsersPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name, email, or title..."
-              className="w-full pl-9 pr-28 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900 placeholder-slate-400"
+              className="w-full pl-9 pr-28 py-2 text-base sm:text-xs rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900 placeholder-slate-400"
             />
             {searchQuery && (
               <button
@@ -842,7 +842,7 @@ export default function AdminUsersPage() {
 
           {/* shadcn Pagination Integration */}
           {totalPages > 1 && (
-            <div className="border-t border-slate-100 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/40">
+            <div className="border-t border-slate-100 p-3 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 bg-slate-50/40">
               <p className="text-xs text-slate-500 font-sans text-center sm:text-left">
                 Showing page <strong className="text-slate-800 font-semibold">{currentPage}</strong> of{' '}
                 <strong className="text-slate-800 font-semibold">{totalPages}</strong> ({totalUsers} total users)
@@ -914,11 +914,11 @@ export default function AdminUsersPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto"
+              className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-4 sm:p-7 md:p-8 shadow-2xl space-y-5 sm:space-y-6 max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3 sm:pb-4">
                 <div className="space-y-0.5">
-                  <h3 className="text-lg font-bold font-manrope text-slate-900">
+                  <h3 className="text-base sm:text-lg font-bold font-manrope text-slate-900">
                     Edit User: {editingUser.name}
                   </h3>
                   <p className="text-xs text-slate-500 font-sans">
@@ -945,7 +945,7 @@ export default function AdminUsersPage() {
                     required
                     value={editForm.name}
                     onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900"
+                    className="w-full px-3.5 py-2 text-base sm:text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900"
                   />
                 </div>
 
@@ -959,7 +959,7 @@ export default function AdminUsersPage() {
                     required
                     value={editForm.email}
                     onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900"
+                    className="w-full px-3.5 py-2 text-base sm:text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900"
                   />
                 </div>
 
@@ -973,7 +973,7 @@ export default function AdminUsersPage() {
                     value={editForm.title}
                     placeholder="e.g. Senior Full-Stack Engineer"
                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900"
+                    className="w-full px-3.5 py-2 text-base sm:text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900"
                   />
                 </div>
 
@@ -987,7 +987,7 @@ export default function AdminUsersPage() {
                     onChange={(e) =>
                       setEditForm({ ...editForm, role: e.target.value as 'admin' | 'user' })
                     }
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 bg-white"
+                    className="w-full px-3.5 py-2 text-base sm:text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 bg-white"
                   >
                     <option value="user">Verified User (Standard Developer)</option>
                     <option value="admin">Administrator (Full System Access)</option>
@@ -1037,7 +1037,7 @@ export default function AdminUsersPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto"
+              className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-4 sm:p-7 md:p-8 shadow-2xl space-y-4 sm:space-y-5 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 border border-rose-200 text-rose-600">
                 <FiAlertTriangle className="h-6 w-6" />
