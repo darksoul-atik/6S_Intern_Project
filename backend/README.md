@@ -80,6 +80,45 @@ Self-service admin registration via public APIs is strictly disabled to prevent 
    npm run seed:admin
    ```
 
+## 🌐 Developer Profile Visibility & Security Architecture
+
+### Architectural Decision: Public Viewing (`GET /users/:id`), Authenticated & Authorized Mutations
+
+In DevPulse, developer profiles are designed around **open discovery** coupled with **strict authorization boundaries**:
+
+#### 1. Why `GET /users/:id` is Public (Unauthenticated):
+- **Peer & Talent Discovery**: DevPulse is an engineering community platform. Requiring authentication just to view a developer's skills and work experience introduces unnecessary friction for peer networking, recruiters, and prospective collaborators.
+- **Search & Shareability**: Developers can share direct links to their DevPulse profile on GitHub, resumes, or social profiles without forcing recipients to create an account first.
+- **Data Protection Guarantee**: Sensitive fields such as `passwordHash` and authentication state are explicitly excluded via Mongoose projection (`.select('-passwordHash')`). Only public-facing developer attributes (`name`, `role`, `skills`, `experiences`, `createdAt`, `updatedAt`) are exposed.
+
+#### 2. Strict Ownership & Admin Authorization on Mutations:
+- **No Anonymous Edits**: All write operations require a valid JWT Bearer token (`JwtAuthGuard`).
+- **Owner-Only Edits**: Users can only update their own profile (`/users/me` or `/users/:id` where `:id` matches `req.user.userId`).
+- **Administrative Override**: Users with role `admin` can edit any developer profile to manage spam, inappropriate content, or compliance.
+- **Strict 403 Forbidden**: If a non-admin attempts to mutate another developer's profile, the system rejects the request immediately with `403 Forbidden` (`You do not have permission to modify this profile`) enforced by `ProfileOwnerOrAdminGuard`.
+
+### Profile Endpoints Reference
+
+| Method | Endpoint | Auth Required | Role / Permissions | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/users/:id` | No | Public | Fetch public profile (skills, experiences, name, role) |
+| `GET` | `/users/me` | Yes (JWT) | Authenticated User | Fetch currently logged-in user profile |
+| `PATCH` | `/users/me` | Yes (JWT) | Authenticated User | Update current user basic profile (name) |
+| `POST` | `/users/me/skills` | Yes (JWT) | Authenticated User | Add a skill (case-trimmed, deduplicated) |
+| `DELETE` | `/users/me/skills/:skill` | Yes (JWT) | Authenticated User | Remove a skill |
+| `PUT` | `/users/me/skills` | Yes (JWT) | Authenticated User | Replace entire skills list |
+| `POST` | `/users/me/experiences` | Yes (JWT) | Authenticated User | Add work experience subdocument |
+| `PATCH` | `/users/me/experiences/:expId`| Yes (JWT) | Authenticated User | Update work experience by subdocument ID |
+| `DELETE` | `/users/me/experiences/:expId`| Yes (JWT) | Authenticated User | Delete work experience by subdocument ID |
+| `PATCH` | `/users/:id` | Yes (JWT) | Owner or Admin | Update profile for target user ID (`403` if unauthorized) |
+| `POST` | `/users/:id/skills` | Yes (JWT) | Owner or Admin | Add skill to target user ID (`403` if unauthorized) |
+| `DELETE` | `/users/:id/skills/:skill` | Yes (JWT) | Owner or Admin | Remove skill from target user ID (`403` if unauthorized) |
+| `PUT` | `/users/:id/skills` | Yes (JWT) | Owner or Admin | Overwrite skills for target user ID (`403` if unauthorized) |
+| `POST` | `/users/:id/experiences` | Yes (JWT) | Owner or Admin | Add experience to target user ID (`403` if unauthorized) |
+| `PATCH` | `/users/:id/experiences/:expId`| Yes (JWT) | Owner or Admin | Update experience on target user ID (`403` if unauthorized) |
+| `DELETE` | `/users/:id/experiences/:expId`| Yes (JWT) | Owner or Admin | Delete experience on target user ID (`403` if unauthorized) |
+
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
