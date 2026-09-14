@@ -135,6 +135,26 @@ describe('AuthService', () => {
 
       await expect(authService.login(loginDto)).rejects.toThrow(UnauthorizedException);
     });
+
+    it('should throw UnauthorizedException with admin deletion message if user account isDeleted', async () => {
+      mockUsersService.findByEmail.mockResolvedValue({
+        _id: 'deleted-user',
+        name: 'Deleted User',
+        email: 'deleted@devpulse.io',
+        passwordHash: await bcrypt.hash('Secret123', 10),
+        role: 'user',
+        isDeleted: true,
+      });
+
+      const loginDto = {
+        email: 'deleted@devpulse.io',
+        password: 'Secret123',
+      };
+
+      await expect(authService.login(loginDto)).rejects.toThrow(
+        'Your profile has been deleted by an Admin. Please contact support if you believe this was an error.',
+      );
+    });
   });
 
   describe('getMe', () => {

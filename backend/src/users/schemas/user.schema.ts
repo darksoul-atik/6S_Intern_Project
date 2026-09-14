@@ -97,6 +97,15 @@ export class User {
   @Prop({ type: [ExperienceSchema], default: [] })
   experiences!: Experience[];
 
+  @Prop({ type: Boolean, default: false, index: true })
+  isDeleted?: boolean;
+
+  @Prop({ type: Date, default: null })
+  deletedAt?: Date;
+
+  @Prop({ type: String, default: null })
+  deletedReason?: string;
+
   createdAt?: Date;
   updatedAt?: Date;
 }

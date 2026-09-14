@@ -7,23 +7,28 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
+import { AdminUpdateUserDto } from './dto/admin-update-user.dto.js';
 import { AddSkillDto, UpdateSkillsDto } from './dto/skills.dto.js';
 import {
   CreateExperienceDto,
   UpdateExperienceDto,
 } from './dto/experience.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
+import { RolesGuard } from '../auth/guards/roles.guard.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy.js';
 import { ProfileOwnerOrAdminGuard } from './guards/profile-owner-or-admin.guard.js';
@@ -169,6 +174,38 @@ export class UsersController {
     return this.usersService.removeExperience(user.userId, experienceId);
   }
 
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'List all signed-up users with pagination (Admin only)',
+    description:
+      'Returns a paginated list of all users, supporting optional search keyword and deletion status filters.',
+  })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 10 })
+  @ApiQuery({ name: 'search', required: false, example: 'alex' })
+  @ApiQuery({ name: 'includeDeleted', required: false, example: true })
+  @ApiResponse({ status: 200, description: 'Paginated user list retrieved' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden: Admin access required' })
+  async getAllUsers(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
+    @Query('includeDeleted') includeDeleted?: string,
+  ) {
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
+    return this.usersService.findAllUsers({
+      page: pageNum,
+      limit: limitNum,
+      search,
+      includeDeleted: includeDeleted === 'true' || includeDeleted === '1' || includeDeleted === undefined,
+    });
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Get public developer profile by user ID',
@@ -303,5 +340,62 @@ export class UsersController {
     @Param('experienceId') experienceId: string,
   ) {
     return this.usersService.removeExperience(id, experienceId);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Soft-delete user account (Admin only)',
+    description:
+      'Marks user as deleted so they cannot log in. Login will respond that the profile was deleted by an admin.',
+  })
+  @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the user to delete' })
+  @ApiResponse({ status: 200, description: 'User account marked as deleted' })
+  @ApiResponse({ status: 400, description: 'Cannot delete own admin account' })
+  @ApiResponse({ status: 403, description: 'Forbidden: Admin access required' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async deleteUser(
+    @Param('id') id: string,
+    @CurrentUser() adminUser: AuthenticatedUser,
+  ) {
+    return this.usersService.deleteUser(id, adminUser.userId);
+  }
+
+  @Post(':id/restore')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Restore soft-deleted user account (Admin only)',
+  })
+  @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the user to restore' })
+  @ApiResponse({ status: 200, description: 'User account restored successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden: Admin access required' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async restoreUser(@Param('id') id: string) {
+    return this.usersService.restoreUser(id);
+  }
+
+  @Patch(':id/admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Admin edit of any user details (Admin only)',
+    description:
+      'Allows an administrator to modify any user attribute including display name, email, role, and professional title.',
+  })
+  @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the user to update' })
+  @ApiResponse({ status: 200, description: 'User updated successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden: Admin access required' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 409, description: 'Conflict: Email already registered' })
+  async adminUpdateUser(
+    @Param('id') id: string,
+    @Body() dto: AdminUpdateUserDto,
+  ) {
+    return this.usersService.adminUpdateUser(id, dto);
   }
 }

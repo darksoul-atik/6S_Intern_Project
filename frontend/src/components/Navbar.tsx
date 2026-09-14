@@ -65,6 +65,19 @@ export function Navbar() {
                 >
                   Profile
                 </Link>
+                {user?.role === 'admin' && (
+                  <Link
+                    href="/admin/users"
+                    id="navbar-admin-users-link"
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold font-manrope transition-colors ${
+                      pathname.startsWith('/admin')
+                        ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 shadow-xs'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                    }`}
+                  >
+                    Admin Users
+                  </Link>
+                )}
               </>
             )}
           </nav>

@@ -2,15 +2,25 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
+import { AdminUpdateUserDto } from './dto/admin-update-user.dto.js';
 import {
   CreateExperienceDto,
   UpdateExperienceDto,
 } from './dto/experience.dto.js';
+
+export interface PaginatedUsersResult {
+  users: UserDocument[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
 
 @Injectable()
 export class UsersService {
@@ -212,6 +222,121 @@ export class UsersService {
     }
 
     user.experiences.splice(expIndex, 1);
+    return user.save();
+  }
+
+  async findAllUsers(query: {
+    page: number;
+    limit: number;
+    search?: string;
+    includeDeleted?: boolean;
+  }): Promise<PaginatedUsersResult> {
+    const filter: Record<string, unknown> = {};
+    if (!query.includeDeleted) {
+      filter.isDeleted = { $ne: true };
+    }
+
+    if (query.search && query.search.trim()) {
+      const term = query.search.trim();
+      filter.$or = [
+        { name: { $regex: term, $options: 'i' } },
+        { email: { $regex: term, $options: 'i' } },
+        { title: { $regex: term, $options: 'i' } },
+      ];
+    }
+
+    const total = await this.userModel.countDocuments(filter).exec();
+    const users = await this.userModel
+      .find(filter)
+      .select('-passwordHash')
+      .sort({ createdAt: -1 })
+      .skip((query.page - 1) * query.limit)
+      .limit(query.limit)
+      .exec();
+
+    return {
+      users,
+      total,
+      page: query.page,
+      limit: query.limit,
+      totalPages: Math.ceil(total / query.limit) || 1,
+    };
+  }
+
+  async deleteUser(
+    targetUserId: string,
+    currentAdminId: string,
+  ): Promise<{ id: string; name: string; email: string; isDeleted: boolean; message: string }> {
+    if (targetUserId === currentAdminId) {
+      throw new BadRequestException('Administrators cannot delete their own account');
+    }
+
+    const user = await this.findById(targetUserId);
+    if (!user) {
+      throw new NotFoundException(`User with ID '${targetUserId}' not found`);
+    }
+
+    user.isDeleted = true;
+    user.deletedAt = new Date();
+    await user.save();
+
+    return {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      isDeleted: true,
+      message: 'User account marked as deleted successfully',
+    };
+  }
+
+  async restoreUser(
+    targetUserId: string,
+  ): Promise<{ id: string; name: string; email: string; isDeleted: boolean; message: string }> {
+    const user = await this.findById(targetUserId);
+    if (!user) {
+      throw new NotFoundException(`User with ID '${targetUserId}' not found`);
+    }
+
+    user.isDeleted = false;
+    user.deletedAt = undefined;
+    await user.save();
+
+    return {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      isDeleted: false,
+      message: 'User account restored successfully',
+    };
+  }
+
+  async adminUpdateUser(
+    targetUserId: string,
+    dto: AdminUpdateUserDto,
+  ): Promise<UserDocument> {
+    const user = await this.findById(targetUserId);
+    if (!user) {
+      throw new NotFoundException(`User with ID '${targetUserId}' not found`);
+    }
+
+    if (dto.email && dto.email.toLowerCase().trim() !== user.email) {
+      const existing = await this.findByEmail(dto.email);
+      if (existing && existing._id.toString() !== targetUserId) {
+        throw new ConflictException('Email is already registered by another user');
+      }
+      user.email = dto.email.toLowerCase().trim();
+    }
+
+    if (dto.name !== undefined) user.name = dto.name.trim();
+    if (dto.role !== undefined) user.role = dto.role;
+    if (dto.title !== undefined) user.title = dto.title.trim() || undefined;
+    if (dto.avatarUrl !== undefined) user.avatarUrl = dto.avatarUrl || undefined;
+
+    if (dto.isDeleted !== undefined) {
+      user.isDeleted = dto.isDeleted;
+      user.deletedAt = dto.isDeleted ? new Date() : undefined;
+    }
+
     return user.save();
   }
 }

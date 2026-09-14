@@ -20,6 +20,8 @@ describe('UsersService', () => {
     mockUserModel = MockModel;
     mockUserModel.findOne = vi.fn();
     mockUserModel.findById = vi.fn();
+    mockUserModel.find = vi.fn();
+    mockUserModel.countDocuments = vi.fn();
 
     service = new UsersService(mockUserModel as any);
   });
@@ -276,5 +278,118 @@ describe('UsersService', () => {
 
     const res = await service.removeExperience(validId, expId);
     expect(res.experiences).toHaveLength(0);
+  });
+
+  describe('findAllUsers', () => {
+    it('should return paginated users list with metadata', async () => {
+      mockUserModel.countDocuments.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(15),
+      });
+      const mockUsers = [{ name: 'User 1' }, { name: 'User 2' }];
+      mockUserModel.find.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          sort: vi.fn().mockReturnValue({
+            skip: vi.fn().mockReturnValue({
+              limit: vi.fn().mockReturnValue({
+                exec: vi.fn().mockResolvedValue(mockUsers),
+              }),
+            }),
+          }),
+        }),
+      });
+
+      const result = await service.findAllUsers({ page: 1, limit: 10 });
+      expect(result.users).toEqual(mockUsers);
+      expect(result.total).toBe(15);
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(10);
+      expect(result.totalPages).toBe(2);
+    });
+  });
+
+  describe('deleteUser and restoreUser', () => {
+    const adminId = '507f1f77bcf86cd799439011';
+    const targetUserId = '507f1f77bcf86cd799439022';
+
+    it('should throw BadRequestException if admin attempts to delete own account', async () => {
+      await expect(service.deleteUser(adminId, adminId)).rejects.toThrow(
+        'Administrators cannot delete their own account',
+      );
+    });
+
+    it('should mark target user as deleted', async () => {
+      const mockUser = {
+        _id: targetUserId,
+        name: 'Target User',
+        email: 'target@example.com',
+        isDeleted: false,
+        save: vi.fn().mockImplementation(function (this: any) {
+          return Promise.resolve(this);
+        }),
+      };
+      mockUserModel.findById.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(mockUser),
+      });
+
+      const result = await service.deleteUser(targetUserId, adminId);
+      expect(result.isDeleted).toBe(true);
+      expect(mockUser.isDeleted).toBe(true);
+      expect(mockUser.save).toHaveBeenCalled();
+    });
+
+    it('should restore a deleted user', async () => {
+      const mockUser = {
+        _id: targetUserId,
+        name: 'Target User',
+        email: 'target@example.com',
+        isDeleted: true,
+        save: vi.fn().mockImplementation(function (this: any) {
+          return Promise.resolve(this);
+        }),
+      };
+      mockUserModel.findById.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(mockUser),
+      });
+
+      const result = await service.restoreUser(targetUserId);
+      expect(result.isDeleted).toBe(false);
+      expect(mockUser.isDeleted).toBe(false);
+      expect(mockUser.save).toHaveBeenCalled();
+    });
+  });
+
+  describe('adminUpdateUser', () => {
+    const validId = '507f1f77bcf86cd799439011';
+
+    it('should update user fields by admin', async () => {
+      const mockUser = {
+        _id: validId,
+        name: 'Old Name',
+        email: 'old@example.com',
+        role: 'user',
+        title: 'Junior',
+        save: vi.fn().mockImplementation(function (this: any) {
+          return Promise.resolve(this);
+        }),
+      };
+      mockUserModel.findById.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(mockUser),
+      });
+      mockUserModel.findOne.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(null),
+      });
+
+      const result = await service.adminUpdateUser(validId, {
+        name: 'New Name',
+        email: 'new@example.com',
+        role: 'admin',
+        title: 'Senior Engineer',
+      });
+
+      expect(result.name).toBe('New Name');
+      expect(result.email).toBe('new@example.com');
+      expect(result.role).toBe('admin');
+      expect(result.title).toBe('Senior Engineer');
+    });
   });
 });

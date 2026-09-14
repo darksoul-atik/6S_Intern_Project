@@ -92,6 +92,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    // Check if account has been deleted by an administrator
+    if (user.isDeleted) {
+      console.warn(`[AuthService.login] FAILED: User account "${normalizedEmail}" has been deleted by an admin`);
+      throw new UnauthorizedException(
+        'Your profile has been deleted by an Admin. Please contact support if you believe this was an error.',
+      );
+    }
+
     // Compare with exact password first
     let isPasswordValid = await bcrypt.compare(
       loginDto.password,
@@ -142,8 +150,8 @@ export class AuthService {
 
   async getMe(userId: string): Promise<UserResponseData> {
     const user = await this.usersService.findById(userId);
-    if (!user) {
-      throw new UnauthorizedException('User not found');
+    if (!user || user.isDeleted) {
+      throw new UnauthorizedException('User not found or account has been deleted');
     }
 
     return {
