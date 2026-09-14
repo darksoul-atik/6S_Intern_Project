@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { User, UserSchema } from './schemas/user.schema.js';
 import { UsersService } from './users.service.js';
 import { UsersController } from './users.controller.js';
+import { ProfileOwnerOrAdminGuard } from './guards/profile-owner-or-admin.guard.js';
 
 @Module({
   imports: [
@@ -11,7 +12,7 @@ import { UsersController } from './users.controller.js';
     PassportModule.register({ defaultStrategy: 'jwt' }),
   ],
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [UsersService, ProfileOwnerOrAdminGuard],
   exports: [UsersService, MongooseModule],
 })
 export class UsersModule {}
