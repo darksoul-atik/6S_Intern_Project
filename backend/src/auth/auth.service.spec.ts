@@ -11,6 +11,7 @@ describe('AuthService', () => {
   beforeEach(() => {
     mockUsersService = {
       findByEmail: vi.fn(),
+      findById: vi.fn(),
       create: vi.fn(),
     };
     mockJwtService = {
@@ -96,6 +97,7 @@ describe('AuthService', () => {
       expect(mockUsersService.findByEmail).toHaveBeenCalledWith('alex.chen@devpulse.io');
       expect(mockJwtService.sign).toHaveBeenCalledWith({
         sub: 'user-789',
+        name: 'Alex Chen',
         email: 'alex.chen@devpulse.io',
         role: 'user',
       });
@@ -132,6 +134,40 @@ describe('AuthService', () => {
       };
 
       await expect(authService.login(loginDto)).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('getMe', () => {
+    it('should return user identity and profile attributes including name', async () => {
+      const now = new Date();
+      mockUsersService.findById.mockResolvedValue({
+        _id: 'user-abc',
+        name: 'Sarah Connor',
+        email: 'sarah@sky.net',
+        role: 'user',
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const result = await authService.getMe('user-abc');
+
+      expect(mockUsersService.findById).toHaveBeenCalledWith('user-abc');
+      expect(result).toEqual({
+        id: 'user-abc',
+        name: 'Sarah Connor',
+        email: 'sarah@sky.net',
+        role: 'user',
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
+
+    it('should throw UnauthorizedException if user is not found', async () => {
+      mockUsersService.findById.mockResolvedValue(null);
+
+      await expect(authService.getMe('nonexistent-id')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });

@@ -74,7 +74,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Get current authenticated user identity',
     description:
-      'Extracts and returns verified user identity (id, email, role) from the provided JWT Bearer token.',
+      'Extracts and returns verified user identity (id, name, email, role) for the authenticated session.',
   })
   @ApiResponse({
     status: 200,
@@ -84,12 +84,8 @@ export class AuthController {
     status: 401,
     description: 'Missing or invalid Bearer token',
   })
-  getMe(@CurrentUser() user: AuthenticatedUser) {
-    return {
-      id: user.userId,
-      email: user.email,
-      role: user.role,
-    };
+  async getMe(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.getMe(user.userId);
   }
 
   @Get('admin-check')

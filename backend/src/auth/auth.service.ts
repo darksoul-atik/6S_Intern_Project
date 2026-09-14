@@ -32,6 +32,7 @@ export interface JwtPayload {
   sub: string;
   email: string;
   role: string;
+  name?: string;
 }
 
 @Injectable()
@@ -115,11 +116,12 @@ export class AuthService {
 
     console.log(`[AuthService.login] SUCCESS: "${normalizedEmail}" (role: ${user.role}) authenticated successfully`);
 
-    // Construct JWT payload containing sub (userId), email, and role
+    // Construct JWT payload containing sub (userId), email, role, and name
     const payload: JwtPayload = {
       sub: user._id.toString(),
       email: user.email,
       role: user.role,
+      name: user.name,
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -135,6 +137,22 @@ export class AuthService {
         },
       },
       message: 'Login successful',
+    };
+  }
+
+  async getMe(userId: string): Promise<UserResponseData> {
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     };
   }
 }

@@ -24,6 +24,23 @@ describe('JwtStrategy', () => {
     });
   });
 
+  it('should validate and return authenticated user with name when present', async () => {
+    const payload = {
+      sub: 'user-123',
+      name: 'Alex Chen',
+      email: 'alex@devpulse.io',
+      role: 'user',
+    };
+
+    const user = await strategy.validate(payload);
+    expect(user).toEqual({
+      userId: 'user-123',
+      name: 'Alex Chen',
+      email: 'alex@devpulse.io',
+      role: 'user',
+    });
+  });
+
   it('should throw UnauthorizedException if required claims are missing', async () => {
     const invalidPayload = {
       sub: '',
