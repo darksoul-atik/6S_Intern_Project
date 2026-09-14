@@ -97,9 +97,13 @@ export default function EditProfilePage({ params }: EditPageProps) {
     };
   }, [targetId]);
 
+  // Target Profile ID resolution (with fallback to _id or currentUser.id)
+  const profileId =
+    profile?.id || profile?._id || (targetId !== 'me' ? targetId : currentUser?.id);
+
   // Authorization check
   const isOwner =
-    currentUser && profile && (currentUser.id === profile.id || targetId === 'me');
+    currentUser && (currentUser.id === profileId || targetId === 'me');
   const isAdmin = currentUser?.role === 'admin';
   const canEdit = isOwner || isAdmin;
 
@@ -116,8 +120,11 @@ export default function EditProfilePage({ params }: EditPageProps) {
     setNameError(null);
     setNameSuccess(false);
 
+    const endpoint =
+      targetId === 'me' ? '/api/users/me' : `/api/users/${profileId}`;
+
     try {
-      const res = await apiClient<UserProfile>(`/api/users/${profile.id}`, {
+      const res = await apiClient<UserProfile>(endpoint, {
         method: 'PATCH',
         body: JSON.stringify({ name: name.trim() }),
       });
@@ -168,14 +175,16 @@ export default function EditProfilePage({ params }: EditPageProps) {
     });
     setNewSkillInput('');
 
+    const endpoint =
+      targetId === 'me'
+        ? '/api/users/me/skills'
+        : `/api/users/${profileId}/skills`;
+
     try {
-      const res = await apiClient<UserProfile>(
-        `/api/users/${profile.id}/skills`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ skill: trimmedSkill }),
-        },
-      );
+      const res = await apiClient<UserProfile>(endpoint, {
+        method: 'POST',
+        body: JSON.stringify({ skill: trimmedSkill }),
+      });
       if (res.data) {
         setProfile(res.data);
         setSkillFeedback({
@@ -207,13 +216,15 @@ export default function EditProfilePage({ params }: EditPageProps) {
       skills: previousSkills.filter((s) => s !== skillToRemove),
     });
 
+    const endpoint =
+      targetId === 'me'
+        ? `/api/users/me/skills/${encodeURIComponent(skillToRemove)}`
+        : `/api/users/${profileId}/skills/${encodeURIComponent(skillToRemove)}`;
+
     try {
-      const res = await apiClient<UserProfile>(
-        `/api/users/${profile.id}/skills/${encodeURIComponent(skillToRemove)}`,
-        {
-          method: 'DELETE',
-        },
-      );
+      const res = await apiClient<UserProfile>(endpoint, {
+        method: 'DELETE',
+      });
       if (res.data) {
         setProfile(res.data);
         setSkillFeedback({
@@ -280,13 +291,16 @@ export default function EditProfilePage({ params }: EditPageProps) {
     try {
       if (editingExp) {
         // Update experience
-        const res = await apiClient<UserProfile>(
-          `/api/users/${profile.id}/experiences/${editingExp._id}`,
-          {
-            method: 'PATCH',
-            body: JSON.stringify(payload),
-          },
-        );
+        const expSubId = editingExp._id || editingExp.id;
+        const endpoint =
+          targetId === 'me'
+            ? `/api/users/me/experiences/${expSubId}`
+            : `/api/users/${profileId}/experiences/${expSubId}`;
+
+        const res = await apiClient<UserProfile>(endpoint, {
+          method: 'PATCH',
+          body: JSON.stringify(payload),
+        });
         if (res.data) {
           setProfile(res.data);
           setExpFeedback({
@@ -298,13 +312,15 @@ export default function EditProfilePage({ params }: EditPageProps) {
         }
       } else {
         // Add new experience
-        const res = await apiClient<UserProfile>(
-          `/api/users/${profile.id}/experiences`,
-          {
-            method: 'POST',
-            body: JSON.stringify(payload),
-          },
-        );
+        const endpoint =
+          targetId === 'me'
+            ? '/api/users/me/experiences'
+            : `/api/users/${profileId}/experiences`;
+
+        const res = await apiClient<UserProfile>(endpoint, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
         if (res.data) {
           setProfile(res.data);
           setExpFeedback({
@@ -329,21 +345,28 @@ export default function EditProfilePage({ params }: EditPageProps) {
   // Delete Experience
   const handleDeleteExp = async (expId: string, company: string) => {
     if (!profile) return;
+    if (!confirm(`Are you sure you want to remove experience at ${company}?`)) {
+      return;
+    }
 
     // Optimistic remove
     const previousExps = [...(profile.experiences || [])];
     setProfile({
       ...profile,
-      experiences: previousExps.filter((e) => e._id !== expId),
+      experiences: previousExps.filter(
+        (e) => (e._id || e.id) !== expId,
+      ),
     });
 
+    const endpoint =
+      targetId === 'me'
+        ? `/api/users/me/experiences/${expId}`
+        : `/api/users/${profileId}/experiences/${expId}`;
+
     try {
-      const res = await apiClient<UserProfile>(
-        `/api/users/${profile.id}/experiences/${expId}`,
-        {
-          method: 'DELETE',
-        },
-      );
+      const res = await apiClient<UserProfile>(endpoint, {
+        method: 'DELETE',
+      });
       if (res.data) {
         setProfile(res.data);
         setExpFeedback({
@@ -366,30 +389,56 @@ export default function EditProfilePage({ params }: EditPageProps) {
   }
 
   if (error || !profile) {
-    const is404 = error?.includes('404') || error?.toLowerCase().includes('not found');
+    const is401 =
+      error?.includes('401') ||
+      error?.toLowerCase().includes('unauthorized') ||
+      error?.toLowerCase().includes('active session');
+    const is404 =
+      error?.includes('404') || error?.toLowerCase().includes('not found');
 
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 font-sans">
         <div className="max-w-md w-full rounded-3xl border border-slate-200/80 bg-white/90 p-8 text-center backdrop-blur-2xl shadow-xl space-y-4">
-          <div className="h-14 w-14 rounded-2xl bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center mx-auto text-xl font-bold font-mono shadow-sm">
-            {is404 ? '404' : '!'}
+          <div
+            className={`h-14 w-14 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold font-mono shadow-sm ${
+              is401
+                ? 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                : 'bg-rose-100 text-rose-700 border border-rose-200'
+            }`}
+          >
+            {is401 ? '401' : is404 ? '404' : '!'}
           </div>
           <h2 className="text-xl font-bold font-manrope text-slate-900">
-            {is404 ? 'Developer Not Found' : 'Error Accessing Profile'}
+            {is401
+              ? 'Authentication Required'
+              : is404
+              ? 'Developer Not Found'
+              : 'Error Accessing Profile'}
           </h2>
           <p className="text-sm text-slate-600 font-sans leading-relaxed">
-            {is404
+            {is401
+              ? 'Please sign in to your DevPulse account to edit this profile.'
+              : is404
               ? 'The developer profile you are attempting to edit does not exist or has been removed.'
               : error || 'Unable to access profile for editing.'}
           </p>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              href="/dashboard"
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 text-white px-5 py-2.5 text-xs font-semibold hover:bg-slate-800 transition-all shadow-xs"
-            >
-              <FiArrowLeft className="h-4 w-4" />
-              <span>Return to Dashboard</span>
-            </Link>
+            {is401 ? (
+              <Link
+                href="/login"
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-indigo-600 text-white px-5 py-2.5 text-xs font-semibold hover:bg-indigo-500 transition-all shadow-xs"
+              >
+                <span>Sign In to DevPulse</span>
+              </Link>
+            ) : (
+              <Link
+                href="/dashboard"
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 text-white px-5 py-2.5 text-xs font-semibold hover:bg-slate-800 transition-all shadow-xs"
+              >
+                <FiArrowLeft className="h-4 w-4" />
+                <span>Return to Dashboard</span>
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -411,7 +460,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
           </p>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              href={`/profile/${profile.id}`}
+              href={`/profile/${profileId || 'me'}`}
               className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 text-white px-5 py-2.5 text-xs font-semibold hover:bg-slate-800 transition-all shadow-xs"
             >
               <FiArrowLeft className="h-4 w-4" />
@@ -446,7 +495,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
           {/* Header Navigation */}
           <div className="flex items-center justify-between">
             <Link
-              href={`/profile/${profile.id}`}
+              href={`/profile/${profileId || 'me'}`}
               className="inline-flex items-center space-x-2 text-xs font-semibold font-manrope text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-slate-200/70 rounded-xl px-3.5 py-2 backdrop-blur-md shadow-xs transition-all"
             >
               <FiArrowLeft className="h-3.5 w-3.5" />
@@ -454,7 +503,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
             </Link>
 
             <span className="text-xs font-mono text-slate-500 bg-white/60 px-3 py-1.5 rounded-xl border border-slate-200/60">
-              Editing: {profile.id}
+              Editing: {profileId || 'My Profile'}
             </span>
           </div>
 
@@ -671,7 +720,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
             </div>
           </motion.div>
 
-          {/* Section 3: Work Experiences Management (Commit 10 feature) */}
+          {/* Section 3: Work Experiences Management */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -730,58 +779,61 @@ export default function EditProfilePage({ params }: EditPageProps) {
             {/* Experiences List */}
             {profile.experiences && profile.experiences.length > 0 ? (
               <div className="space-y-4 pt-1">
-                {profile.experiences.map((exp) => (
-                  <div
-                    key={exp._id}
-                    className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white/90 p-4 sm:p-5 shadow-2xs hover:shadow-xs hover:border-emerald-200 transition-all"
-                  >
-                    <div className="space-y-1.5 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-sm sm:text-base font-bold font-manrope text-slate-900">
-                          {exp.title}
-                        </h3>
-                        <span className="text-xs font-semibold text-emerald-600 font-sans">
-                          @{exp.company}
-                        </span>
+                {profile.experiences.map((exp) => {
+                  const expId = exp._id || exp.id || '';
+                  return (
+                    <div
+                      key={expId}
+                      className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white/90 p-4 sm:p-5 shadow-2xs hover:shadow-xs hover:border-emerald-200 transition-all"
+                    >
+                      <div className="space-y-1.5 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-sm sm:text-base font-bold font-manrope text-slate-900">
+                            {exp.title}
+                          </h3>
+                          <span className="text-xs font-semibold text-emerald-600 font-sans">
+                            @{exp.company}
+                          </span>
+                        </div>
+
+                        <div className="inline-flex items-center space-x-1.5 text-[11px] font-mono text-slate-500 bg-slate-100/80 px-2.5 py-0.5 rounded-lg">
+                          <FiCalendar className="h-3 w-3 text-slate-400" />
+                          <span>
+                            {exp.from} – {exp.to || 'Present'}
+                          </span>
+                        </div>
+
+                        {exp.description && (
+                          <p className="text-xs text-slate-600 font-sans leading-relaxed pt-1">
+                            {exp.description}
+                          </p>
+                        )}
                       </div>
 
-                      <div className="inline-flex items-center space-x-1.5 text-[11px] font-mono text-slate-500 bg-slate-100/80 px-2.5 py-0.5 rounded-lg">
-                        <FiCalendar className="h-3 w-3 text-slate-400" />
-                        <span>
-                          {exp.from} – {exp.to || 'Present'}
-                        </span>
+                      {/* Action buttons */}
+                      <div className="flex items-center space-x-2 self-end sm:self-start">
+                        <button
+                          type="button"
+                          aria-label="Edit experience"
+                          onClick={() => handleOpenEditExp(exp)}
+                          className="inline-flex items-center space-x-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white hover:border-indigo-300 text-slate-700 hover:text-indigo-600 px-2.5 py-1.5 text-xs font-medium transition-all cursor-pointer"
+                        >
+                          <FiEdit3 className="h-3.5 w-3.5" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Delete experience"
+                          onClick={() => handleDeleteExp(expId, exp.company)}
+                          className="inline-flex items-center space-x-1 rounded-lg border border-rose-200 bg-rose-50/60 hover:bg-rose-100 hover:border-rose-300 text-rose-700 px-2.5 py-1.5 text-xs font-medium transition-all cursor-pointer"
+                        >
+                          <FiTrash2 className="h-3.5 w-3.5" />
+                          <span>Delete</span>
+                        </button>
                       </div>
-
-                      {exp.description && (
-                        <p className="text-xs text-slate-600 font-sans leading-relaxed pt-1">
-                          {exp.description}
-                        </p>
-                      )}
                     </div>
-
-                    {/* Action buttons */}
-                    <div className="flex items-center space-x-2 self-end sm:self-start">
-                      <button
-                        type="button"
-                        aria-label="Edit experience"
-                        onClick={() => handleOpenEditExp(exp)}
-                        className="inline-flex items-center space-x-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white hover:border-indigo-300 text-slate-700 hover:text-indigo-600 px-2.5 py-1.5 text-xs font-medium transition-all cursor-pointer"
-                      >
-                        <FiEdit3 className="h-3.5 w-3.5" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Delete experience"
-                        onClick={() => handleDeleteExp(exp._id, exp.company)}
-                        className="inline-flex items-center space-x-1 rounded-lg border border-rose-200 bg-rose-50/60 hover:bg-rose-100 hover:border-rose-300 text-rose-700 px-2.5 py-1.5 text-xs font-medium transition-all cursor-pointer"
-                      >
-                        <FiTrash2 className="h-3.5 w-3.5" />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center space-y-2">

@@ -65,15 +65,17 @@ export default function ProfileViewPage({ params }: PageProps) {
     };
   }, [targetId]);
 
+  const profileId =
+    profile?.id || profile?._id || (targetId !== 'me' ? targetId : currentUser?.id);
   const isOwner =
-    currentUser && profile && (currentUser.id === profile.id || targetId === 'me');
+    currentUser && (currentUser.id === profileId || targetId === 'me');
   const isAdmin = currentUser?.role === 'admin';
   const canEdit = Boolean(isOwner || isAdmin);
 
   const handleShare = () => {
     if (typeof window !== 'undefined') {
-      const shareUrl = profile
-        ? `${window.location.origin}/profile/${profile.id}`
+      const shareUrl = profileId
+        ? `${window.location.origin}/profile/${profileId}`
         : window.location.href;
       navigator.clipboard.writeText(shareUrl);
       setCopied(true);
@@ -86,43 +88,66 @@ export default function ProfileViewPage({ params }: PageProps) {
   }
 
   if (error || !profile) {
-    const is404 = error?.includes('404') || error?.toLowerCase().includes('not found');
-    const is403 = error?.includes('403') || error?.toLowerCase().includes('permission') || error?.toLowerCase().includes('forbidden');
+    const is401 =
+      error?.includes('401') ||
+      error?.toLowerCase().includes('unauthorized') ||
+      error?.toLowerCase().includes('active session');
+    const is404 =
+      error?.includes('404') || error?.toLowerCase().includes('not found');
+    const is403 =
+      error?.includes('403') ||
+      error?.toLowerCase().includes('permission') ||
+      error?.toLowerCase().includes('forbidden');
 
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 font-sans">
         <div className="max-w-md w-full rounded-3xl border border-slate-200/80 bg-white/90 p-8 text-center backdrop-blur-2xl shadow-xl space-y-4">
           <div
             className={`h-14 w-14 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold font-mono shadow-sm ${
-              is403
+              is401
+                ? 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                : is403
                 ? 'bg-amber-100 text-amber-700 border border-amber-200'
                 : 'bg-rose-100 text-rose-700 border border-rose-200'
             }`}
           >
-            {is403 ? '403' : is404 ? '404' : '!'}
+            {is401 ? '401' : is403 ? '403' : is404 ? '404' : '!'}
           </div>
           <h2 className="text-xl font-bold font-manrope text-slate-900">
-            {is403
+            {is401
+              ? 'Authentication Required'
+              : is403
               ? 'Access Forbidden'
               : is404
               ? 'Developer Not Found'
               : 'Profile Unavailable'}
           </h2>
           <p className="text-sm text-slate-600 font-sans leading-relaxed">
-            {is403
+            {is401
+              ? 'Please sign in to your DevPulse account to view this profile.'
+              : is403
               ? 'You do not have authorization to access this profile data.'
               : is404
               ? 'The requested developer profile does not exist or has been removed.'
               : error || 'Unable to load profile at this time.'}
           </p>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              href="/dashboard"
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 text-white px-5 py-2.5 text-xs font-semibold hover:bg-slate-800 transition-all shadow-xs"
-            >
-              <FiArrowLeft className="h-4 w-4" />
-              <span>Return to Dashboard</span>
-            </Link>
+            {is401 ? (
+              <Link
+                href="/login"
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-indigo-600 text-white px-5 py-2.5 text-xs font-semibold hover:bg-indigo-500 transition-all shadow-xs"
+              >
+                <span>Sign In to DevPulse</span>
+              </Link>
+            ) : (
+              <Link
+                href="/dashboard"
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 text-white px-5 py-2.5 text-xs font-semibold hover:bg-slate-800 transition-all shadow-xs"
+              >
+                <FiArrowLeft className="h-4 w-4" />
+                <span>Return to Dashboard</span>
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -197,7 +222,7 @@ export default function ProfileViewPage({ params }: PageProps) {
 
               {canEdit && (
                 <Link
-                  href={`/profile/${profile.id}/edit`}
+                  href={`/profile/${profileId}/edit`}
                   id="edit-profile-btn"
                   className="inline-flex items-center space-x-2 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white px-4 py-2 text-xs font-semibold font-manrope shadow-[0_4px_16px_rgba(79,70,229,0.3)] hover:shadow-[0_6px_22px_rgba(79,70,229,0.45)] transition-all cursor-pointer"
                 >
@@ -315,7 +340,7 @@ export default function ProfileViewPage({ params }: PageProps) {
                   </p>
                   {canEdit && (
                     <Link
-                      href={`/profile/${profile.id}/edit`}
+                      href={`/profile/${profileId}/edit`}
                       className="inline-block text-xs font-semibold text-indigo-600 hover:text-indigo-500 hover:underline"
                     >
                       + Add your skills
@@ -389,7 +414,7 @@ export default function ProfileViewPage({ params }: PageProps) {
                   </p>
                   {canEdit && (
                     <Link
-                      href={`/profile/${profile.id}/edit`}
+                      href={`/profile/${profileId}/edit`}
                       className="inline-block text-xs font-semibold text-indigo-600 hover:text-indigo-500 hover:underline"
                     >
                       + Add work experience

@@ -1,5 +1,6 @@
 export interface Experience {
   _id: string;
+  id?: string;
   title: string;
   company: string;
   from: string;
@@ -9,6 +10,7 @@ export interface Experience {
 
 export interface UserProfile {
   id: string;
+  _id?: string;
   name: string;
   email?: string;
   role: 'user' | 'admin';

@@ -5,7 +5,17 @@ export type UserDocument = HydratedDocument<User>;
 
 export type UserRole = 'admin' | 'user';
 
-@Schema({ timestamps: true })
+@Schema({
+  timestamps: true,
+  toJSON: {
+    transform: (_doc, ret: Record<string, unknown>) => {
+      if (ret._id) {
+        ret.id = ret._id.toString();
+      }
+      return ret;
+    },
+  },
+})
 export class Experience {
   _id?: Types.ObjectId;
 
@@ -34,6 +44,9 @@ export const ExperienceSchema = SchemaFactory.createForClass(Experience);
   timestamps: true,
   toJSON: {
     transform: (_doc, ret: Record<string, unknown>) => {
+      if (ret._id) {
+        ret.id = ret._id.toString();
+      }
       delete ret.passwordHash;
       return ret;
     },
