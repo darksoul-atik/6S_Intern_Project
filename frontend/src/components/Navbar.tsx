@@ -1,12 +1,19 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { FiMenu, FiX } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 
 export function Navbar() {
   const pathname = usePathname();
   const { user, isAuthenticated, logout, isLoading } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   // Hide navbar on public landing and auth pages (root, login, signup) to prevent duplication
   if (pathname === '/' || pathname === '/login' || pathname === '/signup') {
@@ -75,7 +82,7 @@ export function Navbar() {
                         : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
                     }`}
                   >
-                    Admin Users
+                    User List
                   </Link>
                 )}
               </>
@@ -96,7 +103,7 @@ export function Navbar() {
                 className="flex items-center space-x-2 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] px-2.5 sm:px-3 py-1.5 backdrop-blur-md shadow-xs transition-colors group cursor-pointer"
               >
                 <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                <span className="text-xs font-medium text-zinc-200 group-hover:text-white max-w-[85px] xs:max-w-[130px] sm:max-w-[200px] md:max-w-none truncate font-sans">
+                <span className="text-xs font-medium text-zinc-200 group-hover:text-white max-w-[100px] min-[400px]:max-w-[150px] sm:max-w-[200px] md:max-w-none truncate font-sans">
                   {user.name || user.email}
                 </span>
                 <span
@@ -120,6 +127,16 @@ export function Navbar() {
               >
                 Logout
               </button>
+
+              {/* Mobile Menu Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle navigation menu"
+                className="sm:hidden p-2 rounded-xl border border-white/10 bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                {mobileMenuOpen ? <FiX className="h-4 w-4" /> : <FiMenu className="h-4 w-4" />}
+              </button>
             </div>
           ) : (
             <div className="flex items-center space-x-2">
@@ -139,6 +156,47 @@ export function Navbar() {
           )}
         </div>
       </div>
+
+      {/* Mobile Navigation Dropdown */}
+      {isAuthenticated && mobileMenuOpen && (
+        <div className="sm:hidden border-t border-white/10 bg-[#090d16]/98 px-4 py-3 space-y-1.5 backdrop-blur-2xl shadow-xl">
+          <Link
+            href="/dashboard"
+            onClick={() => setMobileMenuOpen(false)}
+            className={`block rounded-xl px-3.5 py-2 text-xs font-semibold font-manrope transition-colors ${
+              pathname.startsWith('/dashboard')
+                ? 'bg-white/10 text-white shadow-xs'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+            }`}
+          >
+            Dashboard
+          </Link>
+          <Link
+            href="/profile/me"
+            onClick={() => setMobileMenuOpen(false)}
+            className={`block rounded-xl px-3.5 py-2 text-xs font-semibold font-manrope transition-colors ${
+              pathname.startsWith('/profile')
+                ? 'bg-white/10 text-white shadow-xs'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+            }`}
+          >
+            Profile
+          </Link>
+          {user?.role === 'admin' && (
+            <Link
+              href="/admin/users"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`block rounded-xl px-3.5 py-2 text-xs font-semibold font-manrope transition-colors ${
+                pathname.startsWith('/admin')
+                  ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 shadow-xs'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+              }`}
+            >
+              User List
+            </Link>
+          )}
+        </div>
+      )}
     </header>
   );
 }

@@ -155,6 +155,10 @@ export default function AdminUsersPage() {
   );
 
   useEffect(() => {
+    document.title = 'User List — DevPulse';
+  }, []);
+
+  useEffect(() => {
     if (!authLoading && isAuthenticated && currentUser?.role === 'admin') {
       fetchUsers(currentPage, searchQuery);
     }
@@ -315,7 +319,7 @@ export default function AdminUsersPage() {
         aria-hidden="true"
       />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 space-y-6 sm:space-y-8">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 space-y-6 sm:space-y-8">
         
         {/* Toast Notification */}
         <AnimatePresence>
@@ -352,17 +356,17 @@ export default function AdminUsersPage() {
           <div className="space-y-1.5">
             <div className="inline-flex items-center space-x-2 rounded-full border border-indigo-200/60 bg-indigo-50/80 px-3 py-0.5 text-[11px] font-semibold text-indigo-700 font-manrope">
               <FiShield className="h-3 w-3" />
-              <span>Admin Operations</span>
+              <span>Admin Portal</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold font-manrope tracking-tight text-slate-900">
-              User Management & Directory
+              User List
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 font-sans max-w-2xl leading-relaxed">
-              Full directory of registered developers. Inspect user identities, edit profile details, manage access permissions, or soft-delete accounts with customized login rejection notices.
+              Directory of all registered developers. View user identities, edit profile details, or manage access permissions.
             </p>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 shrink-0">
             <button
               type="button"
               onClick={() => fetchUsers(currentPage, searchQuery)}
@@ -373,78 +377,84 @@ export default function AdminUsersPage() {
               <span>Refresh</span>
             </button>
           </div>
-        </div>
-
-        {/* KPI Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        </div>        {/* KPI Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Card 1: Total */}
-          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-4 sm:p-5 backdrop-blur-md shadow-xs">
-            <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope">
-              <span>Total Users</span>
-              <div className="h-7 w-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-5 backdrop-blur-md shadow-xs min-w-0">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope gap-1">
+              <span className="truncate">Total Users</span>
+              <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                 <FiUsers className="h-3.5 w-3.5" />
               </div>
             </div>
-            <div className="mt-2 text-2xl sm:text-3xl font-bold font-manrope text-slate-900">
+            <div className="mt-1.5 sm:mt-2 text-xl sm:text-3xl font-bold font-manrope text-slate-900 tracking-tight">
               {totalUsers}
             </div>
-            <span className="text-[10px] text-slate-400 font-sans">Across whole platform</span>
+            <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block truncate">
+              Across whole platform
+            </span>
           </div>
 
           {/* Card 2: Active */}
-          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-4 sm:p-5 backdrop-blur-md shadow-xs">
-            <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope">
-              <span>Active Accounts</span>
-              <div className="h-7 w-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-5 backdrop-blur-md shadow-xs min-w-0">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope gap-1">
+              <span className="truncate">Active Accounts</span>
+              <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                 <FiUserCheck className="h-3.5 w-3.5" />
               </div>
             </div>
-            <div className="mt-2 text-2xl sm:text-3xl font-bold font-manrope text-emerald-600">
+            <div className="mt-1.5 sm:mt-2 text-xl sm:text-3xl font-bold font-manrope text-emerald-600 tracking-tight">
               {activeCount}
             </div>
-            <span className="text-[10px] text-slate-400 font-sans">Permitted to sign in</span>
+            <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block truncate">
+              Permitted to sign in
+            </span>
           </div>
 
           {/* Card 3: Deleted / Blocked */}
-          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-4 sm:p-5 backdrop-blur-md shadow-xs">
-            <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope">
-              <span>Deleted / Suspended</span>
-              <div className="h-7 w-7 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-5 backdrop-blur-md shadow-xs min-w-0">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope gap-1">
+              <span className="truncate">Deleted Accounts</span>
+              <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
                 <FiUserX className="h-3.5 w-3.5" />
               </div>
             </div>
-            <div className="mt-2 text-2xl sm:text-3xl font-bold font-manrope text-rose-600">
+            <div className="mt-1.5 sm:mt-2 text-xl sm:text-3xl font-bold font-manrope text-rose-600 tracking-tight">
               {deletedCount}
             </div>
-            <span className="text-[10px] text-slate-400 font-sans">Blocked with notice</span>
+            <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block truncate">
+              Blocked with notice
+            </span>
           </div>
 
           {/* Card 4: Admins */}
-          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-4 sm:p-5 backdrop-blur-md shadow-xs">
-            <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope">
-              <span>Admins</span>
-              <div className="h-7 w-7 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+          <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-5 backdrop-blur-md shadow-xs min-w-0">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope gap-1">
+              <span className="truncate">Admins</span>
+              <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
                 <FiShield className="h-3.5 w-3.5" />
               </div>
             </div>
-            <div className="mt-2 text-2xl sm:text-3xl font-bold font-manrope text-purple-700">
+            <div className="mt-1.5 sm:mt-2 text-xl sm:text-3xl font-bold font-manrope text-purple-700 tracking-tight">
               {adminCount}
             </div>
-            <span className="text-[10px] text-slate-400 font-sans">Elevated privileges</span>
+            <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block truncate">
+              Elevated privileges
+            </span>
           </div>
         </div>
 
         {/* Filter and Search Toolbar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white/90 border border-slate-200/80 rounded-2xl p-3 sm:p-4 shadow-xs">
           {/* Search Form */}
-          <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
+          <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md min-w-0">
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name, email, or title..."
-              className="w-full pl-9 pr-20 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900 placeholder-slate-400"
+              className="w-full pl-9 pr-28 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900 placeholder-slate-400"
             />
             {searchQuery && (
               <button
@@ -453,7 +463,7 @@ export default function AdminUsersPage() {
                   setSearchQuery('');
                   fetchUsers(1, '');
                 }}
-                className="absolute right-12 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-[11px]"
+                className="absolute right-16 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-[11px]"
               >
                 Clear
               </button>
@@ -466,12 +476,12 @@ export default function AdminUsersPage() {
             </button>
           </form>
 
-          {/* Status Tabs */}
-          <div className="flex items-center space-x-1.5 border border-slate-200/80 bg-slate-100/70 p-1 rounded-xl">
+          {/* Filter Tabs */}
+          <div className="flex items-center space-x-1 border border-slate-200/80 bg-slate-100/70 p-1 rounded-xl shrink-0 overflow-x-auto w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setActiveFilter('all')}
-              className={`px-3 py-1 text-xs font-semibold font-manrope rounded-lg transition-all ${
+              className={`px-3 py-1.5 text-xs font-semibold font-manrope rounded-lg transition-all whitespace-nowrap flex-1 sm:flex-initial text-center ${
                 activeFilter === 'all'
                   ? 'bg-white text-slate-900 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -482,34 +492,34 @@ export default function AdminUsersPage() {
             <button
               type="button"
               onClick={() => setActiveFilter('active')}
-              className={`px-3 py-1 text-xs font-semibold font-manrope rounded-lg transition-all ${
+              className={`px-3 py-1.5 text-xs font-semibold font-manrope rounded-lg transition-all whitespace-nowrap flex-1 sm:flex-initial text-center ${
                 activeFilter === 'active'
                   ? 'bg-white text-emerald-700 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Active
+              Active ({activeCount})
             </button>
             <button
               type="button"
               onClick={() => setActiveFilter('deleted')}
-              className={`px-3 py-1 text-xs font-semibold font-manrope rounded-lg transition-all ${
+              className={`px-3 py-1.5 text-xs font-semibold font-manrope rounded-lg transition-all whitespace-nowrap flex-1 sm:flex-initial text-center ${
                 activeFilter === 'deleted'
                   ? 'bg-white text-rose-700 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Deleted
+              Deleted ({deletedCount})
             </button>
           </div>
         </div>
 
-        {/* Users Table / Directory */}
+        {/* Users Directory Card / Table */}
         <div className="bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
           {isLoading ? (
             <div className="p-12 text-center space-y-3">
               <div className="inline-block h-8 w-8 border-3 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
-              <p className="text-xs text-slate-500 font-medium font-manrope">Loading registered developers...</p>
+              <p className="text-xs text-slate-500 font-medium font-manrope">Loading developers...</p>
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="p-12 text-center space-y-3">
@@ -524,248 +534,373 @@ export default function AdminUsersPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200/80 bg-slate-50/70 text-[11px] font-semibold font-manrope uppercase tracking-wider text-slate-500">
-                    <th className="py-3.5 px-4 sm:px-6">User / Developer</th>
-                    <th className="py-3.5 px-4">Contact Email</th>
-                    <th className="py-3.5 px-4">Date Created</th>
-                    <th className="py-3.5 px-4">Role</th>
-                    <th className="py-3.5 px-4">Status</th>
-                    <th className="py-3.5 px-4 sm:px-6 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
-                  {filteredUsers.map((u) => {
-                    const isSelf = u.id === currentUser?.id;
-                    return (
-                      <tr
-                        key={u.id}
-                        className={`transition-colors hover:bg-slate-50/70 ${
-                          u.isDeleted ? 'bg-rose-50/30' : ''
-                        }`}
-                      >
-                        {/* Avatar & Name */}
-                        <td className="py-3.5 px-4 sm:px-6">
-                          <div className="flex items-center space-x-3">
-                            <div className="relative h-10 w-10 sm:h-11 sm:w-11 rounded-2xl p-[1px] bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-400 shrink-0 shadow-2xs">
-                              <div className="flex h-full w-full items-center justify-center rounded-[15px] bg-[#0c101c] overflow-hidden">
-                                {u.avatarUrl ? (
-                                  <img
-                                    src={u.avatarUrl}
-                                    alt={u.name}
-                                    className="h-full w-full object-cover"
-                                  />
+            <>
+              {/* Desktop Table (Visible on lg+: min-w-[980px] ensures generous space and zero squeezing) */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[980px]">
+                  <thead>
+                    <tr className="border-b border-slate-200/80 bg-slate-50/70 text-[11px] font-semibold font-manrope uppercase tracking-wider text-slate-500">
+                      <th className="py-4 px-6 min-w-[260px]">User / Developer</th>
+                      <th className="py-4 px-6 min-w-[240px]">Contact Email</th>
+                      <th className="py-4 px-6 min-w-[150px] whitespace-nowrap">Date Created</th>
+                      <th className="py-4 px-6 min-w-[170px] whitespace-nowrap">Role</th>
+                      <th className="py-4 px-6 text-right min-w-[200px] whitespace-nowrap">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {filteredUsers.map((u) => {
+                      const isSelf = u.id === currentUser?.id;
+                      return (
+                        <tr
+                          key={u.id}
+                          className={`transition-colors hover:bg-slate-50/70 ${
+                            u.isDeleted ? 'bg-rose-50/30' : ''
+                          }`}
+                        >
+                          {/* Avatar & Name */}
+                          <td className="py-4 px-6">
+                            <div className="flex items-center space-x-3.5 min-w-0">
+                              <div className="relative h-11 w-11 rounded-2xl p-[1px] bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-400 shrink-0 shadow-2xs">
+                                <div className="flex h-full w-full items-center justify-center rounded-[15px] bg-[#0c101c] overflow-hidden">
+                                  {u.avatarUrl ? (
+                                    <img
+                                      src={u.avatarUrl}
+                                      alt={u.name}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="text-xs font-bold font-manrope text-white">
+                                      {getInitials(u.name)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="space-y-0.5 min-w-0">
+                                <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                                  <span className="font-semibold font-manrope text-slate-900 text-sm whitespace-nowrap">
+                                    {u.name}
+                                  </span>
+                                  {isSelf && (
+                                    <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-indigo-100 text-indigo-700 font-manrope shrink-0 whitespace-nowrap">
+                                      You
+                                    </span>
+                                  )}
+                                  {u.isDeleted && (
+                                    <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-rose-100 text-rose-700 border border-rose-200 shrink-0 whitespace-nowrap">
+                                      Deleted
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-slate-500 font-sans truncate max-w-[200px]">
+                                  {u.title || 'Developer'}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Email */}
+                          <td className="py-4 px-6 whitespace-nowrap">
+                            <div className="inline-flex items-center space-x-2 font-sans text-xs text-slate-700">
+                              <FiMail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                              <span className="font-mono text-xs">{u.email}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyEmail(u.email)}
+                                title="Copy email address"
+                                className="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-100 transition-colors shrink-0"
+                              >
+                                {copiedEmail === u.email ? (
+                                  <FiCheck className="h-3.5 w-3.5 text-emerald-600" />
                                 ) : (
-                                  <span className="text-xs font-bold font-manrope text-white">
-                                    {getInitials(u.name)}
-                                  </span>
+                                  <FiCopy className="h-3.5 w-3.5" />
                                 )}
-                              </div>
+                              </button>
                             </div>
-                            <div className="space-y-0.5 max-w-[180px] sm:max-w-xs">
-                              <div className="flex items-center space-x-2">
-                                <span className="font-semibold font-manrope text-slate-900 truncate">
-                                  {u.name}
-                                </span>
-                                {isSelf && (
-                                  <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-indigo-100 text-indigo-700 font-manrope">
-                                    You
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-[11px] text-slate-500 truncate font-sans">
-                                {u.title || 'Developer'}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* Email */}
-                        <td className="py-3.5 px-4">
-                          <div className="flex items-center space-x-1.5 font-sans text-slate-600">
-                            <FiMail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                            <span className="truncate max-w-[150px] sm:max-w-none">{u.email}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleCopyEmail(u.email)}
-                              title="Copy email address"
-                              className="text-slate-400 hover:text-slate-700 p-0.5 rounded"
-                            >
-                              {copiedEmail === u.email ? (
-                                <FiCheck className="h-3 w-3 text-emerald-600" />
+                          {/* Created Date */}
+                          <td className="py-4 px-6 whitespace-nowrap">
+                            <div className="inline-flex items-center space-x-2 text-slate-600 font-sans text-xs">
+                              <FiCalendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                              <span>{formatDate(u.createdAt)}</span>
+                            </div>
+                          </td>
+
+                          {/* Role */}
+                          <td className="py-4 px-6 whitespace-nowrap">
+                            {u.role === 'admin' ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-manrope bg-purple-50 text-purple-700 border border-purple-200/80 whitespace-nowrap">
+                                <FiShield className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                                <span>Administrator</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-manrope bg-slate-100 text-slate-700 border border-slate-200/90 whitespace-nowrap">
+                                <FiCheckCircle className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                                <span>Verified User</span>
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-4 px-6 text-right whitespace-nowrap">
+                            <div className="inline-flex items-center justify-end space-x-2">
+                              {/* View Profile */}
+                              <Link
+                                href={`/profile/${u.id}`}
+                                target="_blank"
+                                title="View Developer Profile"
+                                className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition-colors border border-transparent hover:border-slate-200 shrink-0"
+                              >
+                                <FiExternalLink className="h-4 w-4" />
+                              </Link>
+
+                              {/* Edit Button */}
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(u)}
+                                title="Edit user details"
+                                className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-slate-700 hover:text-indigo-700 bg-slate-100 hover:bg-indigo-50 border border-slate-200 rounded-xl font-manrope text-xs font-semibold transition-colors shrink-0 whitespace-nowrap"
+                              >
+                                <FiEdit3 className="h-3.5 w-3.5" />
+                                <span>Edit</span>
+                              </button>
+
+                              {/* Delete or Restore */}
+                              {u.isDeleted ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRestoreUser(u)}
+                                  title="Restore user account"
+                                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl font-manrope text-xs font-semibold transition-colors shrink-0 whitespace-nowrap"
+                                >
+                                  <FiRotateCcw className="h-3.5 w-3.5" />
+                                  <span>Restore</span>
+                                </button>
                               ) : (
-                                <FiCopy className="h-3 w-3" />
+                                <button
+                                  type="button"
+                                  disabled={isSelf}
+                                  onClick={() => setDeletingUser(u)}
+                                  title={isSelf ? 'Cannot delete own admin account' : 'Delete user account'}
+                                  className={`inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl font-manrope text-xs font-semibold transition-colors shrink-0 whitespace-nowrap ${
+                                    isSelf ? 'opacity-40 cursor-not-allowed' : ''
+                                  }`}
+                                >
+                                  <FiTrash2 className="h-3.5 w-3.5" />
+                                  <span>Delete</span>
+                                </button>
                               )}
-                            </button>
-                          </div>
-                        </td>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
-                        {/* Created Date */}
-                        <td className="py-3.5 px-4">
-                          <div className="inline-flex items-center space-x-1.5 text-slate-500 font-sans text-xs">
-                            <FiCalendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                            <span>{formatDate(u.createdAt)}</span>
+              {/* Mobile / Tablet Responsive Card View (< lg: Beautiful Card View so NO text is squeezed) */}
+              <div className="block lg:hidden divide-y divide-slate-100">
+                {filteredUsers.map((u) => {
+                  const isSelf = u.id === currentUser?.id;
+                  return (
+                    <div
+                      key={u.id}
+                      className={`p-4 sm:p-5 space-y-3.5 transition-colors ${
+                        u.isDeleted ? 'bg-rose-50/30' : 'hover:bg-slate-50/40'
+                      }`}
+                    >
+                      {/* User Top Row: Avatar + Name + Badges */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center space-x-3 min-w-0">
+                          <div className="relative h-11 w-11 rounded-2xl p-[1px] bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-400 shrink-0 shadow-2xs">
+                            <div className="flex h-full w-full items-center justify-center rounded-[15px] bg-[#0c101c] overflow-hidden">
+                              {u.avatarUrl ? (
+                                <img
+                                  src={u.avatarUrl}
+                                  alt={u.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-xs font-bold font-manrope text-white">
+                                  {getInitials(u.name)}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </td>
+                          <div className="min-w-0 space-y-0.5">
+                            <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                              <h4 className="font-semibold font-manrope text-slate-900 text-sm">
+                                {u.name}
+                              </h4>
+                              {isSelf && (
+                                <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-indigo-100 text-indigo-700 font-manrope shrink-0">
+                                  You
+                                </span>
+                              )}
+                              {u.isDeleted && (
+                                <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-rose-100 text-rose-700 border border-rose-200 shrink-0">
+                                  Deleted
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500 font-sans truncate">
+                              {u.title || 'Developer'}
+                            </p>
+                          </div>
+                        </div>
 
-                        {/* Role */}
-                        <td className="py-3.5 px-4">
+                        {/* Role Badge */}
+                        <div className="shrink-0">
                           {u.role === 'admin' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold font-manrope bg-purple-50 text-purple-700 border border-purple-200/80">
-                              <FiShield className="h-3 w-3 text-purple-600" />
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold font-manrope bg-purple-50 text-purple-700 border border-purple-200/80 whitespace-nowrap">
+                              <FiShield className="h-3 w-3 text-purple-600 shrink-0" />
                               <span>Admin</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold font-manrope bg-slate-100 text-slate-700 border border-slate-200/90">
-                              <FiCheckCircle className="h-3 w-3 text-indigo-600" />
-                              <span>Verified User</span>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold font-manrope bg-slate-100 text-slate-700 border border-slate-200/90 whitespace-nowrap">
+                              <FiCheckCircle className="h-3 w-3 text-indigo-600 shrink-0" />
+                              <span>User</span>
                             </span>
                           )}
-                        </td>
+                        </div>
+                      </div>
 
-                        {/* Status */}
-                        <td className="py-3.5 px-4">
-                          {u.isDeleted ? (
-                            <div className="space-y-0.5">
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-manrope bg-rose-50 text-rose-700 border border-rose-200">
-                                <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                                <span>Deleted by Admin</span>
-                              </span>
-                              {u.deletedAt && (
-                                <p className="text-[10px] text-slate-400 font-sans">
-                                  {formatDate(u.deletedAt)}
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-manrope bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              <span>Active</span>
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="py-3.5 px-4 sm:px-6 text-right">
-                          <div className="inline-flex items-center justify-end space-x-1.5">
-                            {/* View Profile */}
-                            <Link
-                              href={`/profile/${u.id}`}
-                              target="_blank"
-                              title="View Developer Profile"
-                              className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors"
-                            >
-                              <FiExternalLink className="h-4 w-4" />
-                            </Link>
-
-                            {/* Edit Button */}
-                            <button
-                              type="button"
-                              onClick={() => openEditModal(u)}
-                              title="Edit user details"
-                              className="inline-flex items-center space-x-1 px-2.5 py-1 text-slate-700 hover:text-indigo-700 bg-slate-100/80 hover:bg-indigo-50 border border-slate-200/80 rounded-lg font-manrope text-xs font-semibold transition-colors"
-                            >
-                              <FiEdit3 className="h-3.5 w-3.5" />
-                              <span>Edit</span>
-                            </button>
-
-                            {/* Delete or Restore */}
-                            {u.isDeleted ? (
-                              <button
-                                type="button"
-                                onClick={() => handleRestoreUser(u)}
-                                title="Restore user account"
-                                className="inline-flex items-center space-x-1 px-2.5 py-1 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg font-manrope text-xs font-semibold transition-colors"
-                              >
-                                <FiRotateCcw className="h-3.5 w-3.5" />
-                                <span>Restore</span>
-                              </button>
+                      {/* Details: Email & Date */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-50/90 p-3 rounded-xl text-xs font-sans text-slate-600 border border-slate-100">
+                        <div className="flex items-center space-x-2 min-w-0">
+                          <FiMail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate font-mono text-[11px] sm:text-xs">{u.email}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyEmail(u.email)}
+                            title="Copy email"
+                            className="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-200/60 shrink-0 transition-colors"
+                          >
+                            {copiedEmail === u.email ? (
+                              <FiCheck className="h-3.5 w-3.5 text-emerald-600" />
                             ) : (
-                              <button
-                                type="button"
-                                disabled={isSelf}
-                                onClick={() => setDeletingUser(u)}
-                                title={isSelf ? 'Cannot delete own admin account' : 'Delete user account'}
-                                className={`inline-flex items-center space-x-1 px-2.5 py-1 text-rose-600 bg-rose-50/80 hover:bg-rose-100 border border-rose-200/80 rounded-lg font-manrope text-xs font-semibold transition-colors ${
-                                  isSelf ? 'opacity-40 cursor-not-allowed' : ''
-                                }`}
-                              >
-                                <FiTrash2 className="h-3.5 w-3.5" />
-                                <span>Delete</span>
-                              </button>
+                              <FiCopy className="h-3.5 w-3.5" />
                             )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          </button>
+                        </div>
+                        <div className="flex items-center space-x-2 min-w-0">
+                          <FiCalendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate text-[11px] sm:text-xs">Joined {formatDate(u.createdAt)}</span>
+                        </div>
+                      </div>
+
+                      {/* Actions Footer */}
+                      <div className="flex items-center justify-end space-x-2 pt-1 flex-wrap gap-y-2">
+                        <Link
+                          href={`/profile/${u.id}`}
+                          target="_blank"
+                          title="View Developer Profile"
+                          className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold font-manrope shrink-0"
+                        >
+                          <FiExternalLink className="h-4 w-4" />
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(u)}
+                          className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-slate-700 bg-slate-100 hover:bg-indigo-50 border border-slate-200 rounded-xl font-manrope text-xs font-semibold shrink-0"
+                        >
+                          <FiEdit3 className="h-3.5 w-3.5" />
+                          <span>Edit</span>
+                        </button>
+
+                        {u.isDeleted ? (
+                          <button
+                            type="button"
+                            onClick={() => handleRestoreUser(u)}
+                            className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl font-manrope text-xs font-semibold shrink-0"
+                          >
+                            <FiRotateCcw className="h-3.5 w-3.5" />
+                            <span>Restore</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={isSelf}
+                            onClick={() => setDeletingUser(u)}
+                            className={`inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl font-manrope text-xs font-semibold shrink-0 ${
+                              isSelf ? 'opacity-40 cursor-not-allowed' : ''
+                            }`}
+                          >
+                            <FiTrash2 className="h-3.5 w-3.5" />
+                            <span>Delete</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
 
           {/* shadcn Pagination Integration */}
           {totalPages > 1 && (
-            <div className="border-t border-slate-100 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/40">
-              <p className="text-xs text-slate-500 font-sans">
+            <div className="border-t border-slate-100 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/40">
+              <p className="text-xs text-slate-500 font-sans text-center sm:text-left">
                 Showing page <strong className="text-slate-800 font-semibold">{currentPage}</strong> of{' '}
                 <strong className="text-slate-800 font-semibold">{totalPages}</strong> ({totalUsers} total users)
               </p>
 
-              <Pagination className="mx-0 w-auto">
-                <PaginationContent>
-                  {/* Previous Button */}
-                  <PaginationItem>
-                    <PaginationPrevious
-                      disabled={currentPage <= 1}
-                      onClick={() => handlePageChange(currentPage - 1)}
-                    />
-                  </PaginationItem>
+              <div className="overflow-x-auto max-w-full py-1">
+                <Pagination className="mx-0 w-auto">
+                  <PaginationContent>
+                    {/* Previous Button */}
+                    <PaginationItem>
+                      <PaginationPrevious
+                        disabled={currentPage <= 1}
+                        onClick={() => handlePageChange(currentPage - 1)}
+                      />
+                    </PaginationItem>
 
-                  {/* Page Numbers */}
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter((page) => {
-                      // Always show first, last, and pages adjacent to current page
-                      return (
-                        page === 1 ||
-                        page === totalPages ||
-                        Math.abs(page - currentPage) <= 1
-                      );
-                    })
-                    .map((page, idx, arr) => {
-                      const prevPage = arr[idx - 1];
-                      const showEllipsisBefore = prevPage && page - prevPage > 1;
+                    {/* Page Numbers */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((page) => {
+                        return (
+                          page === 1 ||
+                          page === totalPages ||
+                          Math.abs(page - currentPage) <= 1
+                        );
+                      })
+                      .map((page, idx, arr) => {
+                        const prevPage = arr[idx - 1];
+                        const showEllipsisBefore = prevPage && page - prevPage > 1;
 
-                      return (
-                        <React.Fragment key={page}>
-                          {showEllipsisBefore && (
+                        return (
+                          <React.Fragment key={page}>
+                            {showEllipsisBefore && (
+                              <PaginationItem>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            )}
                             <PaginationItem>
-                              <PaginationEllipsis />
+                              <PaginationLink
+                                isActive={page === currentPage}
+                                onClick={() => handlePageChange(page)}
+                              >
+                                {page}
+                              </PaginationLink>
                             </PaginationItem>
-                          )}
-                          <PaginationItem>
-                            <PaginationLink
-                              isActive={page === currentPage}
-                              onClick={() => handlePageChange(page)}
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        </React.Fragment>
-                      );
-                    })}
+                          </React.Fragment>
+                        );
+                      })}
 
-                  {/* Next Button */}
-                  <PaginationItem>
-                    <PaginationNext
-                      disabled={currentPage >= totalPages}
-                      onClick={() => handlePageChange(currentPage + 1)}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+                    {/* Next Button */}
+                    <PaginationItem>
+                      <PaginationNext
+                        disabled={currentPage >= totalPages}
+                        onClick={() => handlePageChange(currentPage + 1)}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
             </div>
           )}
         </div>
@@ -779,7 +914,7 @@ export default function AdminUsersPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6"
+              className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div className="space-y-0.5">
@@ -902,7 +1037,7 @@ export default function AdminUsersPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5"
+              className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 border border-rose-200 text-rose-600">
                 <FiAlertTriangle className="h-6 w-6" />
