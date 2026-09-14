@@ -135,4 +135,66 @@ describe('UsersService', () => {
       service.updateBasicProfile(validId, { name: 'New Name' }),
     ).rejects.toThrow('User profile not found');
   });
+
+  it('should add a skill and avoid duplicates', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const mockUser = {
+      _id: validId,
+      skills: ['TypeScript'],
+      save: vi.fn().mockImplementation(function (this: any) {
+        return Promise.resolve(this);
+      }),
+    };
+    mockUserModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(mockUser),
+    });
+
+    const res1 = await service.addSkill(validId, 'React');
+    expect(res1.skills).toContain('React');
+    expect(mockUser.skills).toHaveLength(2);
+
+    // Duplicate add should be ignored
+    const res2 = await service.addSkill(validId, 'typescript');
+    expect(res2.skills).toHaveLength(2);
+  });
+
+  it('should remove a skill case-insensitively', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const mockUser = {
+      _id: validId,
+      skills: ['TypeScript', 'Docker', 'NestJS'],
+      save: vi.fn().mockImplementation(function (this: any) {
+        return Promise.resolve(this);
+      }),
+    };
+    mockUserModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(mockUser),
+    });
+
+    const res = await service.removeSkill(validId, 'docker');
+    expect(res.skills).not.toContain('Docker');
+    expect(res.skills).toEqual(['TypeScript', 'NestJS']);
+  });
+
+  it('should update and clean skills array', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const mockUser = {
+      _id: validId,
+      skills: ['Old'],
+      save: vi.fn().mockImplementation(function (this: any) {
+        return Promise.resolve(this);
+      }),
+    };
+    mockUserModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(mockUser),
+    });
+
+    const res = await service.updateSkills(validId, [
+      ' Go ',
+      'Python',
+      'go',
+      '',
+    ]);
+    expect(res.skills).toEqual(['Go', 'Python']);
+  });
 });

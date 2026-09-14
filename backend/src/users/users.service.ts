@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema.js';
@@ -55,6 +59,69 @@ export class UsersService {
       user.name = updateDto.name.trim();
     }
 
+    return user.save();
+  }
+
+  async addSkill(userId: string, skill: string): Promise<UserDocument> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    const trimmed = skill.trim();
+    if (!trimmed) {
+      throw new BadRequestException('Skill name cannot be empty');
+    }
+
+    if (!user.skills) {
+      user.skills = [];
+    }
+
+    const exists = user.skills.some(
+      (s) => s.toLowerCase() === trimmed.toLowerCase(),
+    );
+    if (!exists) {
+      user.skills.push(trimmed);
+      return user.save();
+    }
+
+    return user;
+  }
+
+  async removeSkill(userId: string, skill: string): Promise<UserDocument> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    const trimmed = skill.trim().toLowerCase();
+    if (user.skills && user.skills.length > 0) {
+      user.skills = user.skills.filter((s) => s.toLowerCase() !== trimmed);
+      return user.save();
+    }
+
+    return user;
+  }
+
+  async updateSkills(userId: string, skills: string[]): Promise<UserDocument> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    const seen = new Set<string>();
+    const cleaned: string[] = [];
+
+    for (const raw of skills) {
+      const trimmed = raw.trim();
+      const lower = trimmed.toLowerCase();
+      if (trimmed.length > 0 && !seen.has(lower)) {
+        seen.add(lower);
+        cleaned.push(trimmed);
+      }
+    }
+
+    user.skills = cleaned;
     return user.save();
   }
 }

@@ -2,6 +2,9 @@ import {
   Controller,
   Get,
   Patch,
+  Post,
+  Put,
+  Delete,
   Body,
   Param,
   UseGuards,
@@ -15,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { UsersService } from './users.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
+import { AddSkillDto, UpdateSkillsDto } from './dto/skills.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy.js';
@@ -67,6 +71,48 @@ export class UsersController {
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
     return this.usersService.updateBasicProfile(user.userId, updateProfileDto);
+  }
+
+  @Post('me/skills')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add a skill to the current user profile' })
+  @ApiResponse({ status: 200, description: 'Skill successfully appended' })
+  @ApiResponse({ status: 400, description: 'Invalid skill format' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async addSkill(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() addSkillDto: AddSkillDto,
+  ) {
+    return this.usersService.addSkill(user.userId, addSkillDto.skill);
+  }
+
+  @Delete('me/skills/:skill')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remove a skill from the current user profile' })
+  @ApiParam({ name: 'skill', description: 'Name of the skill to remove' })
+  @ApiResponse({ status: 200, description: 'Skill successfully removed' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async removeSkill(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('skill') skill: string,
+  ) {
+    return this.usersService.removeSkill(user.userId, skill);
+  }
+
+  @Put('me/skills')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update/replace complete skills array' })
+  @ApiResponse({ status: 200, description: 'Skills successfully updated' })
+  @ApiResponse({ status: 400, description: 'Invalid skills array' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async updateSkills(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() updateSkillsDto: UpdateSkillsDto,
+  ) {
+    return this.usersService.updateSkills(user.userId, updateSkillsDto.skills);
   }
 
   @Get(':id')
