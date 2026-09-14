@@ -17,6 +17,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { apiClient, ApiError } from '@/lib/api';
 import type { UserProfile } from '@/types/profile';
+import { ProfileSkeleton } from '@/components/ProfileSkeleton';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -81,38 +82,48 @@ export default function ProfileViewPage({ params }: PageProps) {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center font-sans">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="h-10 w-10 border-3 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
-          <p className="text-xs text-slate-600 font-medium tracking-wide">
-            Loading developer profile...
-          </p>
-        </div>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (error || !profile) {
+    const is404 = error?.includes('404') || error?.toLowerCase().includes('not found');
+    const is403 = error?.includes('403') || error?.toLowerCase().includes('permission') || error?.toLowerCase().includes('forbidden');
+
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 font-sans">
-        <div className="max-w-md w-full rounded-3xl border border-rose-200/80 bg-white/80 p-8 text-center backdrop-blur-2xl shadow-xl space-y-4">
-          <div className="h-12 w-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-xl">
-            !
+        <div className="max-w-md w-full rounded-3xl border border-slate-200/80 bg-white/90 p-8 text-center backdrop-blur-2xl shadow-xl space-y-4">
+          <div
+            className={`h-14 w-14 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold font-mono shadow-sm ${
+              is403
+                ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                : 'bg-rose-100 text-rose-700 border border-rose-200'
+            }`}
+          >
+            {is403 ? '403' : is404 ? '404' : '!'}
           </div>
           <h2 className="text-xl font-bold font-manrope text-slate-900">
-            Profile Not Found
+            {is403
+              ? 'Access Forbidden'
+              : is404
+              ? 'Developer Not Found'
+              : 'Profile Unavailable'}
           </h2>
-          <p className="text-sm text-slate-600">
-            {error || 'The requested developer profile could not be located.'}
+          <p className="text-sm text-slate-600 font-sans leading-relaxed">
+            {is403
+              ? 'You do not have authorization to access this profile data.'
+              : is404
+              ? 'The requested developer profile does not exist or has been removed.'
+              : error || 'Unable to load profile at this time.'}
           </p>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center space-x-2 rounded-xl bg-slate-900 text-white px-5 py-2.5 text-xs font-semibold hover:bg-slate-800 transition-all"
-          >
-            <FiArrowLeft className="h-4 w-4" />
-            <span>Return to Dashboard</span>
-          </Link>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/dashboard"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 text-white px-5 py-2.5 text-xs font-semibold hover:bg-slate-800 transition-all shadow-xs"
+            >
+              <FiArrowLeft className="h-4 w-4" />
+              <span>Return to Dashboard</span>
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -298,7 +309,9 @@ export default function ProfileViewPage({ params }: PageProps) {
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center space-y-2">
                   <p className="text-xs text-slate-500 font-sans">
-                    No skills listed yet.
+                    {canEdit
+                      ? 'No skills listed yet.'
+                      : 'This developer has not listed any skills yet.'}
                   </p>
                   {canEdit && (
                     <Link
@@ -370,7 +383,9 @@ export default function ProfileViewPage({ params }: PageProps) {
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center space-y-2">
                   <p className="text-xs text-slate-500 font-sans">
-                    No work experience listed yet.
+                    {canEdit
+                      ? 'No work experience listed yet.'
+                      : 'This developer has not listed any work experience yet.'}
                   </p>
                   {canEdit && (
                     <Link

@@ -20,6 +20,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { apiClient, ApiError } from '@/lib/api';
 import type { UserProfile, Experience } from '@/types/profile';
+import { ProfileSkeleton } from '@/components/ProfileSkeleton';
 
 interface EditPageProps {
   params: Promise<{ id: string }>;
@@ -361,38 +362,35 @@ export default function EditProfilePage({ params }: EditPageProps) {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center font-sans">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="h-10 w-10 border-3 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
-          <p className="text-xs text-slate-600 font-medium tracking-wide">
-            Loading profile settings...
-          </p>
-        </div>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (error || !profile) {
+    const is404 = error?.includes('404') || error?.toLowerCase().includes('not found');
+
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 font-sans">
-        <div className="max-w-md w-full rounded-3xl border border-rose-200/80 bg-white/80 p-8 text-center backdrop-blur-2xl shadow-xl space-y-4">
-          <div className="h-12 w-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-xl">
-            !
+        <div className="max-w-md w-full rounded-3xl border border-slate-200/80 bg-white/90 p-8 text-center backdrop-blur-2xl shadow-xl space-y-4">
+          <div className="h-14 w-14 rounded-2xl bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center mx-auto text-xl font-bold font-mono shadow-sm">
+            {is404 ? '404' : '!'}
           </div>
           <h2 className="text-xl font-bold font-manrope text-slate-900">
-            Error Accessing Profile
+            {is404 ? 'Developer Not Found' : 'Error Accessing Profile'}
           </h2>
-          <p className="text-sm text-slate-600">
-            {error || 'Unable to access profile for editing.'}
+          <p className="text-sm text-slate-600 font-sans leading-relaxed">
+            {is404
+              ? 'The developer profile you are attempting to edit does not exist or has been removed.'
+              : error || 'Unable to access profile for editing.'}
           </p>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center space-x-2 rounded-xl bg-slate-900 text-white px-5 py-2.5 text-xs font-semibold hover:bg-slate-800 transition-all"
-          >
-            <FiArrowLeft className="h-4 w-4" />
-            <span>Return to Dashboard</span>
-          </Link>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/dashboard"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 text-white px-5 py-2.5 text-xs font-semibold hover:bg-slate-800 transition-all shadow-xs"
+            >
+              <FiArrowLeft className="h-4 w-4" />
+              <span>Return to Dashboard</span>
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -401,23 +399,25 @@ export default function EditProfilePage({ params }: EditPageProps) {
   if (!canEdit) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 font-sans">
-        <div className="max-w-md w-full rounded-3xl border border-amber-200/80 bg-white/80 p-8 text-center backdrop-blur-2xl shadow-xl space-y-4">
-          <div className="h-12 w-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-xl">
-            <FiAlertCircle />
+        <div className="max-w-md w-full rounded-3xl border border-amber-200/80 bg-white/90 p-8 text-center backdrop-blur-2xl shadow-xl space-y-4">
+          <div className="h-14 w-14 rounded-2xl bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center mx-auto text-xl font-bold font-mono shadow-sm">
+            403
           </div>
           <h2 className="text-xl font-bold font-manrope text-slate-900">
             Permission Denied (403)
           </h2>
-          <p className="text-sm text-slate-600">
-            You do not have permission to modify this developer profile.
+          <p className="text-sm text-slate-600 font-sans leading-relaxed">
+            You do not have administrative or owner permissions to modify this developer profile.
           </p>
-          <Link
-            href={`/profile/${profile.id}`}
-            className="inline-flex items-center space-x-2 rounded-xl bg-slate-900 text-white px-5 py-2.5 text-xs font-semibold hover:bg-slate-800 transition-all"
-          >
-            <FiArrowLeft className="h-4 w-4" />
-            <span>View Public Profile</span>
-          </Link>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href={`/profile/${profile.id}`}
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 text-white px-5 py-2.5 text-xs font-semibold hover:bg-slate-800 transition-all shadow-xs"
+            >
+              <FiArrowLeft className="h-4 w-4" />
+              <span>View Public Profile</span>
+            </Link>
+          </div>
         </div>
       </div>
     );
