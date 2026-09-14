@@ -616,23 +616,18 @@ export default function EditProfilePage({ params }: EditPageProps) {
             transition={{ delay: 0.15 }}
             className="rounded-3xl border border-white/80 bg-white/60 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] space-y-5"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center space-x-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 border border-purple-100 text-purple-600">
-                  <FiAward className="h-4 w-4" />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold font-manrope text-slate-900">
-                    Developer Skills & Technologies
-                  </h2>
-                  <p className="text-xs text-slate-500 font-sans">
-                    Add or remove technical competencies and tools (e.g., React, Go, Docker).
-                  </p>
-                </div>
+            <div className="flex items-center space-x-2.5 pb-3 border-b border-slate-100">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 border border-purple-100 text-purple-600">
+                <FiAward className="h-4 w-4" />
               </div>
-              <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100/80 px-2.5 py-1 rounded-full">
-                {profile.skills?.length || 0} skills
-              </span>
+              <div>
+                <h2 className="text-base font-bold font-manrope text-slate-900">
+                  Developer Skills & Technologies
+                </h2>
+                <p className="text-xs text-slate-500 font-sans">
+                  Add or remove technical competencies and tools (e.g., React, Go, Docker).
+                </p>
+              </div>
             </div>
 
             {/* Add Skill Form */}

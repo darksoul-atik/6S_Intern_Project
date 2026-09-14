@@ -306,18 +306,13 @@ export default function ProfileViewPage({ params }: PageProps) {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="lg:col-span-1 rounded-3xl border border-white/80 bg-white/60 p-6 sm:p-7 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] space-y-4"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center space-x-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600">
-                    <FiAward className="h-4 w-4" />
-                  </div>
-                  <h2 className="text-base font-bold font-manrope text-slate-900 tracking-tight">
-                    Skills & Tech
-                  </h2>
+              <div className="flex items-center space-x-2.5 pb-3 border-b border-slate-100">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600">
+                  <FiAward className="h-4 w-4" />
                 </div>
-                <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100/80 px-2.5 py-0.5 rounded-full">
-                  {profile.skills?.length || 0}
-                </span>
+                <h2 className="text-base font-bold font-manrope text-slate-900 tracking-tight">
+                  Skills & Tech
+                </h2>
               </div>
 
               {profile.skills && profile.skills.length > 0 ? (
@@ -332,20 +327,12 @@ export default function ProfileViewPage({ params }: PageProps) {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center space-y-2">
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
                   <p className="text-xs text-slate-500 font-sans">
                     {canEdit
                       ? 'No skills listed yet.'
                       : 'This developer has not listed any skills yet.'}
                   </p>
-                  {canEdit && (
-                    <Link
-                      href={`/profile/${profileId}/edit`}
-                      className="inline-block text-xs font-semibold text-indigo-600 hover:text-indigo-500 hover:underline"
-                    >
-                      + Add your skills
-                    </Link>
-                  )}
                 </div>
               )}
             </motion.div>
@@ -357,18 +344,13 @@ export default function ProfileViewPage({ params }: PageProps) {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="lg:col-span-2 rounded-3xl border border-white/80 bg-white/60 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] space-y-5"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center space-x-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 border border-purple-100 text-purple-600">
-                    <FiBriefcase className="h-4 w-4" />
-                  </div>
-                  <h2 className="text-base font-bold font-manrope text-slate-900 tracking-tight">
-                    Work Experience
-                  </h2>
+              <div className="flex items-center space-x-2.5 pb-3 border-b border-slate-100">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 border border-purple-100 text-purple-600">
+                  <FiBriefcase className="h-4 w-4" />
                 </div>
-                <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100/80 px-2.5 py-0.5 rounded-full">
-                  {profile.experiences?.length || 0}
-                </span>
+                <h2 className="text-base font-bold font-manrope text-slate-900 tracking-tight">
+                  Work Experience
+                </h2>
               </div>
 
               {profile.experiences && profile.experiences.length > 0 ? (
@@ -406,20 +388,12 @@ export default function ProfileViewPage({ params }: PageProps) {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center space-y-2">
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
                   <p className="text-xs text-slate-500 font-sans">
                     {canEdit
                       ? 'No work experience listed yet.'
                       : 'This developer has not listed any work experience yet.'}
                   </p>
-                  {canEdit && (
-                    <Link
-                      href={`/profile/${profileId}/edit`}
-                      className="inline-block text-xs font-semibold text-indigo-600 hover:text-indigo-500 hover:underline"
-                    >
-                      + Add work experience
-                    </Link>
-                  )}
                 </div>
               )}
             </motion.div>
