@@ -532,9 +532,9 @@ export default function ProfileViewPage({ params }: PageProps) {
 
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-4 text-xs text-slate-600 font-sans pt-0.5">
                   {profile.email && (
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center space-x-1.5 min-w-0">
                       <FiMail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate max-w-[200px] min-[400px]:max-w-[260px] sm:max-w-none">{profile.email}</span>
+                      <span className="break-all font-mono">{profile.email}</span>
                     </div>
                   )}
                   {memberSince && (

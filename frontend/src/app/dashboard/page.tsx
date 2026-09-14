@@ -154,9 +154,9 @@ export default function DashboardPage() {
 
               {/* Title & Subtitle */}
               <div className="space-y-2 max-w-3xl">
-                <h1 className="text-xl min-[400px]:text-2xl sm:text-3xl md:text-4xl font-bold font-manrope tracking-tight text-slate-900 leading-tight">
+                <h1 className="text-xl min-[400px]:text-2xl sm:text-3xl md:text-4xl font-bold font-manrope tracking-tight text-slate-900 leading-tight break-words">
                   Welcome back,{' '}
-                  <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent break-words">
                     {user?.name || 'Developer'}
                   </span>
                 </h1>
@@ -244,7 +244,7 @@ export default function DashboardPage() {
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 border border-white/90 text-indigo-600 shadow-xs backdrop-blur-md">
                       <FiUser className="h-4 w-4" />
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold font-manrope text-slate-900 tracking-tight truncate">
+                    <h3 className="text-base sm:text-lg font-bold font-manrope text-slate-900 tracking-tight break-words">
                       User Identity Check
                     </h3>
                   </div>
@@ -298,7 +298,7 @@ export default function DashboardPage() {
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 border border-white/90 text-purple-600 shadow-xs backdrop-blur-md">
                       <FiShield className="h-4 w-4" />
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold font-manrope text-slate-900 tracking-tight truncate">
+                    <h3 className="text-base sm:text-lg font-bold font-manrope text-slate-900 tracking-tight break-words">
                       Admin Access Verification
                     </h3>
                   </div>
@@ -332,7 +332,7 @@ export default function DashboardPage() {
                         <span className="font-bold">
                           {adminResult?.success ? '200 OK:' : `${adminResult?.statusCode || 403} FORBIDDEN:`}
                         </span>
-                        <span className="truncate">{adminResult?.message}</span>
+                        <span className="break-all">{adminResult?.message}</span>
                       </div>
                       {Boolean(adminResult?.data) && (
                         <pre className="mt-2 max-h-56 sm:max-h-72 overflow-x-auto text-[10px] sm:text-[11px] text-slate-200 bg-slate-950/90 p-3 rounded-xl border border-slate-800 font-mono shadow-inner">

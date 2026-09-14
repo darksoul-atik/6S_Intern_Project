@@ -71,21 +71,21 @@ export default function HomePage() {
                   id="hero-continue-btn"
                   className="group flex-1 px-4 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white text-xs sm:text-sm font-semibold font-manrope shadow-lg shadow-indigo-600/35 hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-between space-x-3 border border-indigo-400/40 cursor-pointer min-w-0"
                 >
-                  <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+                  <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 flex-1">
                     {/* User Avatar Placeholder */}
                     <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-white/20 border border-white/30 text-white font-bold font-manrope text-xs sm:text-sm shadow-inner group-hover:scale-105 transition-transform">
                       {(user.name || user.email)[0].toUpperCase()}
                     </div>
-                    <div className="text-left truncate">
+                    <div className="text-left min-w-0 flex-1">
                       <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-emerald-200 font-semibold block leading-tight">
                         {user.role === 'admin' ? 'Admin Access' : 'Verified User'}
                       </span>
-                      <span className="text-xs sm:text-sm font-bold text-white block truncate max-w-[170px] min-[380px]:max-w-[210px] sm:max-w-none">
+                      <span className="text-xs sm:text-sm font-bold text-white block leading-snug break-words">
                         Continue as {user.name || user.email.split('@')[0]}
                       </span>
                     </div>
                   </div>
-                  <FiArrowRight className="h-4 w-4 shrink-0 text-white/90 group-hover:translate-x-1 transition-transform" />
+                  <FiArrowRight className="h-4 w-4 shrink-0 text-white/90 group-hover:translate-x-1 transition-transform ml-2" />
                 </Link>
 
                 {/* Log Out Button */}

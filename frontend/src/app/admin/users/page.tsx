@@ -382,7 +382,7 @@ export default function AdminUsersPage() {
           {/* Card 1: Total */}
           <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3 sm:p-4 md:p-5 backdrop-blur-md shadow-xs min-w-0">
             <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope gap-1">
-              <span className="truncate">Total Users</span>
+              <span className="break-words leading-tight">Total Users</span>
               <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                 <FiUsers className="h-3.5 w-3.5" />
               </div>
@@ -390,7 +390,7 @@ export default function AdminUsersPage() {
             <div className="mt-1 sm:mt-2 text-lg min-[400px]:text-xl sm:text-3xl font-bold font-manrope text-slate-900 tracking-tight">
               {totalUsers}
             </div>
-            <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block truncate">
+            <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block break-words leading-tight">
               Across platform
             </span>
           </div>
@@ -398,7 +398,7 @@ export default function AdminUsersPage() {
           {/* Card 2: Active */}
           <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3 sm:p-4 md:p-5 backdrop-blur-md shadow-xs min-w-0">
             <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope gap-1">
-              <span className="truncate">Active Accounts</span>
+              <span className="break-words leading-tight">Active Accounts</span>
               <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                 <FiUserCheck className="h-3.5 w-3.5" />
               </div>
@@ -406,7 +406,7 @@ export default function AdminUsersPage() {
             <div className="mt-1 sm:mt-2 text-lg min-[400px]:text-xl sm:text-3xl font-bold font-manrope text-emerald-600 tracking-tight">
               {activeCount}
             </div>
-            <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block truncate">
+            <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block break-words leading-tight">
               Permitted to sign in
             </span>
           </div>
@@ -414,7 +414,7 @@ export default function AdminUsersPage() {
           {/* Card 3: Deleted / Blocked */}
           <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3 sm:p-4 md:p-5 backdrop-blur-md shadow-xs min-w-0">
             <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope gap-1">
-              <span className="truncate">Deleted Accounts</span>
+              <span className="break-words leading-tight">Deleted Accounts</span>
               <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
                 <FiUserX className="h-3.5 w-3.5" />
               </div>
@@ -422,7 +422,7 @@ export default function AdminUsersPage() {
             <div className="mt-1 sm:mt-2 text-lg min-[400px]:text-xl sm:text-3xl font-bold font-manrope text-rose-600 tracking-tight">
               {deletedCount}
             </div>
-            <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block truncate">
+            <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block break-words leading-tight">
               Blocked with notice
             </span>
           </div>
@@ -430,7 +430,7 @@ export default function AdminUsersPage() {
           {/* Card 4: Admins */}
           <div className="bg-white/80 border border-slate-200/80 rounded-2xl p-3 sm:p-4 md:p-5 backdrop-blur-md shadow-xs min-w-0">
             <div className="flex items-center justify-between text-slate-500 text-xs font-medium font-manrope gap-1">
-              <span className="truncate">Admins</span>
+              <span className="break-words leading-tight">Admins</span>
               <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
                 <FiShield className="h-3.5 w-3.5" />
               </div>
@@ -438,7 +438,7 @@ export default function AdminUsersPage() {
             <div className="mt-1 sm:mt-2 text-lg min-[400px]:text-xl sm:text-3xl font-bold font-manrope text-purple-700 tracking-tight">
               {adminCount}
             </div>
-            <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block truncate">
+            <span className="text-[10px] sm:text-[11px] text-slate-400 font-sans mt-0.5 block break-words leading-tight">
               Elevated privileges
             </span>
           </div>
@@ -577,7 +577,7 @@ export default function AdminUsersPage() {
                               </div>
                               <div className="space-y-0.5 min-w-0">
                                 <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-                                  <span className="font-semibold font-manrope text-slate-900 text-sm whitespace-nowrap">
+                                  <span className="font-semibold font-manrope text-slate-900 text-sm break-words">
                                     {u.name}
                                   </span>
                                   {isSelf && (
@@ -591,7 +591,7 @@ export default function AdminUsersPage() {
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-xs text-slate-500 font-sans truncate max-w-[200px]">
+                                <p className="text-xs text-slate-500 font-sans break-words max-w-[220px]">
                                   {u.title || 'Developer'}
                                 </p>
                               </div>
@@ -730,7 +730,7 @@ export default function AdminUsersPage() {
                           </div>
                           <div className="min-w-0 space-y-0.5">
                             <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
-                              <h4 className="font-semibold font-manrope text-slate-900 text-sm">
+                              <h4 className="font-semibold font-manrope text-slate-900 text-sm break-words leading-tight">
                                 {u.name}
                               </h4>
                               {isSelf && (
@@ -744,7 +744,7 @@ export default function AdminUsersPage() {
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-slate-500 font-sans truncate">
+                            <p className="text-xs text-slate-500 font-sans break-words">
                               {u.title || 'Developer'}
                             </p>
                           </div>
@@ -770,7 +770,7 @@ export default function AdminUsersPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-50/90 p-3 rounded-xl text-xs font-sans text-slate-600 border border-slate-100">
                         <div className="flex items-center space-x-2 min-w-0">
                           <FiMail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate font-mono text-[11px] sm:text-xs">{u.email}</span>
+                          <span className="break-all font-mono text-[11px] sm:text-xs">{u.email}</span>
                           <button
                             type="button"
                             onClick={() => handleCopyEmail(u.email)}
@@ -786,12 +786,12 @@ export default function AdminUsersPage() {
                         </div>
                         <div className="flex items-center space-x-2 min-w-0">
                           <FiCalendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate text-[11px] sm:text-xs">Joined {formatDate(u.createdAt)}</span>
+                          <span className="text-[11px] sm:text-xs break-words">Joined {formatDate(u.createdAt)}</span>
                         </div>
                       </div>
 
                       {/* Actions Footer */}
-                      <div className="flex items-center justify-end space-x-2 pt-1 flex-wrap gap-y-2">
+                      <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
                         <Link
                           href={`/profile/${u.id}`}
                           target="_blank"
@@ -918,7 +918,7 @@ export default function AdminUsersPage() {
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 sm:pb-4">
                 <div className="space-y-0.5">
-                  <h3 className="text-base sm:text-lg font-bold font-manrope text-slate-900">
+                  <h3 className="text-base sm:text-lg font-bold font-manrope text-slate-900 break-words">
                     Edit User: {editingUser.name}
                   </h3>
                   <p className="text-xs text-slate-500 font-sans">
@@ -1044,7 +1044,7 @@ export default function AdminUsersPage() {
               </div>
 
               <div className="space-y-2">
-                <h3 className="text-base font-bold font-manrope text-slate-900">
+                <h3 className="text-base font-bold font-manrope text-slate-900 break-words">
                   Delete Account for {deletingUser.name}?
                 </h3>
                 <p className="text-xs text-slate-600 leading-relaxed font-sans">
@@ -1058,7 +1058,7 @@ export default function AdminUsersPage() {
                 </p>
               </div>
 
-              <div className="flex items-center justify-end space-x-3 pt-2">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:space-x-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setDeletingUser(null)}
