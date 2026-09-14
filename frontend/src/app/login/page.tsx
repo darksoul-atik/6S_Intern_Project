@@ -135,15 +135,15 @@ function LoginForm() {
 
             {/* Motto */}
             <h1 className="text-3xl xs:text-4xl sm:text-5xl font-bold font-manrope tracking-tight text-white leading-[1.12]">
-              Where code meets{' '}
+              Welcome back to your{' '}
               <span className="bg-gradient-to-r from-indigo-300 via-purple-300 to-emerald-300 bg-clip-text text-transparent">
-                collective intelligence.
+                developer hub.
               </span>
             </h1>
 
             {/* Passage */}
             <p className="text-sm sm:text-base text-zinc-300 font-sans font-normal leading-relaxed max-w-md mx-auto lg:mx-0">
-              A modern platform engineered for developers to exchange technical insights, debate architecture, and build the future of software together.
+              Sign in to manage your engineering sessions, verify system permissions, and engage with the DevPulse architecture community.
             </p>
           </motion.div>
 

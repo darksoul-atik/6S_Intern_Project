@@ -2,13 +2,10 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiLogIn, FiUserPlus, FiArrowRight, FiLayout } from 'react-icons/fi';
+import { FiLogIn, FiUserPlus, FiArrowRight } from 'react-icons/fi';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
-import { useAuth } from '@/context/AuthContext';
 
 export default function HomePage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-
   return (
     <MeshGradientBackground
       colors={['#4f46e5', '#7c3aed', '#0284c7', '#059669']}
@@ -58,58 +55,28 @@ export default function HomePage() {
             A modern platform engineered for developers to exchange technical insights, debate architecture, and build the future of software together.
           </p>
 
-          {/* Centered Action Buttons (Placed directly after the texts) */}
+          {/* Centered Action Buttons (Sign In & Sign Up) */}
           <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 w-full max-w-md sm:max-w-none mx-auto">
-            {isLoading ? (
-              <div className="h-12 w-48 rounded-2xl bg-white/10 animate-pulse mx-auto" />
-            ) : isAuthenticated && user ? (
-              /* If already logged in, show Dashboard quick access */
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-3.5 w-full sm:w-auto">
-                <Link
-                  href="/dashboard"
-                  id="hero-dashboard-btn"
-                  className="group px-6 sm:px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white text-xs sm:text-sm font-semibold font-manrope shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-center space-x-2.5 border border-indigo-400/30 cursor-pointer"
-                >
-                  <FiLayout className="h-4 w-4 text-emerald-200" />
-                  <span>Go to Dashboard</span>
-                  <span className="text-xs font-mono bg-black/25 px-2 py-0.5 rounded-md text-white/90">
-                    {user.name || user.email}
-                  </span>
-                  <FiArrowRight className="h-4 w-4 text-white/80 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
+            {/* Sign In Button */}
+            <Link
+              href="/login"
+              id="hero-signin-btn"
+              className="group w-full sm:w-auto min-w-[160px] sm:min-w-[170px] px-6 sm:px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-600 hover:from-indigo-500 hover:via-indigo-400 hover:to-blue-500 text-white text-xs sm:text-sm font-semibold font-manrope shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-center space-x-2.5 border border-indigo-400/30 cursor-pointer"
+            >
+              <FiLogIn className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+              <span>Sign In</span>
+            </Link>
 
-                <Link
-                  href="/login"
-                  className="px-6 py-3.5 rounded-2xl bg-white/[0.06] hover:bg-white/[0.12] text-zinc-300 hover:text-white text-xs sm:text-sm font-semibold font-manrope border border-white/10 backdrop-blur-xl transition-all text-center"
-                >
-                  Switch Account
-                </Link>
-              </div>
-            ) : (
-              /* Public Call-To-Action: Sign In & Sign Up with React Icons */
-              <>
-                {/* Sign In Button */}
-                <Link
-                  href="/login"
-                  id="hero-signin-btn"
-                  className="group w-full sm:w-auto min-w-[160px] sm:min-w-[170px] px-6 sm:px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-600 hover:from-indigo-500 hover:via-indigo-400 hover:to-blue-500 text-white text-xs sm:text-sm font-semibold font-manrope shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-center space-x-2.5 border border-indigo-400/30 cursor-pointer"
-                >
-                  <FiLogIn className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-                  <span>Sign In</span>
-                </Link>
-
-                {/* Sign Up Button */}
-                <Link
-                  href="/signup"
-                  id="hero-signup-btn"
-                  className="group w-full sm:w-auto min-w-[160px] sm:min-w-[170px] px-6 sm:px-8 py-3.5 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs sm:text-sm font-semibold font-manrope border border-white/15 hover:border-white/30 backdrop-blur-2xl shadow-xl hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-center space-x-2.5 cursor-pointer"
-                >
-                  <FiUserPlus className="h-4 w-4 text-indigo-300" />
-                  <span>Sign Up</span>
-                  <FiArrowRight className="h-3.5 w-3.5 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              </>
-            )}
+            {/* Sign Up Button */}
+            <Link
+              href="/signup"
+              id="hero-signup-btn"
+              className="group w-full sm:w-auto min-w-[160px] sm:min-w-[170px] px-6 sm:px-8 py-3.5 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs sm:text-sm font-semibold font-manrope border border-white/15 hover:border-white/30 backdrop-blur-2xl shadow-xl hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-center space-x-2.5 cursor-pointer"
+            >
+              <FiUserPlus className="h-4 w-4 text-indigo-300" />
+              <span>Sign Up</span>
+              <FiArrowRight className="h-3.5 w-3.5 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
           </div>
         </motion.div>
       </div>
