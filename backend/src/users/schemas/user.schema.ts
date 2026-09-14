@@ -1,9 +1,34 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import type { HydratedDocument, Types } from 'mongoose';
 
 export type UserDocument = HydratedDocument<User>;
 
 export type UserRole = 'admin' | 'user';
+
+@Schema({ timestamps: true })
+export class Experience {
+  _id?: Types.ObjectId;
+
+  @Prop({ required: true, trim: true })
+  title!: string;
+
+  @Prop({ required: true, trim: true })
+  company!: string;
+
+  @Prop({ required: true, trim: true })
+  from!: string;
+
+  @Prop({ required: false, trim: true })
+  to?: string;
+
+  @Prop({ required: false, trim: true })
+  description?: string;
+
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export const ExperienceSchema = SchemaFactory.createForClass(Experience);
 
 @Schema({
   timestamps: true,
@@ -37,6 +62,12 @@ export class User {
     index: true,
   })
   role!: UserRole;
+
+  @Prop({ type: [String], default: [] })
+  skills!: string[];
+
+  @Prop({ type: [ExperienceSchema], default: [] })
+  experiences!: Experience[];
 
   createdAt?: Date;
   updatedAt?: Date;
