@@ -106,4 +106,33 @@ describe('UsersService', () => {
       "Developer profile with ID '507f1f77bcf86cd799439011' not found",
     );
   });
+
+  it('should update user name on updateBasicProfile', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const mockUser = {
+      _id: validId,
+      name: 'Old Name',
+      save: vi.fn().mockImplementation(function (this: any) {
+        return Promise.resolve(this);
+      }),
+    };
+    mockUserModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(mockUser),
+    });
+
+    const result = await service.updateBasicProfile(validId, { name: '  New Name  ' });
+    expect(result.name).toBe('New Name');
+    expect(mockUser.save).toHaveBeenCalled();
+  });
+
+  it('should throw NotFoundException on updateBasicProfile if user does not exist', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    mockUserModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(null),
+    });
+
+    await expect(
+      service.updateBasicProfile(validId, { name: 'New Name' }),
+    ).rejects.toThrow('User profile not found');
+  });
 });

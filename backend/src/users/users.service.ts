@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema.js';
+import { UpdateProfileDto } from './dto/update-profile.dto.js';
 
 @Injectable()
 export class UsersService {
@@ -39,5 +40,21 @@ export class UsersService {
       throw new NotFoundException(`Developer profile with ID '${id}' not found`);
     }
     return user;
+  }
+
+  async updateBasicProfile(
+    userId: string,
+    updateDto: UpdateProfileDto,
+  ): Promise<UserDocument> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    if (updateDto.name !== undefined) {
+      user.name = updateDto.name.trim();
+    }
+
+    return user.save();
   }
 }
