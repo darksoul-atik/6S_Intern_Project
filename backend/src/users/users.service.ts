@@ -7,6 +7,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
+import {
+  CreateExperienceDto,
+  UpdateExperienceDto,
+} from './dto/experience.dto.js';
 
 @Injectable()
 export class UsersService {
@@ -122,6 +126,77 @@ export class UsersService {
     }
 
     user.skills = cleaned;
+    return user.save();
+  }
+
+  async addExperience(
+    userId: string,
+    expDto: CreateExperienceDto,
+  ): Promise<UserDocument> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    if (!user.experiences) {
+      user.experiences = [];
+    }
+
+    user.experiences.push({
+      title: expDto.title.trim(),
+      company: expDto.company.trim(),
+      from: expDto.from.trim(),
+      to: expDto.to?.trim() || undefined,
+      description: expDto.description?.trim() || undefined,
+    } as any);
+
+    return user.save();
+  }
+
+  async updateExperience(
+    userId: string,
+    experienceId: string,
+    expDto: UpdateExperienceDto,
+  ): Promise<UserDocument> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    const expIndex = user.experiences.findIndex(
+      (e) => e._id?.toString() === experienceId,
+    );
+    if (expIndex === -1) {
+      throw new NotFoundException(`Experience with ID '${experienceId}' not found`);
+    }
+
+    const target = user.experiences[expIndex];
+    if (expDto.title !== undefined) target.title = expDto.title.trim();
+    if (expDto.company !== undefined) target.company = expDto.company.trim();
+    if (expDto.from !== undefined) target.from = expDto.from.trim();
+    if (expDto.to !== undefined) target.to = expDto.to.trim();
+    if (expDto.description !== undefined) target.description = expDto.description.trim();
+
+    return user.save();
+  }
+
+  async removeExperience(
+    userId: string,
+    experienceId: string,
+  ): Promise<UserDocument> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    const expIndex = user.experiences.findIndex(
+      (e) => e._id?.toString() === experienceId,
+    );
+    if (expIndex === -1) {
+      throw new NotFoundException(`Experience with ID '${experienceId}' not found`);
+    }
+
+    user.experiences.splice(expIndex, 1);
     return user.save();
   }
 }

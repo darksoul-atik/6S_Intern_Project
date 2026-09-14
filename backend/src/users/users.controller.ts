@@ -19,6 +19,10 @@ import {
 import { UsersService } from './users.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { AddSkillDto, UpdateSkillsDto } from './dto/skills.dto.js';
+import {
+  CreateExperienceDto,
+  UpdateExperienceDto,
+} from './dto/experience.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy.js';
@@ -113,6 +117,55 @@ export class UsersController {
     @Body() updateSkillsDto: UpdateSkillsDto,
   ) {
     return this.usersService.updateSkills(user.userId, updateSkillsDto.skills);
+  }
+
+  @Post('me/experiences')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add a new work experience to profile' })
+  @ApiResponse({ status: 200, description: 'Experience successfully added' })
+  @ApiResponse({ status: 400, description: 'Validation error in experience payload' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async addExperience(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() createExpDto: CreateExperienceDto,
+  ) {
+    return this.usersService.addExperience(user.userId, createExpDto);
+  }
+
+  @Patch('me/experiences/:experienceId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update an existing work experience entry' })
+  @ApiParam({ name: 'experienceId', description: 'ID of the experience subdocument' })
+  @ApiResponse({ status: 200, description: 'Experience successfully updated' })
+  @ApiResponse({ status: 404, description: 'Experience not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async updateExperience(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('experienceId') experienceId: string,
+    @Body() updateExpDto: UpdateExperienceDto,
+  ) {
+    return this.usersService.updateExperience(
+      user.userId,
+      experienceId,
+      updateExpDto,
+    );
+  }
+
+  @Delete('me/experiences/:experienceId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remove a work experience entry' })
+  @ApiParam({ name: 'experienceId', description: 'ID of the experience subdocument' })
+  @ApiResponse({ status: 200, description: 'Experience successfully deleted' })
+  @ApiResponse({ status: 404, description: 'Experience not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async removeExperience(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('experienceId') experienceId: string,
+  ) {
+    return this.usersService.removeExperience(user.userId, experienceId);
   }
 
   @Get(':id')

@@ -197,4 +197,84 @@ describe('UsersService', () => {
     ]);
     expect(res.skills).toEqual(['Go', 'Python']);
   });
+
+  it('should add a new experience subdocument', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const mockUser = {
+      _id: validId,
+      experiences: [] as any[],
+      save: vi.fn().mockImplementation(function (this: any) {
+        return Promise.resolve(this);
+      }),
+    };
+    mockUserModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(mockUser),
+    });
+
+    const res = await service.addExperience(validId, {
+      title: 'Senior Engineer',
+      company: '6sense',
+      from: '2022-01',
+      to: 'Present',
+      description: 'Building microservices',
+    });
+
+    expect(res.experiences).toHaveLength(1);
+    expect(res.experiences[0].title).toBe('Senior Engineer');
+    expect(res.experiences[0].company).toBe('6sense');
+  });
+
+  it('should update an existing experience subdocument', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const expId = 'exp-123';
+    const mockUser = {
+      _id: validId,
+      experiences: [
+        {
+          _id: expId,
+          title: 'Junior Engineer',
+          company: 'Old Co',
+          from: '2020-01',
+        },
+      ],
+      save: vi.fn().mockImplementation(function (this: any) {
+        return Promise.resolve(this);
+      }),
+    };
+    mockUserModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(mockUser),
+    });
+
+    const res = await service.updateExperience(validId, expId, {
+      title: 'Lead Engineer',
+    });
+
+    expect(res.experiences[0].title).toBe('Lead Engineer');
+    expect(res.experiences[0].company).toBe('Old Co');
+  });
+
+  it('should remove an existing experience subdocument', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const expId = 'exp-123';
+    const mockUser = {
+      _id: validId,
+      experiences: [
+        {
+          _id: expId,
+          title: 'Junior Engineer',
+          company: 'Old Co',
+          from: '2020-01',
+        },
+      ],
+      save: vi.fn().mockImplementation(function (this: any) {
+        return Promise.resolve(this);
+      }),
+    };
+    mockUserModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(mockUser),
+    });
+
+    const res = await service.removeExperience(validId, expId);
+    expect(res.experiences).toHaveLength(0);
+  });
 });
