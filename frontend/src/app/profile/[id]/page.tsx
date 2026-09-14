@@ -450,9 +450,9 @@ export default function ProfileViewPage({ params }: PageProps) {
                   )}
                 </div>
 
-                {/* Owner/Admin Action buttons centered directly under avatar */}
+                {/* Owner/Admin Action buttons centered directly under avatar matching image width */}
                 {canEdit && (
-                  <div className="flex items-center justify-center space-x-2 pt-0.5">
+                  <div className="flex items-center justify-between gap-2 w-24 sm:w-28 pt-1">
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -464,10 +464,18 @@ export default function ProfileViewPage({ params }: PageProps) {
                       type="button"
                       disabled={avatarUploading}
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center justify-center space-x-1.5 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-3.5 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
+                      title={avatarUploading ? 'Uploading photo...' : 'Upload Photo'}
+                      aria-label="Upload Photo"
+                      className="flex-1 inline-flex items-center justify-center h-9 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer disabled:opacity-50"
                     >
-                      <FiCamera className="h-3.5 w-3.5 text-indigo-400" />
-                      <span>{avatarUploading ? 'Saving...' : 'Upload Photo'}</span>
+                      {avatarUploading ? (
+                        <svg className="animate-spin h-4 w-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                      ) : (
+                        <FiCamera className="h-4 w-4 text-indigo-400" />
+                      )}
                     </button>
 
                     {profile.avatarUrl && (
@@ -475,11 +483,11 @@ export default function ProfileViewPage({ params }: PageProps) {
                         type="button"
                         disabled={avatarUploading}
                         onClick={handleRemoveAvatar}
-                        title="Remove custom photo and use initials"
-                        className="inline-flex items-center justify-center space-x-1.5 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-red-400 hover:text-red-300 px-3 py-2 text-xs font-semibold font-manrope shadow-md hover:border-red-500/40 transition-all cursor-pointer"
+                        title="Remove Photo"
+                        aria-label="Remove Photo"
+                        className="flex-1 inline-flex items-center justify-center h-9 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] shadow-md hover:border-red-500/40 transition-all cursor-pointer disabled:opacity-50"
                       >
-                        <FiTrash2 className="h-3.5 w-3.5 text-indigo-400" />
-                        <span>Remove</span>
+                        <FiTrash2 className="h-4 w-4 text-red-400 hover:text-red-300" />
                       </button>
                     )}
                   </div>

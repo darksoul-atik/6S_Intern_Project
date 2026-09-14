@@ -671,30 +671,25 @@ export default function EditProfilePage({ params }: EditPageProps) {
             <form onSubmit={handleSaveName} className="space-y-6 pt-1">
               {/* Avatar Upload Block */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-4 rounded-2xl bg-white/80 border border-slate-200/80 shadow-2xs">
-                <div className="relative group shrink-0">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-emerald-500 p-[2px] shadow-sm overflow-hidden">
-                    {avatarUrl ? (
-                      <img
-                        src={avatarUrl}
-                        alt="Avatar preview"
-                        className="h-full w-full object-cover rounded-[14px]"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-slate-900 text-white font-mono font-bold text-xl tracking-wider">
-                        {getInitials(name || profile.name)}
-                      </div>
-                    )}
+                <div className="flex flex-col items-center gap-2 shrink-0">
+                  <div className="relative group">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-emerald-500 p-[2px] shadow-sm overflow-hidden">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt="Avatar preview"
+                          className="h-full w-full object-cover rounded-[14px]"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-slate-900 text-white font-mono font-bold text-xl tracking-wider">
+                          {getInitials(name || profile.name)}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-2 flex-1">
-                  <h3 className="text-xs font-bold font-manrope text-slate-900">
-                    Profile Picture / Avatar
-                  </h3>
-                  <p className="text-xs text-slate-500 font-sans">
-                    Upload an avatar image (PNG, JPG, WebP max 5MB). If removed, initials are used automatically.
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {/* Icon buttons matching exact image width */}
+                  <div className="flex items-center justify-between gap-1.5 w-20">
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -706,23 +701,41 @@ export default function EditProfilePage({ params }: EditPageProps) {
                       type="button"
                       disabled={avatarUploading}
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center space-x-1.5 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-3.5 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
+                      title={avatarUploading ? 'Processing...' : 'Upload Photo'}
+                      aria-label="Upload Photo"
+                      className="flex-1 inline-flex items-center justify-center h-8 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer disabled:opacity-50"
                     >
-                      <FiCamera className="h-3.5 w-3.5 text-indigo-400" />
-                      <span>{avatarUploading ? 'Processing...' : 'Upload Photo'}</span>
+                      {avatarUploading ? (
+                        <svg className="animate-spin h-3.5 w-3.5 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                      ) : (
+                        <FiCamera className="h-3.5 w-3.5 text-indigo-400" />
+                      )}
                     </button>
 
                     {avatarUrl && (
                       <button
                         type="button"
                         onClick={handleRemoveAvatar}
-                        className="inline-flex items-center space-x-1.5 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-red-400 hover:text-red-300 px-3 py-2 text-xs font-semibold font-manrope shadow-md hover:border-red-500/40 transition-all cursor-pointer"
+                        title="Remove Photo"
+                        aria-label="Remove Photo"
+                        className="flex-1 inline-flex items-center justify-center h-8 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] shadow-md hover:border-red-500/40 transition-all cursor-pointer disabled:opacity-50"
                       >
-                        <FiTrash2 className="h-3.5 w-3.5 text-indigo-400" />
-                        <span>Remove</span>
+                        <FiTrash2 className="h-3.5 w-3.5 text-red-400 hover:text-red-300" />
                       </button>
                     )}
                   </div>
+                </div>
+
+                <div className="space-y-1.5 flex-1">
+                  <h3 className="text-xs font-bold font-manrope text-slate-900">
+                    Profile Picture / Avatar
+                  </h3>
+                  <p className="text-xs text-slate-500 font-sans">
+                    Upload an avatar image (PNG, JPG, WebP max 5MB). Use the buttons below the photo to upload or remove. If removed, initials are used automatically.
+                  </p>
                 </div>
               </div>
 
