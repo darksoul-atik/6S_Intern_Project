@@ -640,15 +640,17 @@ export default function ProfileViewPage({ params }: PageProps) {
             className="stats shadow-sm w-full rounded-3xl border border-white/80 bg-white/65 p-2 sm:p-3 backdrop-blur-3xl backdrop-saturate-200 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100/90"
           >
             {/* Stat 1: Reactions */}
-            <div className="stat flex items-center space-x-3.5 p-4 sm:p-6">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 shrink-0">
-                <FiHeart className="h-4 w-4 stroke-current" />
-              </div>
-              <div>
+            <div className="stat p-4 sm:p-6 space-y-2">
+              <div className="flex items-center space-x-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 shrink-0">
+                  <FiHeart className="h-4 w-4 stroke-current" />
+                </div>
                 <h3 className="text-base font-bold font-manrope text-slate-900 tracking-tight">
                   Reactions Received
                 </h3>
-                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 mt-1">
+              </div>
+              <div className="pl-10.5">
+                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900">
                   {profile.reactionsCount || 0}
                 </div>
                 <div className="stat-desc text-[11px] text-slate-500 font-sans mt-0.5">
@@ -658,15 +660,17 @@ export default function ProfileViewPage({ params }: PageProps) {
             </div>
 
             {/* Stat 2: Posts Made */}
-            <div className="stat flex items-center space-x-3.5 p-4 sm:p-6">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 shrink-0">
-                <FiFileText className="h-4 w-4 stroke-current" />
-              </div>
-              <div>
+            <div className="stat p-4 sm:p-6 space-y-2">
+              <div className="flex items-center space-x-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 shrink-0">
+                  <FiFileText className="h-4 w-4 stroke-current" />
+                </div>
                 <h3 className="text-base font-bold font-manrope text-slate-900 tracking-tight">
                   Posts Published
                 </h3>
-                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 mt-1">
+              </div>
+              <div className="pl-10.5">
+                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900">
                   {profile.postsCount || 0}
                 </div>
                 <div className="stat-desc text-[11px] text-slate-500 font-sans mt-0.5">
@@ -676,15 +680,17 @@ export default function ProfileViewPage({ params }: PageProps) {
             </div>
 
             {/* Stat 3: #1 Ranked Posts */}
-            <div className="stat flex items-center space-x-3.5 p-4 sm:p-6">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 shrink-0">
-                <FiTrendingUp className="h-4 w-4 stroke-current" />
-              </div>
-              <div>
+            <div className="stat p-4 sm:p-6 space-y-2">
+              <div className="flex items-center space-x-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 shrink-0">
+                  <FiTrendingUp className="h-4 w-4 stroke-current" />
+                </div>
                 <h3 className="text-base font-bold font-manrope text-slate-900 tracking-tight">
                   Ranked #1 Honors
                 </h3>
-                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 mt-1">
+              </div>
+              <div className="pl-10.5">
+                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900">
                   {profile.topRankedCount || 0}
                 </div>
                 <div className="stat-desc text-[11px] text-slate-500 font-sans mt-0.5">
