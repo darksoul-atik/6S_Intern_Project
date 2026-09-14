@@ -30,6 +30,13 @@
   - Integrated lightweight, SSR-safe Lottie micro-animations for the welcome card, security shield, and status responses.
 - **Flicker-Free Instant Navigation**: Prompted to optimize the session termination lifecycle, eliminating full-page reloads and spinner flashes by performing instantaneous router redirection (`router.replace('/')`) paired with immediate client-state resetting.
 
+### Day 3: Developer Profiles, Ownership & RBAC Security
+- **Domain Modeling with Subdocument Integrity**: Directed the extension of the existing User schema to house `skills: string[]` (deduplicated, trimmed strings) and `experiences: Experience[]` subdocuments (with auto-assigned Mongoose ObjectIds for granular subdocument mutations).
+- **Public Discovery vs. Protected Mutations**: Enforced open talent discovery by keeping `GET /users/:id` public while strictly enforcing that sensitive attributes (`passwordHash`) are excluded via Mongoose projection. Required that all write operations (`PATCH /users/:id`, `/skills`, `/experiences`) require JWT authentication and ownership/admin validation.
+- **Declarative Ownership & Admin Authorization Guard**: Mandated the implementation of `ProfileOwnerOrAdminGuard` to protect all parameterized profile mutation endpoints, strictly verifying that normal users can only mutate their own profile (`targetId === req.user.userId`), while administrators can manage any profile, rejecting unauthorized edits with `403 Forbidden`.
+- **Catch-All BFF Proxy Architecture**: Designed a unified Next.js App Router Route Handler (`/api/users/[[...path]]`) to proxy profile requests from client components to the NestJS backend, transparently injecting `httpOnly` cookie tokens as `Authorization: Bearer <token>` headers.
+- **Micro-Interaction Polish & UX Resilience**: Prompted for optimistic skill tag additions and removals, a work experience modal editor, dedicated loading skeleton states (`ProfileSkeleton`), and clear empty and error states.
+
 ---
 
 ## What I Reviewed or Rejected
@@ -48,6 +55,12 @@
 - **Rejected Static/Unnecessary Navigation Links**: Removed the "Overview" navigation link from the top navigation bar to streamline developer navigation directly between key platform features.
 - **Rejected Internal Design Color Terminology**: Removed design system labels (e.g., "Primary Accent", "Secondary Color") that had inadvertently leaked into user-facing status indicators.
 
+### Day 3
+- **Rejected Premature Feature Creep (Posts, Ranking, Comments)**: Enforced strict Day 3 boundary discipline by rejecting any inclusion of social posts, upvotes, feeds, or threaded comments until Days 4–6, keeping the focus entirely on developer profiles, skills, and work experiences.
+- **Rejected Blanket Authentication on Profile Viewing**: Audited the profile viewing design and rejected gating `GET /users/:id` behind authentication. In a developer platform, peer profiles, resumes, and skill portfolios must be shareable and discoverable publicly without login barriers.
+- **Rejected Duplicate DTO Envelopes**: Ensured that the profile endpoints reused Day 2's global `TransformInterceptor` and `HttpExceptionFilter`, keeping success/error response structures consistent across the entire platform.
+- **Rejected Destructive Array Overwrite for Single Operations**: Avoided requiring full array uploads for single skill or experience additions/removals; implemented targeted subdocument endpoints (`POST /skills`, `DELETE /skills/:skill`, `POST /experiences`, `PATCH /experiences/:id`, `DELETE /experiences/:id`).
+
 ---
 
 ## Bugs Caught & Critical Interventions
@@ -65,3 +78,10 @@
 - **Logout Page Flash & Slow Redirection**: Identified an issue where clicking "Sign Out" caused a full window refresh (`window.location.reload()`) with an undesirable loading spinner flash. Fixed by coordinating immediate local user state clearance with Next.js App Router transition (`router.replace('/')`) prior to issuing the background cookie termination request.
 - **Admin Password Autofill & Trailing Whitespace**: Diagnosed edge cases where browser credential managers or manual copy-paste inserted trailing whitespace into email/password inputs. Hardened `AuthService.login` to sanitize input emails (`email.trim().toLowerCase()`) and added diagnostic authentication logging.
 - **SSR Hydration Mismatches on Lottie Animations**: Resolved SSR hydration errors when rendering Lottie vector animations by developing an SSR-safe client wrapper (`LottieAnimation.tsx`) that mounts animations only after the client tree has hydrated.
+
+### Day 3
+- **NestJS Passport Module Missing Provider in `UsersModule`**: Caught a runtime dependency resolution error (`UnknownAuthenticationStrategyException: Unknown authentication strategy "jwt"`) when applying `JwtAuthGuard` in `UsersController`. Diagnosed that `UsersModule` required importing `PassportModule.register({ defaultStrategy: 'jwt' })` to supply the authentication options context.
+- **Next.js 16 Dynamic Route Params as Promises**: Handled Next.js 16 App Router deprecation where `params` is now an asynchronous Promise (`params: Promise<{ id: string }>`), leveraging React 19's `use(params)` for type-safe parameter unwrap without hydration mismatches.
+- **Mongoose Subdocument Case Sensitivity & Array Mutation**: Prevented skill duplicate pollution by implementing case-insensitive trimming (`skill.trim().toLowerCase()`) before inserting into user documents, preserving case-preserving display strings while enforcing uniqueness.
+- **Browser Subagent Playwright CDN Failure Protocol**: When the browser subagent encountered an external Playwright driver CDN 404 (`azureedge.net`), immediately halted automated browser actions and adhered to system protocols by querying the user for instruction before proceeding with verified programmatic and local verification workflows.
+

@@ -13,7 +13,7 @@ DevPulse is a high-performance, engineering-first developer community platform e
 |:---:|---|---|:---:|
 | **Day 1** | **Foundation, Health Check, OpenAPI & UI** | Monorepo scaffolding, NestJS + Next.js App Router setup, Mongoose Atlas integration, live DB connection diagnostics (`/health`), interactive Swagger UI (`/docs`), generic typed API client (`lib/api.ts`), interactive Framer Motion `MeshGradientBackground` with cursor physics, and a sleek 2-column DevPulse login interface in Google Inter font. | ✅ **Completed** |
 | **Day 2** | **Auth, Identity & Security** | User schema (Mongoose) with role field (`admin` \| `user`), shared response envelopes (`TransformInterceptor` & `HttpExceptionFilter`), `POST /auth/signup` with bcrypt hashing, `POST /auth/login` issuing signed JWTs, Passport `JwtAuthGuard`, `RolesGuard` + `@Roles()` decorator, admin bootstrap CLI seed script, Next.js BFF `httpOnly` cookie persistence, route protection middleware, frontend `/signup`, `/login`, and `/dashboard` pages with dynamic header badges, frosted white glassmorphic cards, Google Inter & Manrope typography, pure React Icons (zero emojis), Lottie micro-animations, instant flicker-free logout to `/`, and xs/sm/md responsiveness. | ✅ **Completed** |
-| **Day 3** | **Profiles & Account Management** | Extended user schema (bio, avatars, tech tags, socials), profile CRUD APIs, account settings dashboard, and dynamic `/profile/[username]` routing. | ⏳ *Upcoming* |
+| **Day 3** | **Profiles & Account Management** | Extended User schema (skills & work experiences subdocuments), public profile viewing (`GET /users/:id`), authenticated & authorized mutations (`/users/me`, `/users/:id`, `/skills`, `/experiences`), `ProfileOwnerOrAdminGuard` with strict 403 Forbidden enforcement on unauthorized edits, Next.js BFF catch-all proxy (`/api/users/[[...path]]`), responsive view-profile page (`/profile/[id]`), interactive edit-profile page (`/profile/[id]/edit`) with optimistic skills tag management and work experience modal, loading skeletons, and comprehensive empty/error states. | ✅ **Completed** |
 | **Day 4** | **Content Engine & Markdown Posts** | Markdown post editor with live preview, tags & categories, post CRUD operations, cursor/page pagination, and unified home feed. | ⏳ *Upcoming* |
 | **Day 5** | **Community Engagement & Socials** | Threaded/nested comments system, polymorphic reactions (likes, stars, bookmarks), and optimistic UI interaction feedback. | ⏳ *Upcoming* |
 | **Day 6** | **Trending Algorithms & Discovery** | Time-decay + engagement ranking algorithm (hot/trending/top), tag-based search and filtering, and an interactive Explore portal. | ⏳ *Upcoming* |
@@ -119,6 +119,120 @@ You can test all endpoints in Hoppscotch (`https://hoppscotch.io`) or Postman di
    - Expected Response: `403 Forbidden` for standard users, or `200 OK` for admin (`admin@devpulse.io`).
 5. **Interactive Swagger Docs**:
    - Open your browser to `http://localhost:5000/docs` to execute requests directly with interactive schemas.
+
+---
+
+## 👤 Day 3 — Developer Profiles (Skills & Experiences) Architecture
+
+### 1. Profile Visibility Choice & Security Guarantees
+
+In DevPulse, developer profiles are architected around **open talent discovery** coupled with **strict authorization boundaries**:
+
+#### Why Public Profile Retrieval (`GET /users/:id`):
+- **Organic Discovery & Sharing**: DevPulse is an engineering community where developers showcase skills and projects. Forcing external visitors, recruiters, or peers to register before viewing a profile impairs organic reach and SEO.
+- **Zero Information Leakage**: Sensitive credentials (`passwordHash`) are strictly excluded at query time via Mongoose projection (`.select('-passwordHash')`). Only public-facing developer attributes (`name`, `role`, `skills`, `experiences`, `createdAt`, `updatedAt`) are exposed.
+
+#### Strict Ownership & Admin Authorization on Mutations:
+- **No Anonymous Writes**: Every profile mutation requires a valid JWT Bearer token (`JwtAuthGuard`).
+- **Owner-Only Edits**: Standard users can only update their own profile (`/users/me` or `/users/:id` matching their own `userId`).
+- **Admin Management**: Administrators can edit any user profile to enforce community standards and moderation.
+- **Strict 403 Forbidden**: Any attempt by a non-admin to mutate another developer's profile is immediately rejected with `403 Forbidden` (`You do not have permission to modify this profile`) enforced by `ProfileOwnerOrAdminGuard`.
+
+---
+
+### 2. Complete Profile Endpoints Reference
+
+| Method | Endpoint | Access / Role | Description |
+|---|---|---|---|
+| `GET` | `/users/:id` | **Public** | Fetch developer profile (name, role, skills, experiences) |
+| `GET` | `/users/me` | Bearer JWT (User) | Fetch authenticated user's own profile |
+| `PATCH` | `/users/me` | Bearer JWT (Owner) | Update own basic profile (`name`) |
+| `POST` | `/users/me/skills` | Bearer JWT (Owner) | Add skill (trimmed, deduplicated) |
+| `DELETE` | `/users/me/skills/:skill` | Bearer JWT (Owner) | Remove skill from own profile |
+| `PUT` | `/users/me/skills` | Bearer JWT (Owner) | Replace entire skills list |
+| `POST` | `/users/me/experiences` | Bearer JWT (Owner) | Add work experience subdocument |
+| `PATCH` | `/users/me/experiences/:id`| Bearer JWT (Owner) | Update work experience by subdocument ID |
+| `DELETE` | `/users/me/experiences/:id`| Bearer JWT (Owner) | Delete work experience by subdocument ID |
+| `PATCH` | `/users/:id` | Owner or Admin | Update profile for target user ID (`403` if unauthorized) |
+| `POST` | `/users/:id/skills` | Owner or Admin | Add skill to target user ID (`403` if unauthorized) |
+| `DELETE` | `/users/:id/skills/:skill` | Owner or Admin | Remove skill from target user ID (`403` if unauthorized) |
+| `PUT` | `/users/:id/skills` | Owner or Admin | Overwrite skills for target user ID (`403` if unauthorized) |
+| `POST` | `/users/:id/experiences` | Owner or Admin | Add experience to target user ID (`403` if unauthorized) |
+| `PATCH` | `/users/:id/experiences/:id`| Owner or Admin| Update experience on target user ID (`403` if unauthorized) |
+| `DELETE` | `/users/:id/experiences/:id`| Owner or Admin| Delete experience on target user ID (`403` if unauthorized) |
+
+#### Frontend BFF Catch-All Proxy (`frontend/src/app/api/users/[[...path]]`):
+- Next.js acts as an authenticated BFF proxy, extracting `devpulse_token` from `httpOnly` cookies and relaying `Authorization: Bearer <token>` to NestJS backend seamlessly for all client-side profile mutations.
+
+---
+
+### 3. Profile Testing Recipes (cURL / Hoppscotch)
+
+```bash
+# 1. Fetch Public Profile by User ID (No auth required)
+curl http://localhost:5000/users/<USER_ID>
+
+# 2. Fetch Authenticated User's Profile
+curl http://localhost:5000/users/me \
+  -H "Authorization: Bearer <TOKEN>"
+
+# 3. Update Display Name
+curl -X PATCH http://localhost:5000/users/me \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alex Chen"}'
+
+# 4. Add Skill (Deduplicated, trimmed)
+curl -X POST http://localhost:5000/users/me/skills \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"skill":"TypeScript"}'
+
+# 5. Remove Skill
+curl -X DELETE http://localhost:5000/users/me/skills/TypeScript \
+  -H "Authorization: Bearer <TOKEN>"
+
+# 6. Add Work Experience Subdocument
+curl -X POST http://localhost:5000/users/me/experiences \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Senior Engineer","company":"Vercel","from":"2023-01","to":"Present","description":"Building edge infrastructure."}'
+
+# 7. Update Work Experience by ID
+curl -X PATCH http://localhost:5000/users/me/experiences/<EXPERIENCE_ID> \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Staff Engineer"}'
+
+# 8. Delete Work Experience by ID
+curl -X DELETE http://localhost:5000/users/me/experiences/<EXPERIENCE_ID> \
+  -H "Authorization: Bearer <TOKEN>"
+
+# 9. Unauthorized Modification Attempt (Expect 403 Forbidden)
+curl -X PATCH http://localhost:5000/users/<OTHER_USER_ID> \
+  -H "Authorization: Bearer <USER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Hacked Name"}'
+```
+
+---
+
+### 4. Frontend Profile UI & Experience
+
+1. **View Profile (`/profile/[id]` or `/profile/me`)**:
+   - High-contrast frosted glassmorphism card with initials avatar ring, online status dot, and role badge.
+   - Skills & Tech chip tags with subtle hover states.
+   - Work Experience vertical timeline with indigo connectors, date badges, company, and responsibilities.
+   - One-click **"Share Profile"** button copying direct URL to clipboard.
+   - Context-aware **"Edit Profile"** button (rendered only when viewer is owner or admin).
+2. **Edit Profile (`/profile/[id]/edit`)**:
+   - Full display name editing with validation feedback.
+   - Interactive skills management with instant optimistic chip addition and removal.
+   - Work experience management with modal dialog for adding and editing positions, plus delete confirmation.
+3. **Resilient UX States**:
+   - **Loading Skeleton**: `ProfileSkeleton` component with shimmering header, skills, and experience cards.
+   - **Empty States**: Contextual messaging ("No skills listed yet" + `+ Add your skills` CTA for owners; clean text for external visitors).
+   - **Error States**: Dedicated 404 (User Not Found) and 403 (Permission Denied) cards with dashboard fallback navigation.
 
 ---
 
