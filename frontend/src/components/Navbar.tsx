@@ -43,16 +43,29 @@ export function Navbar() {
           {/* Nav Links */}
           <nav className="hidden sm:flex items-center space-x-1">
             {isAuthenticated && (
-              <Link
-                href="/dashboard"
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold font-manrope transition-colors ${
-                  pathname.startsWith('/dashboard')
-                    ? 'bg-white/10 text-white shadow-xs'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
-                }`}
-              >
-                Dashboard
-              </Link>
+              <>
+                <Link
+                  href="/dashboard"
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold font-manrope transition-colors ${
+                    pathname.startsWith('/dashboard')
+                      ? 'bg-white/10 text-white shadow-xs'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                  }`}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/profile/me"
+                  id="navbar-profile-link"
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold font-manrope transition-colors ${
+                    pathname.startsWith('/profile')
+                      ? 'bg-white/10 text-white shadow-xs'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                  }`}
+                >
+                  Profile
+                </Link>
+              </>
             )}
           </nav>
         </div>
@@ -64,9 +77,13 @@ export function Navbar() {
           ) : isAuthenticated && user ? (
             <div className="flex items-center space-x-2 sm:space-x-3">
               {/* User Identity & Role Badge */}
-              <div className="flex items-center space-x-2 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 sm:px-3 py-1.5 backdrop-blur-md shadow-xs">
+              <Link
+                href="/profile/me"
+                id="navbar-user-badge-link"
+                className="flex items-center space-x-2 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] px-2.5 sm:px-3 py-1.5 backdrop-blur-md shadow-xs transition-colors group cursor-pointer"
+              >
                 <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                <span className="text-xs font-medium text-zinc-200 max-w-[85px] xs:max-w-[130px] sm:max-w-[200px] md:max-w-none truncate font-sans">
+                <span className="text-xs font-medium text-zinc-200 group-hover:text-white max-w-[85px] xs:max-w-[130px] sm:max-w-[200px] md:max-w-none truncate font-sans">
                   {user.name || user.email}
                 </span>
                 <span
@@ -79,7 +96,7 @@ export function Navbar() {
                 >
                   {user.role}
                 </span>
-              </div>
+              </Link>
 
               {/* Logout Button */}
               <button
