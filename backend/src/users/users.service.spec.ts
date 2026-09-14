@@ -54,4 +54,56 @@ describe('UsersService', () => {
     expect(result).toBeDefined();
     expect(result?.email).toBe('test@example.com');
   });
+
+  it('should return user profile on getMe for valid id', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const mockUser = {
+      _id: validId,
+      name: 'Alice',
+      skills: ['TypeScript'],
+      experiences: [],
+    };
+    mockUserModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(mockUser),
+    });
+
+    const result = await service.getMe(validId);
+    expect(result).toEqual(mockUser);
+  });
+
+  it('should throw NotFoundException on getMe if user does not exist', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    mockUserModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(null),
+    });
+
+    await expect(service.getMe(validId)).rejects.toThrow('User profile not found');
+  });
+
+  it('should return public profile on getProfileById', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const mockUser = {
+      _id: validId,
+      name: 'Bob',
+      skills: ['React'],
+      experiences: [],
+    };
+    mockUserModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(mockUser),
+    });
+
+    const result = await service.getProfileById(validId);
+    expect(result).toEqual(mockUser);
+  });
+
+  it('should throw NotFoundException on getProfileById if user does not exist', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    mockUserModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(null),
+    });
+
+    await expect(service.getProfileById(validId)).rejects.toThrow(
+      "Developer profile with ID '507f1f77bcf86cd799439011' not found",
+    );
+  });
 });
