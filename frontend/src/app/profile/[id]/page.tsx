@@ -274,16 +274,16 @@ export default function ProfileViewPage({ params }: PageProps) {
             {is401 ? (
               <Link
                 href="/login"
-                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-indigo-600 text-white px-5 py-2.5 text-xs font-semibold hover:bg-indigo-500 transition-all shadow-xs"
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-5 py-2.5 text-xs font-semibold font-manrope transition-all shadow-md"
               >
                 <span>Sign In to DevPulse</span>
               </Link>
             ) : (
               <Link
                 href="/dashboard"
-                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 text-white px-5 py-2.5 text-xs font-semibold hover:bg-slate-800 transition-all shadow-xs"
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-5 py-2.5 text-xs font-semibold font-manrope transition-all shadow-md"
               >
-                <FiArrowLeft className="h-4 w-4" />
+                <FiArrowLeft className="h-4 w-4 text-indigo-400" />
                 <span>Return to Dashboard</span>
               </Link>
             )}
@@ -368,9 +368,9 @@ export default function ProfileViewPage({ params }: PageProps) {
                 <Link
                   href={`/profile/${profileId}/edit`}
                   id="edit-profile-btn"
-                  className="inline-flex items-center space-x-2 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white px-4 py-2 text-xs font-semibold font-manrope shadow-[0_4px_16px_rgba(79,70,229,0.3)] hover:shadow-[0_6px_22px_rgba(79,70,229,0.45)] transition-all cursor-pointer"
+                  className="inline-flex items-center space-x-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-4 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
                 >
-                  <FiEdit3 className="h-3.5 w-3.5" />
+                  <FiEdit3 className="h-3.5 w-3.5 text-indigo-400" />
                   <span>Edit Profile</span>
                 </Link>
               )}
@@ -464,9 +464,9 @@ export default function ProfileViewPage({ params }: PageProps) {
                       type="button"
                       disabled={avatarUploading}
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center justify-center space-x-1.5 rounded-xl border border-slate-200/90 bg-white/90 hover:bg-white text-slate-700 hover:text-indigo-600 px-3 py-1.5 text-xs font-semibold font-manrope shadow-2xs hover:shadow-xs hover:border-indigo-300 transition-all cursor-pointer backdrop-blur-md"
+                      className="inline-flex items-center justify-center space-x-1.5 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-3.5 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
                     >
-                      <FiCamera className="h-3.5 w-3.5 text-indigo-600" />
+                      <FiCamera className="h-3.5 w-3.5 text-indigo-400" />
                       <span>{avatarUploading ? 'Saving...' : 'Upload Photo'}</span>
                     </button>
 
@@ -476,9 +476,9 @@ export default function ProfileViewPage({ params }: PageProps) {
                         disabled={avatarUploading}
                         onClick={handleRemoveAvatar}
                         title="Remove custom photo and use initials"
-                        className="inline-flex items-center justify-center space-x-1 rounded-xl border border-rose-200/80 bg-rose-50/70 hover:bg-rose-100/90 text-rose-600 hover:text-rose-700 px-2.5 py-1.5 text-xs font-semibold font-manrope shadow-2xs hover:border-rose-300 transition-all cursor-pointer backdrop-blur-md"
+                        className="inline-flex items-center justify-center space-x-1.5 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-red-400 hover:text-red-300 px-3 py-2 text-xs font-semibold font-manrope shadow-md hover:border-red-500/40 transition-all cursor-pointer"
                       >
-                        <FiTrash2 className="h-3.5 w-3.5" />
+                        <FiTrash2 className="h-3.5 w-3.5 text-indigo-400" />
                         <span>Remove</span>
                       </button>
                     )}
@@ -559,10 +559,13 @@ export default function ProfileViewPage({ params }: PageProps) {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center space-y-2">
+                  <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50/80 text-indigo-600 border border-indigo-100">
+                    <FiAward className="h-4 w-4" />
+                  </div>
                   <p className="text-xs text-slate-500 font-sans">
                     {canEdit
-                      ? 'No skills listed yet.'
+                      ? 'No skills listed yet. Add your core competencies on the edit page.'
                       : 'This developer has not listed any skills yet.'}
                   </p>
                 </div>
@@ -621,10 +624,13 @@ export default function ProfileViewPage({ params }: PageProps) {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center space-y-2">
+                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50/80 text-indigo-600 border border-indigo-100">
+                    <FiBriefcase className="h-5 w-5" />
+                  </div>
                   <p className="text-xs text-slate-500 font-sans">
                     {canEdit
-                      ? 'No work experience listed yet.'
+                      ? 'No work experience listed yet. Add your career milestones on the edit page.'
                       : 'This developer has not listed any work experience yet.'}
                   </p>
                 </div>

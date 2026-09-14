@@ -538,16 +538,16 @@ export default function EditProfilePage({ params }: EditPageProps) {
             {is401 ? (
               <Link
                 href="/login"
-                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-indigo-600 text-white px-5 py-2.5 text-xs font-semibold hover:bg-indigo-500 transition-all shadow-xs"
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-5 py-2.5 text-xs font-semibold font-manrope transition-all shadow-md"
               >
                 <span>Sign In to DevPulse</span>
               </Link>
             ) : (
               <Link
                 href="/dashboard"
-                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 text-white px-5 py-2.5 text-xs font-semibold hover:bg-slate-800 transition-all shadow-xs"
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-5 py-2.5 text-xs font-semibold font-manrope transition-all shadow-md"
               >
-                <FiArrowLeft className="h-4 w-4" />
+                <FiArrowLeft className="h-4 w-4 text-indigo-400" />
                 <span>Return to Dashboard</span>
               </Link>
             )}
@@ -573,9 +573,9 @@ export default function EditProfilePage({ params }: EditPageProps) {
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href={`/profile/${profileId || 'me'}`}
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 text-white px-5 py-2.5 text-xs font-semibold hover:bg-slate-800 transition-all shadow-xs"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-5 py-2.5 text-xs font-semibold font-manrope transition-all shadow-md"
             >
-              <FiArrowLeft className="h-4 w-4" />
+              <FiArrowLeft className="h-4 w-4 text-indigo-400" />
               <span>View Public Profile</span>
             </Link>
           </div>
@@ -706,9 +706,9 @@ export default function EditProfilePage({ params }: EditPageProps) {
                       type="button"
                       disabled={avatarUploading}
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center space-x-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 text-xs font-semibold font-manrope transition-all cursor-pointer shadow-2xs hover:border-indigo-300"
+                      className="inline-flex items-center space-x-1.5 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-3.5 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
                     >
-                      <FiCamera className="h-3.5 w-3.5 text-indigo-600" />
+                      <FiCamera className="h-3.5 w-3.5 text-indigo-400" />
                       <span>{avatarUploading ? 'Processing...' : 'Upload Photo'}</span>
                     </button>
 
@@ -716,10 +716,10 @@ export default function EditProfilePage({ params }: EditPageProps) {
                       <button
                         type="button"
                         onClick={handleRemoveAvatar}
-                        className="inline-flex items-center space-x-1.5 rounded-xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100 text-rose-700 px-3 py-2 text-xs font-semibold font-manrope transition-all cursor-pointer"
+                        className="inline-flex items-center space-x-1.5 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-red-400 hover:text-red-300 px-3 py-2 text-xs font-semibold font-manrope shadow-md hover:border-red-500/40 transition-all cursor-pointer"
                       >
-                        <FiTrash2 className="h-3.5 w-3.5" />
-                        <span>Remove Photo</span>
+                        <FiTrash2 className="h-3.5 w-3.5 text-indigo-400" />
+                        <span>Remove</span>
                       </button>
                     )}
                   </div>
@@ -769,9 +769,9 @@ export default function EditProfilePage({ params }: EditPageProps) {
                   id="save-profile-name-btn"
                   type="submit"
                   disabled={savingName}
-                  className="inline-flex items-center justify-center space-x-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-5 py-2.5 text-xs font-semibold font-manrope shadow-xs hover:shadow-md transition-all cursor-pointer"
+                  className="inline-flex items-center justify-center space-x-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] disabled:opacity-50 text-white px-5 py-2.5 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
                 >
-                  <FiSave className="h-4 w-4" />
+                  <FiSave className="h-4 w-4 text-indigo-400" />
                   <span>{savingName ? 'Saving Changes...' : 'Save Profile Details'}</span>
                 </button>
               </div>
@@ -846,9 +846,9 @@ export default function EditProfilePage({ params }: EditPageProps) {
                   id="add-skill-btn"
                   type="submit"
                   disabled={skillLoading || !newSkillInput.trim()}
-                  className="inline-flex items-center justify-center space-x-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white px-5 py-2.5 text-xs font-semibold font-manrope shadow-xs hover:shadow-md transition-all cursor-pointer"
+                  className="inline-flex items-center justify-center space-x-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] disabled:opacity-50 text-white px-5 py-2.5 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
                 >
-                  <FiPlus className="h-4 w-4" />
+                  <FiPlus className="h-4 w-4 text-indigo-400" />
                   <span>{skillLoading ? 'Adding...' : 'Add Skill'}</span>
                 </button>
               </div>
@@ -903,8 +903,13 @@ export default function EditProfilePage({ params }: EditPageProps) {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500 font-sans">
-                  No skills added yet. Use the input field above to add your first skill.
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center space-y-2">
+                  <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50/80 text-indigo-600 border border-indigo-100">
+                    <FiAward className="h-4 w-4 text-indigo-500" />
+                  </div>
+                  <p className="text-xs text-slate-500 font-sans">
+                    No skills added yet. Use the input field above to showcase your technologies and languages.
+                  </p>
                 </div>
               )}
             </div>
@@ -936,9 +941,9 @@ export default function EditProfilePage({ params }: EditPageProps) {
                 id="open-add-exp-btn"
                 type="button"
                 onClick={handleOpenAddExp}
-                className="inline-flex items-center space-x-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 text-xs font-semibold font-manrope shadow-xs hover:shadow-md transition-all cursor-pointer"
+                className="inline-flex items-center space-x-1.5 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-4 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
               >
-                <FiPlus className="h-4 w-4" />
+                <FiPlus className="h-4 w-4 text-indigo-400" />
                 <span>Add Experience</span>
               </button>
             </div>
@@ -1006,18 +1011,18 @@ export default function EditProfilePage({ params }: EditPageProps) {
                           type="button"
                           aria-label="Edit experience"
                           onClick={() => handleOpenEditExp(exp)}
-                          className="inline-flex items-center space-x-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white hover:border-indigo-300 text-slate-700 hover:text-indigo-600 px-2.5 py-1.5 text-xs font-medium transition-all cursor-pointer"
+                          className="inline-flex items-center space-x-1 rounded-lg border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-2.5 py-1.5 text-xs font-medium transition-all cursor-pointer"
                         >
-                          <FiEdit3 className="h-3.5 w-3.5" />
+                          <FiEdit3 className="h-3.5 w-3.5 text-indigo-400" />
                           <span>Edit</span>
                         </button>
                         <button
                           type="button"
                           aria-label="Delete experience"
                           onClick={() => handleDeleteExp(expId, exp.company)}
-                          className="inline-flex items-center space-x-1 rounded-lg border border-rose-200 bg-rose-50/60 hover:bg-rose-100 hover:border-rose-300 text-rose-700 px-2.5 py-1.5 text-xs font-medium transition-all cursor-pointer"
+                          className="inline-flex items-center space-x-1 rounded-lg border border-white/10 bg-[#090d16] hover:bg-[#121827] text-red-400 hover:text-red-300 px-2.5 py-1.5 text-xs font-medium transition-all cursor-pointer"
                         >
-                          <FiTrash2 className="h-3.5 w-3.5" />
+                          <FiTrash2 className="h-3.5 w-3.5 text-indigo-400" />
                           <span>Delete</span>
                         </button>
                       </div>
@@ -1027,13 +1032,16 @@ export default function EditProfilePage({ params }: EditPageProps) {
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center space-y-2">
+                <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50/80 text-indigo-600 border border-indigo-100">
+                  <FiBriefcase className="h-4 w-4 text-indigo-500" />
+                </div>
                 <p className="text-xs text-slate-500 font-sans">
                   No work experience listed yet.
                 </p>
                 <button
                   type="button"
                   onClick={handleOpenAddExp}
-                  className="inline-block text-xs font-semibold text-emerald-600 hover:text-emerald-500 hover:underline cursor-pointer"
+                  className="inline-block text-xs font-semibold text-indigo-600 hover:text-indigo-500 hover:underline cursor-pointer"
                 >
                   + Add your first work experience
                 </button>
@@ -1143,20 +1151,20 @@ export default function EditProfilePage({ params }: EditPageProps) {
                         onChange={(e) => setExpFrom(e.target.value)}
                         onClick={() => fromPickerRef.current?.showPicker?.()}
                         required
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-3.5 pr-10 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans cursor-pointer"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-3.5 pr-10 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-sans cursor-pointer"
                       />
                       <button
                         type="button"
                         tabIndex={-1}
                         onClick={() => fromPickerRef.current?.showPicker?.()}
-                        className="absolute right-3 p-1 text-slate-400 hover:text-emerald-600 cursor-pointer transition-colors"
+                        className="absolute right-3 p-1 text-slate-400 hover:text-indigo-600 cursor-pointer transition-colors"
                         title="Open calendar picker"
                       >
                         <FiCalendar className="h-4 w-4" />
                       </button>
                     </div>
                     {expFrom ? (
-                      <p className="text-[11px] text-emerald-600 font-medium mt-1">
+                      <p className="text-[11px] text-indigo-600 font-medium mt-1">
                         Selected: {formatDateDisplay(expFrom)}
                       </p>
                     ) : (
@@ -1183,9 +1191,9 @@ export default function EditProfilePage({ params }: EditPageProps) {
                             setIsExpPresent(e.target.checked);
                             if (e.target.checked) setExpTo('');
                           }}
-                          className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20"
+                          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/20"
                         />
-                        <span className="text-[11px] font-medium text-emerald-700">Present</span>
+                        <span className="text-[11px] font-medium text-indigo-700">Present</span>
                       </label>
                     </div>
 
@@ -1199,20 +1207,20 @@ export default function EditProfilePage({ params }: EditPageProps) {
                             value={expTo}
                             onChange={(e) => setExpTo(e.target.value)}
                             onClick={() => toPickerRef.current?.showPicker?.()}
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-3.5 pr-10 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans cursor-pointer"
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-3.5 pr-10 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-sans cursor-pointer"
                           />
                           <button
                             type="button"
                             tabIndex={-1}
                             onClick={() => toPickerRef.current?.showPicker?.()}
-                            className="absolute right-3 p-1 text-slate-400 hover:text-emerald-600 cursor-pointer transition-colors"
+                            className="absolute right-3 p-1 text-slate-400 hover:text-indigo-600 cursor-pointer transition-colors"
                             title="Open calendar picker"
                           >
                             <FiCalendar className="h-4 w-4" />
                           </button>
                         </div>
                         {expTo ? (
-                          <p className="text-[11px] text-emerald-600 font-medium mt-1">
+                          <p className="text-[11px] text-indigo-600 font-medium mt-1">
                             Selected: {formatDateDisplay(expTo)}
                           </p>
                         ) : (
@@ -1222,8 +1230,8 @@ export default function EditProfilePage({ params }: EditPageProps) {
                         )}
                       </div>
                     ) : (
-                      <div className="w-full rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 font-sans flex items-center space-x-1.5 h-[42px]">
-                        <FiCheck className="h-3.5 w-3.5 text-emerald-600" />
+                      <div className="w-full rounded-xl border border-indigo-200 bg-indigo-50/70 px-3.5 py-2.5 text-xs font-semibold text-indigo-700 font-sans flex items-center space-x-1.5 h-[42px]">
+                        <FiCheck className="h-3.5 w-3.5 text-indigo-600" />
                         <span>Currently working here (Present)</span>
                       </div>
                     )}
@@ -1243,7 +1251,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
                     value={expDescription}
                     onChange={(e) => setExpDescription(e.target.value)}
                     placeholder="Describe your responsibilities, architectures designed, and impact..."
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-sans"
                   />
                 </div>
 
@@ -1259,9 +1267,9 @@ export default function EditProfilePage({ params }: EditPageProps) {
                     id="save-exp-btn"
                     type="submit"
                     disabled={expLoading}
-                    className="inline-flex items-center space-x-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-5 py-2 text-xs font-semibold font-manrope shadow-xs hover:shadow-md transition-all cursor-pointer"
+                    className="inline-flex items-center space-x-1.5 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] disabled:opacity-50 text-white px-5 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
                   >
-                    <FiCheck className="h-4 w-4" />
+                    <FiCheck className="h-4 w-4 text-indigo-400" />
                     <span>{expLoading ? 'Saving...' : 'Save Experience'}</span>
                   </button>
                 </div>
