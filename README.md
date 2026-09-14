@@ -248,7 +248,7 @@ curl -X PATCH http://localhost:5000/users/<OTHER_USER_ID> \
 | `JWT_EXPIRES_IN` | JWT token lifespan / expiration | `7d` |
 | `ADMIN_NAME` | Display name for bootstrapped administrator | `DevPulse Administrator` |
 | `ADMIN_EMAIL` | Email address for bootstrapped administrator | `admin@devpulse.io` |
-| `ADMIN_PASSWORD` | Password for bootstrapped administrator | `Admin@SecurePass2026` |
+| `ADMIN_PASSWORD` | Secure password for bootstrapped administrator | `<your_secure_admin_password>` |
 
 ### Frontend (`frontend/.env.local`)
 
