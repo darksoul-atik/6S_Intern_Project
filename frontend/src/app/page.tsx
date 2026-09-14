@@ -2,10 +2,13 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiLogIn, FiUserPlus, FiArrowRight } from 'react-icons/fi';
+import { FiLogIn, FiUserPlus, FiArrowRight, FiLogOut } from 'react-icons/fi';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
+import { useAuth } from '@/context/AuthContext';
 
 export default function HomePage() {
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
+
   return (
     <MeshGradientBackground
       colors={['#4f46e5', '#7c3aed', '#0284c7', '#059669']}
@@ -55,28 +58,72 @@ export default function HomePage() {
             A modern platform engineered for developers to exchange technical insights, debate architecture, and build the future of software together.
           </p>
 
-          {/* Centered Action Buttons (Sign In & Sign Up) */}
-          <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 w-full max-w-md sm:max-w-none mx-auto">
-            {/* Sign In Button */}
-            <Link
-              href="/login"
-              id="hero-signin-btn"
-              className="group w-full sm:w-auto min-w-[160px] sm:min-w-[170px] px-6 sm:px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-600 hover:from-indigo-500 hover:via-indigo-400 hover:to-blue-500 text-white text-xs sm:text-sm font-semibold font-manrope shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-center space-x-2.5 border border-indigo-400/30 cursor-pointer"
-            >
-              <FiLogIn className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-              <span>Sign In</span>
-            </Link>
+          {/* Action Buttons: Continue As + Logout (if logged in) OR Sign In & Sign Up (if logged out) */}
+          <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 w-full max-w-lg mx-auto">
+            {isLoading ? (
+              <div className="h-14 w-64 rounded-2xl bg-white/10 backdrop-blur-md animate-pulse mx-auto" />
+            ) : isAuthenticated && user ? (
+              /* Authenticated View: Continue as User/Admin (with Avatar) + Logout */
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 w-full">
+                {/* Continue as User / Admin Button */}
+                <Link
+                  href="/dashboard"
+                  id="hero-continue-btn"
+                  className="group flex-1 px-5 sm:px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white text-xs sm:text-sm font-semibold font-manrope shadow-lg shadow-indigo-600/35 hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-between space-x-3 border border-indigo-400/40 cursor-pointer"
+                >
+                  <div className="flex items-center space-x-3 min-w-0">
+                    {/* User Avatar Placeholder */}
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 border border-white/30 text-white font-bold font-manrope text-sm shadow-inner group-hover:scale-105 transition-transform">
+                      {(user.name || user.email)[0].toUpperCase()}
+                    </div>
+                    <div className="text-left truncate">
+                      <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-emerald-200 font-semibold block leading-tight">
+                        {user.role === 'admin' ? 'Admin Access' : 'Verified User'}
+                      </span>
+                      <span className="text-xs sm:text-sm font-bold text-white block truncate">
+                        Continue as {user.name || user.email.split('@')[0]}
+                      </span>
+                    </div>
+                  </div>
+                  <FiArrowRight className="h-4 w-4 shrink-0 text-white/90 group-hover:translate-x-1 transition-transform" />
+                </Link>
 
-            {/* Sign Up Button */}
-            <Link
-              href="/signup"
-              id="hero-signup-btn"
-              className="group w-full sm:w-auto min-w-[160px] sm:min-w-[170px] px-6 sm:px-8 py-3.5 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs sm:text-sm font-semibold font-manrope border border-white/15 hover:border-white/30 backdrop-blur-2xl shadow-xl hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-center space-x-2.5 cursor-pointer"
-            >
-              <FiUserPlus className="h-4 w-4 text-indigo-300" />
-              <span>Sign Up</span>
-              <FiArrowRight className="h-3.5 w-3.5 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
+                {/* Log Out Button */}
+                <button
+                  id="hero-logout-btn"
+                  type="button"
+                  onClick={logout}
+                  className="group px-6 py-3.5 rounded-2xl bg-white/[0.08] hover:bg-rose-500/20 text-zinc-300 hover:text-rose-200 text-xs sm:text-sm font-semibold font-manrope border border-white/15 hover:border-rose-500/30 backdrop-blur-2xl shadow-xl hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-center space-x-2 cursor-pointer shrink-0"
+                >
+                  <FiLogOut className="h-4 w-4 text-zinc-400 group-hover:text-rose-300 transition-colors" />
+                  <span>Log Out</span>
+                </button>
+              </div>
+            ) : (
+              /* Public View: Sign In & Sign Up */
+              <>
+                {/* Sign In Button */}
+                <Link
+                  href="/login"
+                  id="hero-signin-btn"
+                  className="group w-full sm:w-auto min-w-[160px] sm:min-w-[170px] px-6 sm:px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-600 hover:from-indigo-500 hover:via-indigo-400 hover:to-blue-500 text-white text-xs sm:text-sm font-semibold font-manrope shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-center space-x-2.5 border border-indigo-400/30 cursor-pointer"
+                >
+                  <FiLogIn className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+                  <span>Sign In</span>
+                </Link>
+
+                {/* Sign Up Button */}
+                <Link
+                  href="/signup"
+                  id="hero-signup-btn"
+                  className="group w-full sm:w-auto min-w-[160px] sm:min-w-[170px] px-6 sm:px-8 py-3.5 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs sm:text-sm font-semibold font-manrope border border-white/15 hover:border-white/30 backdrop-blur-2xl shadow-xl hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99] flex items-center justify-center space-x-2.5 cursor-pointer"
+                >
+                  <FiUserPlus className="h-4 w-4 text-indigo-300" />
+                  <span>Sign Up</span>
+                  <FiArrowRight className="h-3.5 w-3.5 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </>
+            )}
           </div>
         </motion.div>
       </div>
