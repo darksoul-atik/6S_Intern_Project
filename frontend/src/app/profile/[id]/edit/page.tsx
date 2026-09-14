@@ -28,6 +28,30 @@ interface EditPageProps {
   params: Promise<{ id: string }>;
 }
 
+function toDateInputValue(val?: string): string {
+  if (!val) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+  const d = new Date(val);
+  if (!isNaN(d.getTime())) {
+    return d.toISOString().split('T')[0];
+  }
+  return '';
+}
+
+function formatDateDisplay(val?: string): string {
+  if (!val) return '';
+  if (val.toLowerCase() === 'present') return 'Present';
+  const d = new Date(val);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+  return val;
+}
+
 export default function EditProfilePage({ params }: EditPageProps) {
   const resolvedParams = use(params);
   const targetId = resolvedParams.id;
@@ -70,6 +94,9 @@ export default function EditProfilePage({ params }: EditPageProps) {
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+
+  const fromPickerRef = useRef<HTMLInputElement>(null);
+  const toPickerRef = useRef<HTMLInputElement>(null);
 
   const getInitials = (val?: string): string => {
     if (!val) return '?';
@@ -199,7 +226,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
     const payload = {
       name: name.trim(),
       title: title.trim() || undefined,
-      avatarUrl: avatarUrl ? avatarUrl : null,
+      avatarUrl: avatarUrl ? avatarUrl : '',
     };
 
     try {
@@ -343,10 +370,10 @@ export default function EditProfilePage({ params }: EditPageProps) {
     setEditingExp(exp);
     setExpTitle(exp.title);
     setExpCompany(exp.company);
-    setExpFrom(exp.from || '');
+    setExpFrom(toDateInputValue(exp.from));
     const isPresent = !exp.to || exp.to.toLowerCase() === 'present';
     setIsExpPresent(isPresent);
-    setExpTo(isPresent ? '' : exp.to || '');
+    setExpTo(isPresent ? '' : toDateInputValue(exp.to));
     setExpDescription(exp.description || '');
     setExpError(null);
     setIsExpModalOpen(true);
@@ -1099,6 +1126,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Start Date */}
                   <div>
                     <label
                       htmlFor="exp-from-input"
@@ -1106,23 +1134,46 @@ export default function EditProfilePage({ params }: EditPageProps) {
                     >
                       Start Date (Calendar) *
                     </label>
-                    <input
-                      id="exp-from-input"
-                      type="date"
-                      value={expFrom}
-                      onChange={(e) => setExpFrom(e.target.value)}
-                      required
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans"
-                    />
+                    <div className="relative flex items-center">
+                      <input
+                        id="exp-from-input"
+                        ref={fromPickerRef}
+                        type="date"
+                        value={expFrom}
+                        onChange={(e) => setExpFrom(e.target.value)}
+                        onClick={() => fromPickerRef.current?.showPicker?.()}
+                        required
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-3.5 pr-10 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans cursor-pointer"
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => fromPickerRef.current?.showPicker?.()}
+                        className="absolute right-3 p-1 text-slate-400 hover:text-emerald-600 cursor-pointer transition-colors"
+                        title="Open calendar picker"
+                      >
+                        <FiCalendar className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {expFrom ? (
+                      <p className="text-[11px] text-emerald-600 font-medium mt-1">
+                        Selected: {formatDateDisplay(expFrom)}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Click to select date
+                      </p>
+                    )}
                   </div>
 
+                  {/* End Date */}
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <label
                         htmlFor="exp-to-input"
                         className="block text-xs font-semibold text-slate-700 font-manrope"
                       >
-                        End Date
+                        End Date (Calendar)
                       </label>
                       <label className="inline-flex items-center space-x-1.5 text-xs text-slate-600 font-sans cursor-pointer">
                         <input
@@ -1139,15 +1190,39 @@ export default function EditProfilePage({ params }: EditPageProps) {
                     </div>
 
                     {!isExpPresent ? (
-                      <input
-                        id="exp-to-input"
-                        type="date"
-                        value={expTo}
-                        onChange={(e) => setExpTo(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans"
-                      />
+                      <div>
+                        <div className="relative flex items-center">
+                          <input
+                            id="exp-to-input"
+                            ref={toPickerRef}
+                            type="date"
+                            value={expTo}
+                            onChange={(e) => setExpTo(e.target.value)}
+                            onClick={() => toPickerRef.current?.showPicker?.()}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-3.5 pr-10 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans cursor-pointer"
+                          />
+                          <button
+                            type="button"
+                            tabIndex={-1}
+                            onClick={() => toPickerRef.current?.showPicker?.()}
+                            className="absolute right-3 p-1 text-slate-400 hover:text-emerald-600 cursor-pointer transition-colors"
+                            title="Open calendar picker"
+                          >
+                            <FiCalendar className="h-4 w-4" />
+                          </button>
+                        </div>
+                        {expTo ? (
+                          <p className="text-[11px] text-emerald-600 font-medium mt-1">
+                            Selected: {formatDateDisplay(expTo)}
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-slate-400 mt-1">
+                            Click to select date
+                          </p>
+                        )}
+                      </div>
                     ) : (
-                      <div className="w-full rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 font-sans flex items-center space-x-1.5">
+                      <div className="w-full rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 font-sans flex items-center space-x-1.5 h-[42px]">
                         <FiCheck className="h-3.5 w-3.5 text-emerald-600" />
                         <span>Currently working here (Present)</span>
                       </div>

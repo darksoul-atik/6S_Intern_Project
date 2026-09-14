@@ -63,13 +63,22 @@ export class UsersService {
       user.name = updateDto.name.trim();
     }
     if (updateDto.title !== undefined) {
-      user.title = updateDto.title.trim() || undefined;
+      if (updateDto.title && updateDto.title.trim()) {
+        user.title = updateDto.title.trim();
+      } else {
+        user.set('title', undefined);
+      }
     }
     if (updateDto.avatarUrl !== undefined) {
-      user.avatarUrl = updateDto.avatarUrl || undefined;
+      if (updateDto.avatarUrl && updateDto.avatarUrl.trim()) {
+        user.avatarUrl = updateDto.avatarUrl.trim();
+      } else {
+        user.set('avatarUrl', undefined);
+      }
     }
 
     return user.save();
+
   }
 
   async addSkill(userId: string, skill: string): Promise<UserDocument> {

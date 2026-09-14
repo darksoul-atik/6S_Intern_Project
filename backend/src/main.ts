@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe, type INestApplication } from '@nestjs/common';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module.js';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
@@ -10,6 +11,10 @@ let appInstance: INestApplication | null = null;
 
 async function createApp(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule);
+
+  // Increase payload size limit for Base64 avatars and media
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ extended: true, limit: '10mb' }));
 
   // Enable global input validation with class-validator
   app.useGlobalPipes(
