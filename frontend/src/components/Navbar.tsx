@@ -19,7 +19,7 @@ export function Navbar() {
         
         {/* Left: Brand Logo */}
         <div className="flex items-center space-x-4 sm:space-x-6">
-          <Link href="/" className="flex items-center space-x-2.5 sm:space-x-3 group">
+          <Link href="/dashboard" className="flex items-center space-x-2.5 sm:space-x-3 group">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-[1px] shadow-[0_0_18px_rgba(99,102,241,0.35)] transition-transform group-hover:scale-105">
               <div className="flex h-full w-full items-center justify-center rounded-[11px] bg-[#080a10]">
                 <svg
