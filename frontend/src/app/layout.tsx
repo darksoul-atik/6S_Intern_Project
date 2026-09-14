@@ -30,8 +30,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${manrope.variable} h-full antialiased`}>
-      <body className="min-h-full bg-[#020205] text-white font-sans selection:bg-indigo-500/30 selection:text-white">
+    <html
+      lang="en"
+      className={`${inter.variable} ${manrope.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
+      <body
+        className="min-h-full bg-[#020205] text-white font-sans selection:bg-indigo-500/30 selection:text-white"
+        suppressHydrationWarning
+      >
         <AuthProvider>
           <Navbar />
           <main>{children}</main>
