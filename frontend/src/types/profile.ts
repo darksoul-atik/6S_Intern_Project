@@ -14,6 +14,11 @@ export interface UserProfile {
   name: string;
   email?: string;
   role: 'user' | 'admin';
+  title?: string;
+  avatarUrl?: string;
+  reactionsCount?: number;
+  postsCount?: number;
+  topRankedCount?: number;
   skills: string[];
   experiences: Experience[];
   createdAt: string;

@@ -62,6 +62,12 @@ export class UsersService {
     if (updateDto.name !== undefined) {
       user.name = updateDto.name.trim();
     }
+    if (updateDto.title !== undefined) {
+      user.title = updateDto.title.trim() || undefined;
+    }
+    if (updateDto.avatarUrl !== undefined) {
+      user.avatarUrl = updateDto.avatarUrl || undefined;
+    }
 
     return user.save();
   }

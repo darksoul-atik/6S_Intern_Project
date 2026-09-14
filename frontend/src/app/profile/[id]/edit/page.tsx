@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -16,6 +16,8 @@ import {
   FiEdit3,
   FiTrash2,
   FiCalendar,
+  FiCamera,
+  FiUpload,
 } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 import { apiClient, ApiError } from '@/lib/api';
@@ -37,9 +39,13 @@ export default function EditProfilePage({ params }: EditPageProps) {
 
   // Basic Profile Edit State
   const [name, setName] = useState('');
+  const [title, setTitle] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const [nameSuccess, setNameSuccess] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Skills Edit State
   const [newSkillInput, setNewSkillInput] = useState('');
@@ -56,6 +62,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
   const [expCompany, setExpCompany] = useState('');
   const [expFrom, setExpFrom] = useState('');
   const [expTo, setExpTo] = useState('');
+  const [isExpPresent, setIsExpPresent] = useState(false);
   const [expDescription, setExpDescription] = useState('');
   const [expLoading, setExpLoading] = useState(false);
   const [expError, setExpError] = useState<string | null>(null);
@@ -63,6 +70,14 @@ export default function EditProfilePage({ params }: EditPageProps) {
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+
+  const getInitials = (val?: string): string => {
+    if (!val) return '?';
+    const words = val.trim().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return '?';
+    if (words.length === 1) return words[0].charAt(0).toUpperCase();
+    return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+  };
 
   useEffect(() => {
     let active = true;
@@ -77,6 +92,8 @@ export default function EditProfilePage({ params }: EditPageProps) {
         if (active && res.data) {
           setProfile(res.data);
           setName(res.data.name || '');
+          setTitle(res.data.title || '');
+          setAvatarUrl(res.data.avatarUrl || null);
         }
       } catch (err) {
         if (active) {
@@ -107,7 +124,63 @@ export default function EditProfilePage({ params }: EditPageProps) {
   const isAdmin = currentUser?.role === 'admin';
   const canEdit = isOwner || isAdmin;
 
-  // Save basic profile name
+  // Handle Avatar selection and canvas optimization
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setNameError('Please select a valid image file (PNG, JPG, WebP)');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setNameError('Image size should be less than 5MB');
+      return;
+    }
+
+    setAvatarUploading(true);
+    setNameError(null);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 400;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          setAvatarUrl(canvas.toDataURL('image/jpeg', 0.88));
+        } else {
+          setAvatarUrl(event.target?.result as string);
+        }
+        setAvatarUploading(false);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatarUrl('');
+  };
+
+  // Save basic profile (name, title, avatarUrl)
   const handleSaveName = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
@@ -123,13 +196,22 @@ export default function EditProfilePage({ params }: EditPageProps) {
     const endpoint =
       targetId === 'me' ? '/api/users/me' : `/api/users/${profileId}`;
 
+    const payload = {
+      name: name.trim(),
+      title: title.trim() || undefined,
+      avatarUrl: avatarUrl ? avatarUrl : null,
+    };
+
     try {
       const res = await apiClient<UserProfile>(endpoint, {
         method: 'PATCH',
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify(payload),
       });
       if (res.data) {
         setProfile(res.data);
+        setName(res.data.name || '');
+        setTitle(res.data.title || '');
+        setAvatarUrl(res.data.avatarUrl || null);
         setNameSuccess(true);
         setTimeout(() => setNameSuccess(false), 3000);
       }
@@ -137,7 +219,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
       if (err instanceof ApiError) {
         setNameError(err.message);
       } else {
-        setNameError('Failed to update name');
+        setNameError('Failed to update profile details');
       }
     } finally {
       setSavingName(false);
@@ -250,6 +332,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
     setExpCompany('');
     setExpFrom('');
     setExpTo('');
+    setIsExpPresent(false);
     setExpDescription('');
     setExpError(null);
     setIsExpModalOpen(true);
@@ -260,8 +343,10 @@ export default function EditProfilePage({ params }: EditPageProps) {
     setEditingExp(exp);
     setExpTitle(exp.title);
     setExpCompany(exp.company);
-    setExpFrom(exp.from);
-    setExpTo(exp.to || '');
+    setExpFrom(exp.from || '');
+    const isPresent = !exp.to || exp.to.toLowerCase() === 'present';
+    setIsExpPresent(isPresent);
+    setExpTo(isPresent ? '' : exp.to || '');
     setExpDescription(exp.description || '');
     setExpError(null);
     setIsExpModalOpen(true);
@@ -284,7 +369,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
       title: expTitle.trim(),
       company: expCompany.trim(),
       from: expFrom.trim(),
-      to: expTo.trim() || undefined,
+      to: isExpPresent ? 'Present' : expTo.trim() || undefined,
       description: expDescription.trim() || undefined,
     };
 
@@ -502,8 +587,8 @@ export default function EditProfilePage({ params }: EditPageProps) {
               <span>Back to Profile View</span>
             </Link>
 
-            <span className="text-xs font-mono text-slate-500 bg-white/60 px-3 py-1.5 rounded-xl border border-slate-200/60">
-              Editing: {profileId || 'My Profile'}
+            <span className="text-xs font-medium text-slate-600 bg-white/60 px-3 py-1.5 rounded-xl border border-slate-200/60 font-manrope">
+              Editing Profile
             </span>
           </div>
 
@@ -518,7 +603,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
                 Edit Developer Profile
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 mt-1 font-sans">
-                Update your display name, manage your core skills, and list your work experiences.
+                Update your avatar picture, display name, professional headline, skills, and experience.
               </p>
             </div>
 
@@ -535,31 +620,94 @@ export default function EditProfilePage({ params }: EditPageProps) {
             </div>
           </motion.div>
 
-          {/* Section 1: Basic Info (Name) */}
+          {/* Section 1: Profile Details & Avatar */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-3xl border border-white/80 bg-white/60 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] space-y-4"
+            className="rounded-3xl border border-white/80 bg-white/60 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] space-y-6"
           >
             <div className="flex items-center space-x-2.5 pb-2 border-b border-slate-100">
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600">
                 <FiUser className="h-4 w-4" />
               </div>
-              <h2 className="text-base font-bold font-manrope text-slate-900">
-                Basic Information
-              </h2>
+              <div>
+                <h2 className="text-base font-bold font-manrope text-slate-900">
+                  Profile Details & Avatar
+                </h2>
+                <p className="text-xs text-slate-500 font-sans">
+                  Manage your avatar picture, display name, and professional title.
+                </p>
+              </div>
             </div>
 
-            <form onSubmit={handleSaveName} className="space-y-4 pt-1">
-              <div>
-                <label
-                  htmlFor="profile-name-input"
-                  className="block text-xs font-semibold text-slate-700 mb-1.5 font-manrope"
-                >
-                  Full Display Name
-                </label>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <form onSubmit={handleSaveName} className="space-y-6 pt-1">
+              {/* Avatar Upload Block */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-4 rounded-2xl bg-white/80 border border-slate-200/80 shadow-2xs">
+                <div className="relative group shrink-0">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-emerald-500 p-[2px] shadow-sm overflow-hidden">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="Avatar preview"
+                        className="h-full w-full object-cover rounded-[14px]"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-slate-900 text-white font-mono font-bold text-xl tracking-wider">
+                        {getInitials(name || profile.name)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2 flex-1">
+                  <h3 className="text-xs font-bold font-manrope text-slate-900">
+                    Profile Picture / Avatar
+                  </h3>
+                  <p className="text-xs text-slate-500 font-sans">
+                    Upload an avatar image (PNG, JPG, WebP max 5MB). If removed, initials are used automatically.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png, image/jpeg, image/webp, image/gif"
+                      className="hidden"
+                      onChange={handleAvatarFileChange}
+                    />
+                    <button
+                      type="button"
+                      disabled={avatarUploading}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center space-x-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 text-xs font-semibold font-manrope transition-all cursor-pointer shadow-2xs hover:border-indigo-300"
+                    >
+                      <FiCamera className="h-3.5 w-3.5 text-indigo-600" />
+                      <span>{avatarUploading ? 'Processing...' : 'Upload Photo'}</span>
+                    </button>
+
+                    {avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveAvatar}
+                        className="inline-flex items-center space-x-1.5 rounded-xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100 text-rose-700 px-3 py-2 text-xs font-semibold font-manrope transition-all cursor-pointer"
+                      >
+                        <FiTrash2 className="h-3.5 w-3.5" />
+                        <span>Remove Photo</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Name & Title Inputs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="profile-name-input"
+                    className="block text-xs font-semibold text-slate-700 mb-1.5 font-manrope"
+                  >
+                    Full Display Name *
+                  </label>
                   <input
                     id="profile-name-input"
                     type="text"
@@ -567,18 +715,38 @@ export default function EditProfilePage({ params }: EditPageProps) {
                     onChange={(e) => setName(e.target.value)}
                     required
                     placeholder="e.g. Alex Chen"
-                    className="flex-1 rounded-xl border border-slate-200 bg-white/90 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-sans"
+                    className="w-full rounded-xl border border-slate-200 bg-white/90 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-sans"
                   />
-                  <button
-                    id="save-profile-name-btn"
-                    type="submit"
-                    disabled={savingName || name.trim() === profile.name}
-                    className="inline-flex items-center justify-center space-x-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-5 py-2.5 text-xs font-semibold font-manrope shadow-xs hover:shadow-md transition-all cursor-pointer"
-                  >
-                    <FiSave className="h-4 w-4" />
-                    <span>{savingName ? 'Saving...' : 'Save Name'}</span>
-                  </button>
                 </div>
+
+                <div>
+                  <label
+                    htmlFor="profile-title-input"
+                    className="block text-xs font-semibold text-slate-700 mb-1.5 font-manrope"
+                  >
+                    Professional Title (Optional)
+                  </label>
+                  <input
+                    id="profile-title-input"
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. Senior Full-Stack Engineer"
+                    className="w-full rounded-xl border border-slate-200 bg-white/90 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-sans"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  id="save-profile-name-btn"
+                  type="submit"
+                  disabled={savingName}
+                  className="inline-flex items-center justify-center space-x-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-5 py-2.5 text-xs font-semibold font-manrope shadow-xs hover:shadow-md transition-all cursor-pointer"
+                >
+                  <FiSave className="h-4 w-4" />
+                  <span>{savingName ? 'Saving Changes...' : 'Save Profile Details'}</span>
+                </button>
               </div>
 
               {/* Feedback messages */}
@@ -591,7 +759,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
                     className="flex items-center space-x-2 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/80 rounded-xl p-3"
                   >
                     <FiCheck className="h-4 w-4 shrink-0 text-emerald-600" />
-                    <span>Display name updated successfully!</span>
+                    <span>Profile details updated successfully!</span>
                   </motion.div>
                 )}
                 {nameError && (
@@ -930,40 +1098,60 @@ export default function EditProfilePage({ params }: EditPageProps) {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label
                       htmlFor="exp-from-input"
-                      className="block text-xs font-semibold text-slate-700 mb-1 font-manrope"
+                      className="block text-xs font-semibold text-slate-700 mb-1.5 font-manrope"
                     >
-                      Start Date *
+                      Start Date (Calendar) *
                     </label>
                     <input
                       id="exp-from-input"
-                      type="text"
+                      type="date"
                       value={expFrom}
                       onChange={(e) => setExpFrom(e.target.value)}
                       required
-                      placeholder="e.g. 2022-01"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans"
                     />
                   </div>
 
                   <div>
-                    <label
-                      htmlFor="exp-to-input"
-                      className="block text-xs font-semibold text-slate-700 mb-1 font-manrope"
-                    >
-                      End Date
-                    </label>
-                    <input
-                      id="exp-to-input"
-                      type="text"
-                      value={expTo}
-                      onChange={(e) => setExpTo(e.target.value)}
-                      placeholder="e.g. Present, 2024-05"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans"
-                    />
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label
+                        htmlFor="exp-to-input"
+                        className="block text-xs font-semibold text-slate-700 font-manrope"
+                      >
+                        End Date
+                      </label>
+                      <label className="inline-flex items-center space-x-1.5 text-xs text-slate-600 font-sans cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isExpPresent}
+                          onChange={(e) => {
+                            setIsExpPresent(e.target.checked);
+                            if (e.target.checked) setExpTo('');
+                          }}
+                          className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20"
+                        />
+                        <span className="text-[11px] font-medium text-emerald-700">Present</span>
+                      </label>
+                    </div>
+
+                    {!isExpPresent ? (
+                      <input
+                        id="exp-to-input"
+                        type="date"
+                        value={expTo}
+                        onChange={(e) => setExpTo(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-sans"
+                      />
+                    ) : (
+                      <div className="w-full rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 font-sans flex items-center space-x-1.5">
+                        <FiCheck className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Currently working here (Present)</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 

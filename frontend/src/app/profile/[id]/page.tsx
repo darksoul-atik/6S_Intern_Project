@@ -13,6 +13,9 @@ import {
   FiArrowLeft,
   FiShare2,
   FiCheck,
+  FiHeart,
+  FiFileText,
+  FiTrendingUp,
 } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 import { apiClient, ApiError } from '@/lib/api';
@@ -156,15 +159,18 @@ export default function ProfileViewPage({ params }: PageProps) {
 
   const initials = profile.name
     ? profile.name
-        .split(' ')
-        .map((n) => n[0])
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
         .slice(0, 2)
+        .map((w) => w[0])
         .join('')
         .toUpperCase()
     : 'DP';
 
   const memberSince = profile.createdAt
-    ? new Date(profile.createdAt).toLocaleDateString(undefined, {
+    ? new Date(profile.createdAt).toLocaleDateString('en-GB', {
+        day: 'numeric',
         month: 'short',
         year: 'numeric',
       })
@@ -246,10 +252,18 @@ export default function ProfileViewPage({ params }: PageProps) {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               {/* Avatar Ring */}
               <div className="relative group">
-                <div className="flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-3xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-emerald-500 p-[2px] shadow-[0_8px_30px_rgba(99,102,241,0.35)]">
-                  <div className="flex h-full w-full items-center justify-center rounded-[22px] bg-slate-900 text-white font-mono font-bold text-2xl sm:text-3xl tracking-wider">
-                    {initials}
-                  </div>
+                <div className="flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-3xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-emerald-500 p-[2px] shadow-[0_8px_30px_rgba(99,102,241,0.35)] overflow-hidden">
+                  {profile.avatarUrl ? (
+                    <img
+                      src={profile.avatarUrl}
+                      alt={profile.name}
+                      className="h-full w-full object-cover rounded-[22px]"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center rounded-[22px] bg-slate-900 text-white font-mono font-bold text-2xl sm:text-3xl tracking-wider">
+                      {initials}
+                    </div>
+                  )}
                 </div>
                 <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-emerald-500 border-2 border-white shadow-sm flex items-center justify-center">
                   <div className="h-2 w-2 rounded-full bg-white" />
@@ -257,7 +271,7 @@ export default function ProfileViewPage({ params }: PageProps) {
               </div>
 
               {/* Developer Info */}
-              <div className="flex-1 space-y-2.5">
+              <div className="flex-1 space-y-2">
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-manrope tracking-tight text-slate-900">
                     {profile.name}
@@ -275,7 +289,13 @@ export default function ProfileViewPage({ params }: PageProps) {
                   </span>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 font-sans">
+                {profile.title && (
+                  <p className="text-sm sm:text-base font-semibold text-indigo-600 font-manrope">
+                    {profile.title}
+                  </p>
+                )}
+
+                <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 font-sans pt-0.5">
                   {profile.email && (
                     <div className="flex items-center space-x-1.5">
                       <FiMail className="h-3.5 w-3.5 text-slate-400" />
@@ -288,11 +308,69 @@ export default function ProfileViewPage({ params }: PageProps) {
                       <span>Member since {memberSince}</span>
                     </div>
                   )}
-                  <div className="flex items-center space-x-1.5 font-mono text-slate-400 text-[11px]">
-                    <FiUser className="h-3.5 w-3.5 text-slate-400" />
-                    <span>ID: {profile.id}</span>
-                  </div>
                 </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* DaisyUI-Themed Community Impact Stats Component */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.05 }}
+            className="stats shadow-sm w-full rounded-3xl border border-white/80 bg-white/65 p-2 sm:p-3 backdrop-blur-3xl backdrop-saturate-200 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.06),0_0_0_1px_rgba(255,255,255,0.8)] grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100/90"
+          >
+            {/* Stat 1: Reactions */}
+            <div className="stat flex items-center justify-between p-4 sm:p-6">
+              <div>
+                <div className="stat-title text-xs font-bold uppercase tracking-wider text-slate-400 font-manrope">
+                  Reactions Received
+                </div>
+                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 mt-1">
+                  {profile.reactionsCount || 0}
+                </div>
+                <div className="stat-desc text-[11px] text-slate-500 font-sans mt-0.5">
+                  Across all community posts
+                </div>
+              </div>
+              <div className="stat-figure text-rose-500 bg-rose-50 p-3 rounded-2xl border border-rose-100/80 shadow-2xs">
+                <FiHeart className="h-6 w-6 stroke-current" />
+              </div>
+            </div>
+
+            {/* Stat 2: Posts Made */}
+            <div className="stat flex items-center justify-between p-4 sm:p-6">
+              <div>
+                <div className="stat-title text-xs font-bold uppercase tracking-wider text-slate-400 font-manrope">
+                  Posts Published
+                </div>
+                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 mt-1">
+                  {profile.postsCount || 0}
+                </div>
+                <div className="stat-desc text-[11px] text-slate-500 font-sans mt-0.5">
+                  Technical articles & discussions
+                </div>
+              </div>
+              <div className="stat-figure text-indigo-600 bg-indigo-50 p-3 rounded-2xl border border-indigo-100/80 shadow-2xs">
+                <FiFileText className="h-6 w-6 stroke-current" />
+              </div>
+            </div>
+
+            {/* Stat 3: #1 Ranked Posts */}
+            <div className="stat flex items-center justify-between p-4 sm:p-6">
+              <div>
+                <div className="stat-title text-xs font-bold uppercase tracking-wider text-slate-400 font-manrope">
+                  Ranked #1 Honors
+                </div>
+                <div className="stat-value text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 mt-1">
+                  {profile.topRankedCount || 0}
+                </div>
+                <div className="stat-desc text-[11px] text-slate-500 font-sans mt-0.5">
+                  Leaderboard first-place victories
+                </div>
+              </div>
+              <div className="stat-figure text-amber-500 bg-amber-50 p-3 rounded-2xl border border-amber-100/80 shadow-2xs">
+                <FiTrendingUp className="h-6 w-6 stroke-current" />
               </div>
             </div>
           </motion.div>

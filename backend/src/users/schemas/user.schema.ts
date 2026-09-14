@@ -76,6 +76,21 @@ export class User {
   })
   role!: UserRole;
 
+  @Prop({ required: false, trim: true, default: null })
+  title?: string;
+
+  @Prop({ required: false, default: null })
+  avatarUrl?: string;
+
+  @Prop({ type: Number, default: 0 })
+  reactionsCount?: number;
+
+  @Prop({ type: Number, default: 0 })
+  postsCount?: number;
+
+  @Prop({ type: Number, default: 0 })
+  topRankedCount?: number;
+
   @Prop({ type: [String], default: [] })
   skills!: string[];
 
