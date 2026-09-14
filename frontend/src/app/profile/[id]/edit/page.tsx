@@ -651,7 +651,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-manrope bg-slate-100/90 text-slate-700 border border-slate-200/90 shadow-2xs hover:bg-slate-100 transition-colors"
                 >
                   <FiCheckCircle className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-                  <span>Verified Member</span>
+                  <span>Verified User</span>
                 </span>
               )}
             </div>
