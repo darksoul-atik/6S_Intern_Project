@@ -30,12 +30,14 @@
   - Integrated lightweight, SSR-safe Lottie micro-animations for the welcome card, security shield, and status responses.
 - **Flicker-Free Instant Navigation**: Prompted to optimize the session termination lifecycle, eliminating full-page reloads and spinner flashes by performing instantaneous router redirection (`router.replace('/')`) paired with immediate client-state resetting.
 
-### Day 3: Developer Profiles, Ownership & RBAC Security
+### Day 3: Developer Profiles, Ownership, RBAC Security & Mobile Responsiveness
 - **Domain Modeling with Subdocument Integrity**: Directed the extension of the existing User schema to house `skills: string[]` (deduplicated, trimmed strings) and `experiences: Experience[]` subdocuments (with auto-assigned Mongoose ObjectIds for granular subdocument mutations).
 - **Public Discovery vs. Protected Mutations**: Enforced open talent discovery by keeping `GET /users/:id` public while strictly enforcing that sensitive attributes (`passwordHash`) are excluded via Mongoose projection. Required that all write operations (`PATCH /users/:id`, `/skills`, `/experiences`) require JWT authentication and ownership/admin validation.
 - **Declarative Ownership & Admin Authorization Guard**: Mandated the implementation of `ProfileOwnerOrAdminGuard` to protect all parameterized profile mutation endpoints, strictly verifying that normal users can only mutate their own profile (`targetId === req.user.userId`), while administrators can manage any profile, rejecting unauthorized edits with `403 Forbidden`.
 - **Catch-All BFF Proxy Architecture**: Designed a unified Next.js App Router Route Handler (`/api/users/[[...path]]`) to proxy profile requests from client components to the NestJS backend, transparently injecting `httpOnly` cookie tokens as `Authorization: Bearer <token>` headers.
 - **Micro-Interaction Polish & UX Resilience**: Prompted for optimistic skill tag additions and removals, a work experience modal editor, dedicated loading skeleton states (`ProfileSkeleton`), and clear empty and error states.
+- **Administrative User Directory & Moderation**: Guided the implementation of the `/admin/users` portal featuring Shadcn-style pagination, dynamic search across name/email/title, active/deleted filtering tabs, modal profile editors, and soft-delete/restore capabilities with custom login rejection notices.
+- **Responsive Architecture (Zero `Name.....` Truncation & Zero Overflow)**: Mandated an exhaustive responsive overhaul across all 7 platform routes for `sm` (<640px) and `xs` (320px–460px) devices, strictly eliminating ellipsis text truncation (`Name.....`) and decoupling mobile header elements to prevent navbar hamburger menu clipping.
 
 ---
 
@@ -60,6 +62,9 @@
 - **Rejected Blanket Authentication on Profile Viewing**: Audited the profile viewing design and rejected gating `GET /users/:id` behind authentication. In a developer platform, peer profiles, resumes, and skill portfolios must be shareable and discoverable publicly without login barriers.
 - **Rejected Duplicate DTO Envelopes**: Ensured that the profile endpoints reused Day 2's global `TransformInterceptor` and `HttpExceptionFilter`, keeping success/error response structures consistent across the entire platform.
 - **Rejected Destructive Array Overwrite for Single Operations**: Avoided requiring full array uploads for single skill or experience additions/removals; implemented targeted subdocument endpoints (`POST /skills`, `DELETE /skills/:skill`, `POST /experiences`, `PATCH /experiences/:id`, `DELETE /experiences/:id`).
+- **Rejected Artificial Name Truncation (`Name.....`)**: Strictly rejected applying CSS `truncate` and fixed pixel max-widths on user names across the landing page, navbar, dashboard, and admin cards. Enforced flexible, natural text wrapping (`break-words` and `leading-snug`) ensuring full developer names and titles display completely without ellipsis dots.
+- **Rejected Crammed Mobile Top Navbar**: Rejected placing user badges, logout buttons, and the hamburger toggle concurrently in the mobile header row (<640px), which caused header overflow on devices $\le$ 375px. Mandated moving the rich user profile details and logout button into the slide-down mobile menu drawer.
+- **Rejected Fixed-Width Action Wrappers in Mobile Cards**: Replaced rigid `space-x-2` button containers with modern flex-wrap and `gap-2` to eliminate awkward margin-wrapping offsets on narrow mobile cards.
 
 ---
 
@@ -83,5 +88,9 @@
 - **NestJS Passport Module Missing Provider in `UsersModule`**: Caught a runtime dependency resolution error (`UnknownAuthenticationStrategyException: Unknown authentication strategy "jwt"`) when applying `JwtAuthGuard` in `UsersController`. Diagnosed that `UsersModule` required importing `PassportModule.register({ defaultStrategy: 'jwt' })` to supply the authentication options context.
 - **Next.js 16 Dynamic Route Params as Promises**: Handled Next.js 16 App Router deprecation where `params` is now an asynchronous Promise (`params: Promise<{ id: string }>`), leveraging React 19's `use(params)` for type-safe parameter unwrap without hydration mismatches.
 - **Mongoose Subdocument Case Sensitivity & Array Mutation**: Prevented skill duplicate pollution by implementing case-insensitive trimming (`skill.trim().toLowerCase()`) before inserting into user documents, preserving case-preserving display strings while enforcing uniqueness.
+- **Navbar Mobile Viewport Overflow ($\le$ 375px)**: Discovered that on small screens (e.g. 320px–375px), rendering the logo, user pill, logout button, and hamburger toggle side-by-side exceeded 350px width, causing the hamburger menu button to overflow the right edge. Resolved by streamlining the mobile top bar (logo + 32px avatar dot + hamburger toggle) and relocating the full profile card, links, and full-width sign-out button into the mobile drawer.
+- **Tailwind `space-x` Wrapping Margin Bug**: Fixed alignment glitches where `space-x-2` applied unnecessary left margins to wrapped buttons on mobile cards by migrating to native `gap-2` in flex-wrap layouts.
+- **Root Viewport Horizontal Scroll Prevention**: Added `overflow-x: hidden; max-width: 100vw;` to `html` to prevent mobile browser bounce and scrollbar appearance on touch devices.
 - **Browser Subagent Playwright CDN Failure Protocol**: When the browser subagent encountered an external Playwright driver CDN 404 (`azureedge.net`), immediately halted automated browser actions and adhered to system protocols by querying the user for instruction before proceeding with verified programmatic and local verification workflows.
+- **Automated Test Coverage Expansion**: Expanded backend unit and integration test coverage from 20 to 46 passing tests across 8 test suites, verifying authentication, profile ownership, role guards, user service mutations, and response interceptors.
 

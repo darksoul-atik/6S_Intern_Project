@@ -325,7 +325,7 @@ npm run seed:admin
 cd backend
 npm test
 ```
-*Runs Vitest test suite covering auth service, controllers, strategies, guards, interceptors, and filters (20/20 passing).*
+*Runs Vitest test suite covering auth service, users service (skills & experiences subdocuments), controllers, JWT strategies, guards (RolesGuard & ProfileOwnerOrAdminGuard), response transform interceptors, and exception filters (46/46 passing across 8 suites).*
 
 ### 3. Live API Diagnostics (cURL)
 ```bash
@@ -360,9 +360,54 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
    - Automatically establishes the `httpOnly` cookie and redirects to `/dashboard`.
 3. **Explore the Protected Dashboard (`http://localhost:3000/dashboard`)**:
    - **Navbar**: Shows your user email and dynamic role badge (`USER` or `ADMIN`).
-   - **Welcome Developer Banner**: Interactive card with Lottie vector animation and quick-test buttons.
-   - Click **"Verify Session Identity"**: Populates the User Identity Check card with live decoded JWT claims.
+   - **Welcome Developer Banner**: Interactive card with quick-test actions.
+   - Click **"Verify User Identity"**: Populates the User Identity Check card with live decoded JWT claims.
    - Click **"Verify Admin Privileges"**: Populates the Admin Access Verification card with formatted `403 FORBIDDEN` for standard users, or `200 OK` for administrators.
 4. **Instant Logout**:
    - Click **"Sign Out"**: Clears the `httpOnly` session and immediately transitions to the root landing page (`/`) without page reload or spinner flash.
    - Attempting to revisit `/dashboard` triggers server-side middleware redirect to `/login`.
+
+---
+
+## 🔍 Day 3 Verification Guide
+
+### 1. Developer Profiles Flow (`/profile/me` & `/profile/[id]`)
+1. **View Public Profile (`GET /profile/:id`)**:
+   - Open any user's profile URL directly in your browser.
+   - Verify public accessibility without requiring login.
+   - Verify avatar ring, name, title, role badge, email, join date, skills tags, and work experience timeline.
+   - Click **"Share Profile"**: Verifies URL copied to clipboard with visual confirmation.
+2. **Edit Profile (`GET /profile/:id/edit` or `/profile/me/edit`)**:
+   - Click **"Edit Profile"** on your own profile.
+   - **Basic Details**: Update display name and headline title.
+   - **Avatar Management**: Upload photo with automated client-side canvas compression; remove photo.
+   - **Skills Management**: Add new skills (instant optimistic addition, duplicate prevention); click `×` to delete skill.
+   - **Work Experiences**: Click `+ Add Position` to open modal; fill title, company, dates, or toggle "Currently Working Here"; click edit on existing entries or delete.
+3. **Security & Ownership Enforcement**:
+   - Log in as a standard user (`user@devpulse.io`).
+   - Try navigating to `/profile/<OTHER_USER_ID>/edit`.
+   - Verify that `ProfileOwnerOrAdminGuard` denies access with the dedicated `403 Permission Denied` interface.
+   - Log in as Admin (`admin@devpulse.io`) and verify that administrators are authorized to edit any profile.
+
+### 2. Admin User Directory Flow (`/admin/users`)
+1. **Access Control**:
+   - Standard users navigating to `/admin/users` are blocked or redirected.
+   - Administrators accessing `/admin/users` see the full developer directory.
+2. **KPI Analytics Cards**:
+   - View live counters for Total Users, Active Accounts, Deleted Accounts, and Admins.
+3. **Directory Features**:
+   - **Search**: Type keyword to filter by name, email, or title in real time.
+   - **Tabs**: Switch between "All", "Active", and "Deleted" user filters.
+   - **Shadcn Pagination**: Navigate multi-page user sets using responsive pagination controls.
+   - **Edit User Modal**: Click "Edit" to modify any user's name, email, title, or system role.
+   - **Soft Delete & Deletion Rejection Notice**: Click "Delete" on an active user. When that user subsequently attempts to log in, their sign-in is rejected with:
+     > *"Your profile has been deleted by an Admin. Please contact support if you believe this was an error."*
+   - **Restore User**: Click "Restore" in the admin directory; the account is instantly re-enabled.
+
+### 3. Mobile Responsiveness & Zero Overflow Verification
+- **Screen Widths 320px–640px**:
+  - Open browser DevTools (F12) and toggle device toolbar to 320px (iPhone SE / Galaxy Fold).
+  - **Zero Horizontal Overflow**: `scrollWidth === innerWidth` across all pages with zero clipping.
+  - **Navigation Hamburger Toggle**: Cleanly positioned at right edge with ample padding.
+  - **Mobile Menu Drawer**: Tap hamburger button to reveal full user name (no `Name.....` truncation), role badge, email, nav links, and full-width sign-out button.
+  - **Landing Page Hero**: "Continue as [Full Name]" button naturally wraps text across lines using `break-words`.
