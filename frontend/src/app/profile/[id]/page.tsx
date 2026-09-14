@@ -18,6 +18,8 @@ import {
   FiCamera,
   FiTrash2,
   FiAlertCircle,
+  FiShield,
+  FiCheckCircle,
 } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 import { apiClient, ApiError } from '@/lib/api';
@@ -422,7 +424,7 @@ export default function ProfileViewPage({ params }: PageProps) {
                         className="h-full w-full object-cover rounded-[22px]"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center rounded-[22px] bg-slate-900 text-white font-mono font-bold text-2xl sm:text-3xl tracking-wider">
+                      <div className="flex h-full w-full items-center justify-center rounded-[22px] bg-slate-900 text-white font-manrope font-bold text-2xl sm:text-3xl tracking-tight">
                         {initials}
                       </div>
                     )}
@@ -442,7 +444,7 @@ export default function ProfileViewPage({ params }: PageProps) {
                       title="Upload or change profile picture"
                       className="absolute inset-0 rounded-3xl bg-black/45 backdrop-blur-[2px] text-white opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all cursor-pointer"
                     >
-                      <FiCamera className="h-6 w-6 mb-1" />
+                      <FiCamera className="h-6 w-6 mb-1 text-indigo-400" />
                       <span className="text-[10px] font-semibold font-manrope">
                         {avatarUploading ? 'Updating...' : 'Change Photo'}
                       </span>
@@ -501,20 +503,27 @@ export default function ProfileViewPage({ params }: PageProps) {
                     {profile.name}
                   </h1>
 
-                  <span
-                    id="profile-role-badge"
-                    className={`text-[11px] uppercase font-bold font-mono tracking-wider px-3 py-1 rounded-full ${
-                      profile.role === 'admin'
-                        ? 'bg-purple-100/90 text-purple-700 border border-purple-300/80 shadow-[0_0_12px_rgba(147,51,234,0.15)]'
-                        : 'bg-indigo-100/90 text-indigo-700 border border-indigo-300/80 shadow-[0_0_12px_rgba(99,102,241,0.15)]'
-                    }`}
-                  >
-                    {profile.role}
-                  </span>
+                  {profile.role === 'admin' ? (
+                    <span
+                      id="profile-role-badge"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-manrope bg-purple-50/90 text-purple-700 border border-purple-200/90 shadow-2xs"
+                    >
+                      <FiShield className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                      <span>Administrator</span>
+                    </span>
+                  ) : (
+                    <span
+                      id="profile-role-badge"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-manrope bg-slate-100/90 text-slate-700 border border-slate-200/90 shadow-2xs hover:bg-slate-100 transition-colors"
+                    >
+                      <FiCheckCircle className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                      <span>Verified Member</span>
+                    </span>
+                  )}
                 </div>
 
                 {profile.title && (
-                  <p className="text-sm sm:text-base font-semibold text-indigo-600 font-manrope">
+                  <p className="text-sm sm:text-base font-medium text-indigo-600 font-manrope ml-1 sm:ml-1.5 tracking-normal">
                     {profile.title}
                   </p>
                 )}
@@ -560,7 +569,7 @@ export default function ProfileViewPage({ params }: PageProps) {
                   {profile.skills.map((skill) => (
                     <span
                       key={skill}
-                      className="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-xs font-medium font-mono text-slate-700 border border-slate-200/80 shadow-2xs hover:shadow-xs hover:border-indigo-300 hover:text-indigo-600 transition-all"
+                      className="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-xs font-medium font-sans text-slate-700 border border-slate-200/80 shadow-2xs hover:shadow-xs hover:border-indigo-300 hover:text-indigo-600 transition-all"
                     >
                       {skill}
                     </span>
@@ -614,8 +623,8 @@ export default function ProfileViewPage({ params }: PageProps) {
                             </p>
                           </div>
 
-                          <span className="inline-flex items-center space-x-1 rounded-lg bg-slate-100/80 px-2.5 py-1 text-[11px] font-mono font-medium text-slate-600">
-                            <FiCalendar className="h-3 w-3 text-slate-400" />
+                          <span className="inline-flex items-center space-x-1.5 rounded-lg bg-slate-100/90 px-2.5 py-1 text-xs font-sans font-medium tabular-nums text-slate-600 border border-slate-200/60 shadow-2xs">
+                            <FiCalendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                             <span>
                               {formatExpDate(exp.from)} – {formatExpDate(exp.to)}
                             </span>

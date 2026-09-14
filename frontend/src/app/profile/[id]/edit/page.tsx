@@ -18,6 +18,8 @@ import {
   FiCalendar,
   FiCamera,
   FiUpload,
+  FiShield,
+  FiCheckCircle,
 } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 import { apiClient, ApiError } from '@/lib/api';
@@ -635,15 +637,23 @@ export default function EditProfilePage({ params }: EditPageProps) {
             </div>
 
             <div className="flex items-center space-x-2">
-              <span
-                className={`text-[11px] uppercase font-bold font-mono tracking-wider px-3 py-1 rounded-full ${
-                  profile.role === 'admin'
-                    ? 'bg-purple-100 text-purple-700 border border-purple-300'
-                    : 'bg-indigo-100 text-indigo-700 border border-indigo-300'
-                }`}
-              >
-                {profile.role}
-              </span>
+              {profile.role === 'admin' ? (
+                <span
+                  id="profile-role-badge"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-manrope bg-purple-50/90 text-purple-700 border border-purple-200/90 shadow-2xs"
+                >
+                  <FiShield className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                  <span>Administrator</span>
+                </span>
+              ) : (
+                <span
+                  id="profile-role-badge"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-manrope bg-slate-100/90 text-slate-700 border border-slate-200/90 shadow-2xs hover:bg-slate-100 transition-colors"
+                >
+                  <FiCheckCircle className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                  <span>Verified Member</span>
+                </span>
+              )}
             </div>
           </motion.div>
 
@@ -681,7 +691,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
                           className="h-full w-full object-cover rounded-[14px]"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-slate-900 text-white font-mono font-bold text-xl tracking-wider">
+                        <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-slate-900 text-white font-manrope font-bold text-xl tracking-tight">
                           {getInitials(name || profile.name)}
                         </div>
                       )}
@@ -901,7 +911,7 @@ export default function EditProfilePage({ params }: EditPageProps) {
                   {profile.skills.map((skill) => (
                     <span
                       key={skill}
-                      className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white/95 text-xs font-medium font-mono text-slate-800 border border-slate-200 shadow-2xs group hover:border-purple-300 hover:shadow-xs transition-all"
+                      className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white/95 text-xs font-medium font-sans text-slate-800 border border-slate-200 shadow-2xs group hover:border-purple-300 hover:shadow-xs transition-all"
                     >
                       <span>{skill}</span>
                       <button
@@ -1004,8 +1014,8 @@ export default function EditProfilePage({ params }: EditPageProps) {
                           </span>
                         </div>
 
-                        <div className="inline-flex items-center space-x-1.5 text-[11px] font-mono text-slate-500 bg-slate-100/80 px-2.5 py-0.5 rounded-lg">
-                          <FiCalendar className="h-3 w-3 text-slate-400" />
+                        <div className="inline-flex items-center space-x-1.5 text-xs font-sans font-medium tabular-nums text-slate-600 bg-slate-100/90 px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
+                          <FiCalendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                           <span>
                             {exp.from} – {exp.to || 'Present'}
                           </span>
