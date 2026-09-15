@@ -1,15 +1,13 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
+import { useCurrentUser, CURRENT_USER_QUERY_KEY } from '@/hooks/useCurrentUser';
+import type { AuthUser } from '@/hooks/useAuthMutations';
 
-export interface UserSession {
-  id: string;
-  name?: string;
-  email: string;
-  role: string;
-}
+export type UserSession = AuthUser;
 
 interface AuthContextType {
   user: UserSession | null;
@@ -24,66 +22,37 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [user, setUser] = useState<UserSession | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const queryClient = useQueryClient();
+  const { data: user, isLoading, refetch } = useCurrentUser();
 
-  const checkAuth = useCallback(async () => {
-    try {
-      // Hydrate session from httpOnly cookie via /api/auth/me
-      const res = await apiClient<UserSession>('/api/auth/me');
-      if (res.success && res.data) {
-        setUser(res.data);
-      } else {
-        setUser(null);
-      }
-    } catch {
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    const initAuth = async () => {
-      try {
-        const res = await apiClient<UserSession>('/api/auth/me');
-        if (!active) return;
-        if (res.success && res.data) {
-          setUser(res.data);
-        } else {
-          setUser(null);
-        }
-      } catch {
-        if (active) setUser(null);
-      } finally {
-        if (active) setIsLoading(false);
-      }
-    };
-    initAuth();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const login = useCallback((userData: UserSession) => {
-    setUser(userData);
-  }, []);
+  const login = useCallback(
+    (userData: UserSession) => {
+      queryClient.setQueryData(CURRENT_USER_QUERY_KEY, userData);
+    },
+    [queryClient]
+  );
 
   const logout = useCallback(async () => {
-    setUser(null);
-    router.replace('/');
     try {
       await apiClient('/api/auth/logout', { method: 'POST' });
     } catch (err) {
       console.error('Logout error:', err);
+    } finally {
+      // Clear TanStack Query caches to remove user-specific data
+      queryClient.removeQueries({ queryKey: ['auth'] });
+      queryClient.clear();
+      router.replace('/');
     }
-  }, [router]);
+  }, [queryClient, router]);
+
+  const checkAuth = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   return (
     <AuthContext.Provider
       value={{
-        user,
+        user: user ?? null,
         isAuthenticated: !!user,
         isLoading,
         login,
