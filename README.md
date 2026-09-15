@@ -14,8 +14,8 @@ DevPulse is a high-performance, engineering-first developer community platform e
 | **Day 1** | **Foundation, Health Check, OpenAPI & UI** | Monorepo scaffolding, NestJS + Next.js App Router setup, Mongoose Atlas integration, live DB connection diagnostics (`/health`), interactive Swagger UI (`/docs`), generic typed API client (`lib/api.ts`), interactive Framer Motion `MeshGradientBackground` with cursor physics, and a sleek 2-column DevPulse login interface in Google Inter font. | ✅ **Completed** |
 | **Day 2** | **Auth, Identity & Security** | User schema (Mongoose) with role field (`admin` \| `user`), shared response envelopes (`TransformInterceptor` & `HttpExceptionFilter`), `POST /auth/signup` with bcrypt hashing, `POST /auth/login` issuing signed JWTs, Passport `JwtAuthGuard`, `RolesGuard` + `@Roles()` decorator, admin bootstrap CLI seed script, Next.js BFF `httpOnly` cookie persistence, route protection middleware, frontend `/signup`, `/login`, and `/dashboard` pages with dynamic header badges, frosted white glassmorphic cards, Google Inter & Manrope typography, pure React Icons (zero emojis), Lottie micro-animations, instant flicker-free logout to `/`, and xs/sm/md responsiveness. | ✅ **Completed** |
 | **Day 3** | **Profiles & Account Management** | Extended User schema (skills & work experiences subdocuments), public profile viewing (`GET /users/:id`), authenticated & authorized mutations (`/users/me`, `/users/:id`, `/skills`, `/experiences`), `ProfileOwnerOrAdminGuard` with strict 403 Forbidden enforcement on unauthorized edits, Next.js BFF catch-all proxy (`/api/users/[[...path]]`), responsive view-profile page (`/profile/[id]`), interactive edit-profile page (`/profile/[id]/edit`) with optimistic skills tag management and work experience modal, loading skeletons, and comprehensive empty/error states. | ✅ **Completed** |
-| **Day 4** | **Content Engine & Markdown Posts** | Markdown post editor with live preview, tags & categories, post CRUD operations, cursor/page pagination, and unified home feed. | ⏳ *Upcoming* |
-| **Day 5** | **Community Engagement & Socials** | Threaded/nested comments system, polymorphic reactions (likes, stars, bookmarks), and optimistic UI interaction feedback. | ⏳ *Upcoming* |
+| **Day 4** | **Frontend Authentication Flow** | Complete frontend auth overhaul with React Hook Form, centralized Zod validation schemas (`mode: 'onTouched'`), TanStack Query mutations (`useSignupMutation`, `useLoginMutation`, `useLogoutMutation`), `httpOnly` cookie session persistence, current user & role query cache (`useCurrentUser`), safe error mapping (zero user enumeration), protected route middleware with redirect return, and double-submit defense. | ✅ **Completed** |
+| **Day 5** | **Content Engine & Markdown Posts** | Markdown post editor with live preview, tags & categories, post CRUD operations, cursor/page pagination, and unified home feed. | ⏳ *Upcoming* |
 | **Day 6** | **Trending Algorithms & Discovery** | Time-decay + engagement ranking algorithm (hot/trending/top), tag-based search and filtering, and an interactive Explore portal. | ⏳ *Upcoming* |
 | **Day 7** | **Hardening, Testing & Final Audit** | End-to-end integration tests, rate limiting, audit logging, production optimization, final `AI_USAGE.md` compilation, and showcase preparation. | ⏳ *Upcoming* |
 
@@ -233,6 +233,62 @@ curl -X PATCH http://localhost:5000/users/<OTHER_USER_ID> \
    - **Loading Skeleton**: `ProfileSkeleton` component with shimmering header, skills, and experience cards.
    - **Empty States**: Contextual messaging ("No skills listed yet" + `+ Add your skills` CTA for owners; clean text for external visitors).
    - **Error States**: Dedicated 404 (User Not Found) and 403 (Permission Denied) cards with dashboard fallback navigation.
+
+---
+
+## 🛡️ Day 4 — Frontend Authentication Flow (React Hook Form, Zod & TanStack Query)
+
+### 1. Architectural Strategy & Design Choices
+
+#### A. Chosen Session Persistence Strategy: `httpOnly` Cookie via Next.js BFF Route Handlers
+- **Strategy**: Authentication tokens are stored in an **`httpOnly`**, **`Secure`**, **`SameSite=Lax`** cookie (`devpulse_token`) managed via Next.js Backend-For-Frontend (BFF) Route Handlers (`frontend/src/app/api/auth/*`).
+- **Why this strategy was chosen over `localStorage`**:
+  1. **Maximum XSS Immunity**: Tokens stored in browser `localStorage` or `sessionStorage` can be exfiltrated by rogue scripts or vulnerable third-party dependencies. An `httpOnly` cookie cannot be read or accessed by client-side JavaScript.
+  2. **Edge Middleware Interception**: Next.js App Router `middleware.ts` reads the cookie directly from the HTTP request headers at the edge, redirecting unauthorized users before server components render or layout shifts occur.
+  3. **Decoupled REST Backend**: The Next.js BFF acts as a secure proxy that forwards `Authorization: Bearer <token>` headers to the NestJS backend, keeping the backend API decoupled and generic.
+
+#### B. React Hook Form Validation Mode: `mode: 'onTouched'`
+- **Decision**: Configured `mode: 'onTouched'` for both signup and login forms.
+- **Rationale**:
+  - Eliminates distracting error messages on initial keystrokes while a user is still typing.
+  - Automatically runs validation the moment a user finishes typing and leaves the field (`onBlur`).
+  - Once a field has been touched, validation dynamically switches to `onChange` for instant positive feedback when errors are resolved.
+
+#### C. Centralized Zod Validation Schemas (`frontend/src/lib/validations/auth.ts`)
+- **`signupSchema`**:
+  - `name`: Must be a string between 2 and 50 characters (matches backend `SignupDto` `@MinLength(2)`).
+  - `email`: Non-empty, valid email format, auto-trimmed and lowercased (matches backend `SignupDto` `@IsEmail()`).
+  - `password`: Non-empty, minimum 6 characters (matches backend `SignupDto` `@MinLength(6)`).
+- **`loginSchema`**:
+  - `email`: Non-empty, valid email format.
+  - `password`: Non-empty string (no client-side length constraints to prevent leaking password criteria or rejecting valid legacy passwords).
+
+#### D. TanStack Query Session & Mutation Architecture
+- **Mutations (`useSignupMutation`, `useLoginMutation`, `useLogoutMutation`)**:
+  - Encapsulated in `frontend/src/hooks/useAuthMutations.ts`.
+  - Maps backend error envelopes into safe human-readable feedback (e.g. 409 Conflict duplicate email mapped to clear advice).
+  - `useLoginMutation` optimistically seeds the current user query cache (`queryClient.setQueryData(['auth', 'user'], user)`).
+  - `useLogoutMutation` calls `/api/auth/logout`, purges all user-specific queries (`queryClient.removeQueries({ queryKey: ['auth'] })`), and clears the query cache (`queryClient.clear()`).
+- **Current User Query (`useCurrentUser`)**:
+  - Centralized hook in `frontend/src/hooks/useCurrentUser.ts` with `queryKey: ['auth', 'user']`.
+  - Replaces ad-hoc re-fetching across components with a 5-minute fresh cache (`staleTime: 5 * 60 * 1000`).
+  - Consumed directly in `AuthContext.tsx` and `Navbar.tsx` to display user name, email, and role badge (`USER` or `ADMIN`).
+
+#### E. Safe Error Messaging & Enumeration Protection
+- During login, whether an email does not exist in the database or the provided password is incorrect, both backend and frontend return and display the identical message:
+  `"Invalid email or password. Please verify your credentials."`
+- This completely prevents malicious actors from enumerating registered user emails.
+
+#### F. Double-Submit Defense & Accessibility
+- Forms feature double-defense locks:
+  1. Internal handler early return: `if (isPending) return;`
+  2. Button UI locks: `disabled={isPending}` and `aria-disabled={isPending}` with an inline spinning loader.
+- Inputs are tied to `<label>` elements via `htmlFor` and explicit `id`s, while errors are linked with `aria-invalid` and `aria-describedby`.
+
+#### G. Protected Route Handling & Redirect Preservation
+- Edge `middleware.ts` guards `/dashboard/:path*`, `/profile/:path*`, and `/admin/:path*`.
+- Unauthenticated requests are redirected to `/login?redirect=<original_path>`.
+- Upon successful authentication, users are returned directly to their requested destination.
 
 ---
 
