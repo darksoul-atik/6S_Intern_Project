@@ -39,6 +39,13 @@
 - **Administrative User Directory & Moderation**: Guided the implementation of the `/admin/users` portal featuring Shadcn-style pagination, dynamic search across name/email/title, active/deleted filtering tabs, modal profile editors, and soft-delete/restore capabilities with custom login rejection notices.
 - **Responsive Architecture (Zero `Name.....` Truncation & Zero Overflow)**: Mandated an exhaustive responsive overhaul across all 7 platform routes for `sm` (<640px) and `xs` (320px–460px) devices, strictly eliminating ellipsis text truncation (`Name.....`) and decoupling mobile header elements to prevent navbar hamburger menu clipping.
 
+### Day 4: Frontend Authentication Flow (React Hook Form, Zod & TanStack Query)
+- **Architectural Upgrade vs. Duplication**: Mandated an in-place upgrade of existing signup and login pages rather than creating parallel or duplicative routes, preserving the existing glassmorphic styling, background animations, and responsive layouts while modernizing the architecture.
+- **Form Validation & Ergonomics Contract**: Required strict adherence to React Hook Form with centralized Zod schemas, specifically enforcing `mode: 'onTouched'` so users are not penalized with distracting errors while typing initially, yet receive instantaneous inline feedback on blur and subsequent keystrokes.
+- **TanStack Query Mutation & Cache Architecture**: Directed the encapsulation of all authentication lifecycle mutations (`useSignupMutation`, `useLoginMutation`, `useLogoutMutation`) and current user hydration (`useCurrentUser`, `queryKey: ['auth', 'user']`), eliminating ad-hoc fetch logic and standardizing query cache invalidation.
+- **Edge Route Protection & Return Redirection**: Prompted for comprehensive route matching in Next.js `middleware.ts` covering `/dashboard/:path*`, `/profile/:path*`, and `/admin/:path*`, preserving the user's requested destination via `?redirect=` query parameters.
+- **Dual-Layer Double-Submit Defense**: Directed the implementation of submit locks featuring both programmatic in-flight early returns in `onSubmit` and reactive UI locks (`disabled={isPending}`, `aria-disabled={isPending}`, and inline animated spinners) to eliminate duplicate concurrent mutation requests.
+
 ---
 
 ## What I Reviewed or Rejected
@@ -65,6 +72,13 @@
 - **Rejected Artificial Name Truncation (`Name.....`)**: Strictly rejected applying CSS `truncate` and fixed pixel max-widths on user names across the landing page, navbar, dashboard, and admin cards. Enforced flexible, natural text wrapping (`break-words` and `leading-snug`) ensuring full developer names and titles display completely without ellipsis dots.
 - **Rejected Crammed Mobile Top Navbar**: Rejected placing user badges, logout buttons, and the hamburger toggle concurrently in the mobile header row (<640px), which caused header overflow on devices $\le$ 375px. Mandated moving the rich user profile details and logout button into the slide-down mobile menu drawer.
 - **Rejected Fixed-Width Action Wrappers in Mobile Cards**: Replaced rigid `space-x-2` button containers with modern flex-wrap and `gap-2` to eliminate awkward margin-wrapping offsets on narrow mobile cards.
+
+### Day 4
+- **Rejected Premature Day 5+ Scope Creep**: Strictly held the boundary line against introducing post editors, feeds, markdown previews, comments, or reaction data structures, keeping the work strictly confined to the frontend authentication flow.
+- **Rejected Duplicating Signup/Login Pages**: Audited the existing pages and rejected creating brand new or parallel routes (`/auth/login`, `/auth/signup`), electing to upgrade the existing pages in place to preserve visual polish and established URL bookmarks.
+- **Rejected Aggressive Keystroke Error Feedback (`onChange` mode)**: Evaluated RHF validation modes and rejected default `onChange` validation on unblurred inputs, which displays disruptive validation errors while the user is still in the middle of typing. Enforced `mode: 'onTouched'` for a calm, professional developer experience.
+- **Rejected Raw JSON Server Error Dumps**: Rejected exposing raw backend HTTP error payloads directly to users. Structured error envelope mappers (`extractAuthErrorMessage`) to extract meaningful messages (such as translating 409 Conflict to actionable guidance on duplicate emails).
+- **Rejected Client-Side `localStorage` Token Storage**: Re-evaluated and confirmed the `httpOnly` cookie strategy, rejecting suggestions to place JWTs in `localStorage` or `sessionStorage` where they would be exposed to client-side script injection.
 
 ---
 
@@ -93,4 +107,12 @@
 - **Root Viewport Horizontal Scroll Prevention**: Added `overflow-x: hidden; max-width: 100vw;` to `html` to prevent mobile browser bounce and scrollbar appearance on touch devices.
 - **Browser Subagent Playwright CDN Failure Protocol**: When the browser subagent encountered an external Playwright driver CDN 404 (`azureedge.net`), immediately halted automated browser actions and adhered to system protocols by querying the user for instruction before proceeding with verified programmatic and local verification workflows.
 - **Automated Test Coverage Expansion**: Expanded backend unit and integration test coverage from 20 to 46 passing tests across 8 test suites, verifying authentication, profile ownership, role guards, user service mutations, and response interceptors.
+
+### Day 4
+- **Incomplete Edge Middleware Route Matcher**: Identified during audit that `frontend/src/middleware.ts` had an incomplete route matcher (`['/dashboard/:path*', '/login', '/signup']`) which omitted `/profile/:path*` and `/admin/:path*`. This would have allowed unauthenticated users to access profile editing or admin directories before triggering client-side guards. Fixed by extending the matcher to comprehensively intercept all protected subtrees.
+- **Query Parameter Preservation on Protected Redirects**: Caught that unauthorized redirects were dropping destination search parameters. Enhanced the middleware to preserve query strings (`${pathname}${search}`) within the `?redirect=` URL query parameter, guaranteeing users are returned to their exact requested URL state upon authenticating.
+- **Query Cache Invalidation on Session Termination**: Caught that existing logout logic only wiped the `httpOnly` cookie but failed to evict cached user state in TanStack Query (`['auth', 'user']`), which could allow stale identity data to momentarily render if another user logged in on the same browser session. Resolved by integrating `queryClient.removeQueries({ queryKey: ['auth'] })` and `queryClient.clear()` directly into the `useLogoutMutation` lifecycle.
+- **Anti-Enumeration Error Normalization**: Enforced that both non-existent account lookups and bad password attempts return identical safe error messages (`"Invalid email or password. Please verify your credentials."`), preventing malicious user enumeration attacks.
+- **Dual-Layer Double-Submit Race Condition**: Diagnosed potential duplicate network requests caused by users double-clicking submit or pressing Enter in rapid succession during slow network conditions. Mitigated by applying both programmatic early-return checks (`if (isPending) return;`) inside `onSubmit` and reactive UI locks (`disabled={isPending}` and `aria-disabled={isPending}` with an inline loading spinner).
+
 
