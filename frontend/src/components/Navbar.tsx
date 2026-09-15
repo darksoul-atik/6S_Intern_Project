@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 
 export function Navbar() {
   const pathname = usePathname();
+  // Sourced from TanStack Query-managed useCurrentUser cache via AuthProvider
   const { user, isAuthenticated, logout, isLoading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
