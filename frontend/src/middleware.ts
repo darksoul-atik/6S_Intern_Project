@@ -1,17 +1,29 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+/**
+ * DevPulse Protected Route & Auth Middleware
+ * Intercepts incoming requests at the Edge:
+ * - Redirects unauthenticated requests accessing protected routes (/dashboard, /profile, /admin)
+ *   to /login?redirect=<target_route>
+ * - Redirects authenticated users accessing auth routes (/login, /signup) to /dashboard
+ */
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('devpulse_token')?.value;
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
 
-  const isProtectedPath = pathname.startsWith('/dashboard') || pathname.startsWith('/admin');
+  const isProtectedPath =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/profile') ||
+    pathname.startsWith('/admin');
+
   const isAuthPath = pathname === '/login' || pathname === '/signup';
 
-  // If visiting protected route without token, redirect to /login
+  // If visiting a protected route without a valid token, redirect to /login with redirect param
   if (isProtectedPath && !token) {
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
+    const targetPath = search ? `${pathname}${search}` : pathname;
+    loginUrl.searchParams.set('redirect', targetPath);
     return NextResponse.redirect(loginUrl);
   }
 
@@ -24,5 +36,11 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/signup'],
+  matcher: [
+    '/dashboard/:path*',
+    '/profile/:path*',
+    '/admin/:path*',
+    '/login',
+    '/signup',
+  ],
 };
