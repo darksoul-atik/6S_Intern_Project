@@ -1,39 +1,114 @@
 # ⚡ DevPulse
 
 > **Next-Generation Full-Stack Developer Community & Collaboration Hub**  
-> *(Intern Project — 7-Day Sprint)*
+> *(Full-Stack Software Engineering Internship — 20-Day Learning Plan)*
 
 DevPulse is a high-performance, engineering-first developer community platform engineered as a clean, unified monorepo. It features a scalable **NestJS** backend integrated with **MongoDB** via **Mongoose** for resilient domain logic, alongside a modern **Next.js 16** App Router frontend styled with **Tailwind CSS**, **Framer Motion**, frosted white glassmorphism, **Google Inter & Manrope** typography, and pure **React Icons** for a fluid, reactive developer experience.
 
 ---
 
-## 📅 7-Day Roadmap & Implementation Status
+## 📅 20-Day Learning Plan Roadmap & Implementation Status
 
+### Phase 1: Foundations and Authentication (Days 1–4) — ✅ COMPLETED
 | Day | Milestone | Focus Areas | Status |
 |:---:|---|---|:---:|
-| **Day 1** | **Foundation, Health Check, OpenAPI & UI** | Monorepo scaffolding, NestJS + Next.js App Router setup, Mongoose Atlas integration, live DB connection diagnostics (`/health`), interactive Swagger UI (`/docs`), generic typed API client (`lib/api.ts`), interactive Framer Motion `MeshGradientBackground` with cursor physics, and a sleek 2-column DevPulse login interface in Google Inter font. | ✅ **Completed** |
-| **Day 2** | **Auth, Identity & Security** | User schema (Mongoose) with role field (`admin` \| `user`), shared response envelopes (`TransformInterceptor` & `HttpExceptionFilter`), `POST /auth/signup` with bcrypt hashing, `POST /auth/login` issuing signed JWTs, Passport `JwtAuthGuard`, `RolesGuard` + `@Roles()` decorator, admin bootstrap CLI seed script, Next.js BFF `httpOnly` cookie persistence, route protection middleware, frontend `/signup`, `/login`, and `/dashboard` pages with dynamic header badges, frosted white glassmorphic cards, Google Inter & Manrope typography, pure React Icons (zero emojis), Lottie micro-animations, instant flicker-free logout to `/`, and xs/sm/md responsiveness. | ✅ **Completed** |
-| **Day 3** | **Profiles & Account Management** | Extended User schema (skills & work experiences subdocuments), public profile viewing (`GET /users/:id`), authenticated & authorized mutations (`/users/me`, `/users/:id`, `/skills`, `/experiences`), `ProfileOwnerOrAdminGuard` with strict 403 Forbidden enforcement on unauthorized edits, Next.js BFF catch-all proxy (`/api/users/[[...path]]`), responsive view-profile page (`/profile/[id]`), interactive edit-profile page (`/profile/[id]/edit`) with optimistic skills tag management and work experience modal, loading skeletons, and comprehensive empty/error states. | ✅ **Completed** |
-| **Day 4** | **Frontend Authentication Flow** | Complete frontend auth overhaul with React Hook Form, centralized Zod validation schemas (`mode: 'onTouched'`), TanStack Query mutations (`useSignupMutation`, `useLoginMutation`, `useLogoutMutation`), `httpOnly` cookie session persistence, current user & role query cache (`useCurrentUser`), safe error mapping (zero user enumeration), protected route middleware with redirect return, and double-submit defense. | ✅ **Completed** |
-| **Day 5** | **Content Engine & Markdown Posts** | Markdown post editor with live preview, tags & categories, post CRUD operations, cursor/page pagination, and unified home feed. | ⏳ *Upcoming* |
-| **Day 6** | **Trending Algorithms & Discovery** | Time-decay + engagement ranking algorithm (hot/trending/top), tag-based search and filtering, and an interactive Explore portal. | ⏳ *Upcoming* |
-| **Day 7** | **Hardening, Testing & Final Audit** | End-to-end integration tests, rate limiting, audit logging, production optimization, final `AI_USAGE.md` compilation, and showcase preparation. | ⏳ *Upcoming* |
+| **Day 1** | **Project Setup & Request Lifecycle** | NestJS modular architecture (`AppModule`, `HealthModule`, `UsersModule`, `AuthModule`), Mongoose MongoDB Atlas connection, live diagnostics (`GET /health`), Next.js App Router setup, `/status` page with loading/operational/offline states, `.env.example`, clean checkout verification. | ✅ **Completed** |
+| **Day 2** | **API Contracts & TanStack Query Foundation** | Global `TransformInterceptor` (`{ success: true, data }`), `HttpExceptionFilter` (standard error envelope), interactive Swagger OpenAPI (`/docs`), typed Axios API client (`frontend/src/lib/api.ts`) with `withCredentials: true`, `QueryClientProvider` with default caching/retry policies, status query lifecycle with TanStack Query. | ✅ **Completed** |
+| **Day 3** | **Backend Authentication & Role-Based Access** | Mongoose `User` schema with unique lowercase email and `passwordHash` exclusion, `POST /auth/signup` with DTO validation and bcrypt salt rounds (10), `POST /auth/login` issuing signed JWT with `{ sub, email, role }`, `GET /auth/me` with `JwtAuthGuard`, `@Roles('admin')` + `RolesGuard`, idempotent admin bootstrap script (`npm run seed:admin`), anti-enumeration error normalization. | ✅ **Completed** |
+| **Day 4** | **Frontend Authentication Flow & Brand Identity** | RHF + centralized Zod validation (`mode: 'onTouched'`), TanStack Query mutations (`useSignupMutation`, `useLoginMutation`, `useLogoutMutation`), `httpOnly` cookie persistence via Next.js Route Handlers, Edge middleware protection for `/dashboard`, `/profile`, `/admin` with `?redirect=` preservation, double-submit defense, responsive brand PNG logo integration (`Navbar`, Hero, `login`, `signup`, and tab favicon). | ✅ **Completed** |
+
+### Phase 2: Profiles, Forms, and Posts (Days 5–8)
+| Day | Milestone | Focus Areas | Status |
+|:---:|---|---|:---:|
+| **Day 5** | **Developer Profile API** | Headline, bio, skills, portfolioProjects Mongoose models, nested validation, ownership rules (`GET /profile/me`, `PATCH /profile/me`). | ⏳ *Next Up* |
+| **Day 6** | **Complex Developer Profile Form** | Dynamic forms with nested arrays, `useFieldArray` for portfolio projects, optimistic updates, delete confirmation dialog. | ⏳ *Upcoming* |
+| **Day 7** | **Posts API with Ownership & Pagination** | Post schema, authorId, CRUD endpoints, pagination metadata, author sanitization, query indexing. | ⏳ *Upcoming* |
+| **Day 8** | **Feed & Reusable Post Interface** | `PostCard`, feed components, `useInfiniteQuery`, Intersection Observer infinite scroll, query cache invalidation. | ⏳ *Upcoming* |
+
+### Phase 3: Comments, Reactions, and Reliable UI (Days 9–12)
+| Day | Focus Areas | Status |
+|:---:|---|:---:|
+| **Day 9–12** | Threaded comments API, recursive comment interface, reaction engine (like/dislike toggling), optimistic UI with instant rollback. | ⏳ *Upcoming* |
+
+### Phase 4: Discovery, Quality, and Applied Features (Days 13–16)
+| Day | Focus Areas | Status |
+|:---:|---|:---:|
+| **Day 13–16** | Ranked and latest feed APIs, feed filter tabs with URL sync, full-text search with debounce & abort signal, AI-assisted post summarizer. | ⏳ *Upcoming* |
+
+### Phase 5: Testing, Security, Deployment, and Communication (Days 17–20)
+| Day | Focus Areas | Status |
+|:---:|---|:---:|
+| **Day 17–20** | Automated testing matrix, refresh token rotation, rate limiting & security hardening, multi-stage Dockerization, final release candidate demo. | ⏳ *Upcoming* |
 
 ---
 
 ## 🛠️ Tech Stack Summary
 
 - **Backend**: [NestJS](https://nestjs.com/) (Node.js, TypeScript), [Mongoose](https://mongoosejs.com/) (MongoDB ODM), `@nestjs/config`, `@nestjs/swagger`, `passport-jwt`, `bcryptjs`, `class-validator`, `vitest`
-- **Frontend**: [Next.js 16](https://nextjs.org/) (React 19, TypeScript, App Router), [Tailwind CSS](https://tailwindcss.com/), [Framer Motion](https://www.framer.com/motion/), [Lottie React](https://github.com/Gamote/lottie-react), [React Icons (Feather Icons)](https://react-icons.github.io/react-icons/icons/fi/), Google Inter & Manrope Fonts
+- **Frontend**: [Next.js 16](https://nextjs.org/) (React 19, TypeScript, App Router), [Axios](https://axios-http.com/), [TanStack Query v5](https://tanstack.com/query), [React Hook Form](https://react-hook-form.com/), [Zod](https://zod.dev/), [Tailwind CSS](https://tailwindcss.com/), [Framer Motion](https://www.framer.com/motion/), [React Icons](https://react-icons.github.io/react-icons/icons/fi/), Google Inter & Manrope Fonts
 - **Database**: MongoDB (Atlas cloud cluster or local MongoDB)
-- **API Documentation**: OpenAPI 3.0 / Swagger UI at `/docs`
+- **API Documentation**: OpenAPI 3.0 / Swagger UI at `http://localhost:5000/docs`
 - **Package Manager**: npm
 
 ---
 
-## 🔐 Day 2 — Authentication, Authorization & Security Architecture
+## 🩺 Day 1 — Project Setup & Request Lifecycle
+
+### 1. Architecture & Monorepo Foundation
+- **NestJS Application**: Modular layout split into `AppModule`, `HealthModule`, `UsersModule`, and `AuthModule`. Configuration is managed globally through `@nestjs/config` reading environment variables from `.env`.
+- **Database Connection Lifecycle**: Connected to MongoDB Atlas via `MongooseModule.forRootAsync`. Connection health is evaluated dynamically via `connection.readyState` (`1 = connected`).
+- **Health Diagnostic Endpoint (`GET /health`)**:
+  - Live inspection of the Mongoose connection pool.
+  - Returns backend operational status, timestamp, and database connectivity.
+- **Frontend App Router Foundation**:
+  - Built with Next.js 16 App Router (`src/app/`).
+  - `/status` page (`frontend/src/app/status/page.tsx`): Pings `/health` and renders real-time visual states for **Loading**, **Operational (200 OK)**, and **Unavailable (Offline / Degraded)**.
+- **Request Lifecycle (Browser to Database)**:
+  `Client (Browser/Next.js) ──▶ Express Middleware ──▶ ValidationPipe ──▶ Route Guards ──▶ Controller ──▶ Service ──▶ Mongoose ODM ──▶ MongoDB Atlas ──▶ TransformInterceptor ──▶ Standard Success JSON`
+
+---
+
+## 📡 Day 2 — API Contracts & TanStack Query Foundation
+
+### 1. Standardized Response & Error Contracts
+Implemented globally in `backend/src/main.ts` across **all endpoints**:
+- **Global Success Interceptor (`TransformInterceptor`)**: Wraps successful responses in:
+  ```json
+  {
+    "success": true,
+    "data": {},
+    "message": "Optional feedback"
+  }
+  ```
+- **Global Exception Filter (`HttpExceptionFilter`)**: Standardizes all HTTP errors into:
+  ```json
+  {
+    "success": false,
+    "statusCode": 400,
+    "message": "Human-readable error description",
+    "errors": ["Validation error 1", "Validation error 2"]
+  }
+  ```
+
+### 2. Interactive Swagger Documentation (`/docs`)
+- Documented health DTOs, authentication contracts, bearer authorization, and error envelopes at `http://localhost:5000/docs`.
+
+### 3. Typed Axios API Client (`frontend/src/lib/api.ts`)
+- Powered by `axiosInstance` with `withCredentials: true` and JSON headers.
+- Response interceptors convert Axios rejections directly into typed `ApiError` instances.
+- Universal routing forwards requests seamlessly to Next.js BFF routes (`/api/auth/*`) or the NestJS backend.
+
+### 4. Server-State Management via TanStack Query
+- Application wrapped in `QueryClientProvider` (`frontend/src/providers/QueryProvider.tsx`) with 1-minute fresh caching (`staleTime: 60000`) and network retry policy.
+- `/status` page manages health polling via `useQuery({ queryKey: ['health'] })`, resiliently handling backend shutdowns without UI crashes.
+
+
+---
+
+## 🔐 Day 3 — Backend Authentication & Role-Based Access
 
 ### 1. Key Architectural Decisions
+
 
 #### Decision A: Token Persistence via `httpOnly` Cookies (Next.js BFF Pattern)
 - **Chosen Approach**: The JWT access token is stored in an **`httpOnly`**, **`Secure`**, **`SameSite=Lax`** cookie (`devpulse_token`) managed via Next.js Route Handlers (`app/api/auth/*`).
@@ -295,6 +370,14 @@ curl -X PATCH http://localhost:5000/users/<OTHER_USER_ID> \
 - **Interceptors**: Response interceptor normalizes error payloads and network failures into strongly-typed `ApiError` instances containing `statusCode`, `message`, and validation error arrays.
 - **Universal Routing**: Seamlessly delegates requests between Next.js internal BFF routes (`/api/auth/*`), relative endpoints, and absolute backend URLs (`NEXT_PUBLIC_API_URL`).
 - **Full Backward Compatibility**: Interoperable with standard Fetch options (`body: JSON.stringify(...)` or Axios `data: {...}`), ensuring zero breaking changes across TanStack Query mutations.
+
+#### I. Responsive Brand Identity & Logo Integration
+- **Asset Processing**: High-resolution PNG brand lockup trimmed of empty transparent borders down to its exact bounds (`628×281`, aspect ratio 2.23:1) and saved to [`frontend/public/images/logo.png`](file:///c:/Users/hp/Downloads/6senseHQ/frontend/public/images/logo.png).
+- **Standalone Emblem Favicon**: Isolated the golden geometric emblem (`282×281`) to generate `frontend/src/app/icon.png` (64×64) and configured `metadata.icons` in `layout.tsx` for browser tabs.
+- **Placement-Tailored Responsive Sizing**:
+  - **Top Navigation Bar (`Navbar.tsx`)**: Compact `h-7 sm:h-8 md:h-9 w-auto` (~62px to ~80px wide), ensuring zero overflow on narrow mobile screens ($\le$ 375px) while pairing with the 64px header.
+  - **Landing Hero Banner (`page.tsx`)**: Centered focal showcase `h-12 min-[380px]:h-14 sm:h-16 md:h-20 w-auto` with ambient golden backlight (`drop-shadow-[0_0_28px_rgba(251,191,36,0.3)]`).
+  - **Auth Cards (`login/page.tsx` & `signup/page.tsx`)**: Balanced `h-9 sm:h-11 md:h-12 w-auto` with subtle hover scaling (`hover:scale-105`).
 
 ---
 

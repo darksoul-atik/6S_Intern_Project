@@ -10,42 +10,40 @@
 
 ## How I Prompted
 
-### Day 1: Foundation, Diagnostics & Scaffolding
-- **Strict Boundary Scoping**: Designed prompt contracts that explicitly restricted the AI from jumping ahead into Days 2–7 product logic (e.g., authentication, posts, reactions, comments). Day 1 was strictly scoped to infrastructure scaffolding, Mongoose connection validation, and health diagnostics.
+#### Day 1: Project Setup & Request Lifecycle
+- **Strict Boundary Scoping**: Designed prompt contracts that explicitly restricted the AI from jumping ahead into Days 2–7 product logic (e.g., authentication, posts, reactions, comments). Day 1 was strictly scoped to infrastructure scaffolding, Mongoose connection validation, live health diagnostics (`GET /health` with `connection.readyState`), and Next.js App Router `/status` dashboard.
 - **Contract-First Commit Discipline**: Enforced a granular, milestone-based commit protocol rather than end-of-day bulk commits. Each checklist item was mandated to have its own conventional commit (`chore:`, `feat:`, `docs:`) accompanied by explicit command-line verification (compilation, daemon boot, HTTP responses).
 - **Dual-Branch Pipeline Orchestration**: Instructed the agent to follow a continuous parity model across `beta` and `main` branches, requiring validation and push to `beta` first before fast-forwarding into `main`.
 - **Iterative Feedback Loops**: Steered implementation through progressive review phases—starting with plan approval in `implementation_plan.md`, validating runtime logs, and directing follow-up enhancements (such as Swagger documentation integration).
 
-### Day 2: Authentication, Identity, Security & Polish
-- **Security-First Architecture Specification**: Prompted for an enterprise-grade authentication system utilizing the Backend-For-Frontend (BFF) proxy pattern with `httpOnly`, `Secure`, `SameSite=lax` cookies, completely isolating tokens from client-side JavaScript to eliminate XSS risks.
-- **Role-Based Access Control (RBAC) Contracts**: Guided the creation of a declarative `@Roles('admin')` decorator paired with NestJS `RolesGuard` and Passport JWT strategy, with strict HTTP 403 Forbidden enforcement on unauthorized roles.
+### Day 2: API Contracts & TanStack Query Foundation
+- **Standardized Response Envelopes**: Mandated global NestJS interceptors and exception filters:
+  - `TransformInterceptor` wrapping all successful responses in `{ success: true, data: T, message?: string }`.
+  - `HttpExceptionFilter` wrapping errors in `{ success: false, statusCode: number, message: string, errors: string[] }`.
+- **OpenAPI / Swagger Documentation**: Guided the integration of `@nestjs/swagger` at `/docs` with interactive DTO schemas (`HealthResponseDto`, `ErrorResponseDto`).
+- **Typed Axios API Client Foundation**: Prompted for creating an extensible, typed API client in `frontend/src/lib/api.ts` powered by an `axios` instance configured with `withCredentials: true` and response interceptors mapping to `ApiError`.
+- **Server-State Management**: Directed the setup of `QueryClientProvider` with resilient caching (`staleTime: 60s`, `retry: 1`) and wired the `/status` page with `useQuery(['health'])` displaying clear loading, connected, retry, and offline states without crashing.
+
+### Day 3: Backend Authentication & Role-Based Access
+- **Domain Modeling & Sensitive Field Sanitization**: Directed the implementation of the Mongoose `User` schema with unique lowercase email, role (`admin` | `user`), and `passwordHash` (strictly excluded on serialization via `toJSON` transform and `select('-passwordHash')`).
+- **Secure Registration & Login Endpoints**:
+  - `POST /auth/signup`: Input validation with `SignupDto`, password hashing via `bcrypt` (10 salt rounds), default `'user'` role, and 409 Conflict duplicate email handling.
+  - `POST /auth/login`: Credential comparison with `bcrypt.compare`, anti-enumeration normalized error responses, and signed JWT issuance containing `{ sub, email, role, name }`.
+- **RBAC & Authorization Guards**:
+  - `JwtAuthGuard` protecting `GET /auth/me`.
+  - `RolesGuard` paired with `@Roles('admin')` decorator protecting administrative routes (tested on `GET /auth/admin-check` with strict 403 Forbidden enforcement).
 - **Idempotent Out-of-Band Admin Provisioning**: Instructed the agent to build an administrative bootstrap script executed exclusively via the CLI (`npm run seed:admin`), strictly rejecting any public HTTP registration endpoints for administrative accounts.
-- **Iterative UI/UX Modernization**: Steered the UI through progressive design reviews:
-  - Transitioned the dashboard to frosted white glassmorphism (`backdrop-blur-3xl`, specular highlights).
-  - Enforced modern typography pairings with Google Inter and Manrope fonts.
-  - Mandated clean, scalable vector icons (`react-icons/fi`) and strictly eliminated emojis across all cards, badges, and feedback toasts.
-  - Ensured full viewport responsiveness down to mobile `xs` (<380px), `sm`, and `md` breakpoints.
-  - Removed internal design/technical jargon (such as "Primary Accent" and "Secondary Color") from user-facing copy.
-  - Eliminated duplicate action triggers, consolidating verification calls into the primary Welcome Developer banner.
-  - Integrated lightweight, SSR-safe Lottie micro-animations for the welcome card, security shield, and status responses.
-- **Flicker-Free Instant Navigation**: Prompted to optimize the session termination lifecycle, eliminating full-page reloads and spinner flashes by performing instantaneous router redirection (`router.replace('/')`) paired with immediate client-state resetting.
+- **Developer Profiles & Ownership Security**: Extended domain models to support `skills: string[]` and `experiences: Experience[]` subdocuments, with public viewing (`GET /users/:id`), owner-only mutations, and administrative user moderation (`/admin/users`).
 
-### Day 3: Developer Profiles, Ownership, RBAC Security & Mobile Responsiveness
-- **Domain Modeling with Subdocument Integrity**: Directed the extension of the existing User schema to house `skills: string[]` (deduplicated, trimmed strings) and `experiences: Experience[]` subdocuments (with auto-assigned Mongoose ObjectIds for granular subdocument mutations).
-- **Public Discovery vs. Protected Mutations**: Enforced open talent discovery by keeping `GET /users/:id` public while strictly enforcing that sensitive attributes (`passwordHash`) are excluded via Mongoose projection. Required that all write operations (`PATCH /users/:id`, `/skills`, `/experiences`) require JWT authentication and ownership/admin validation.
-- **Declarative Ownership & Admin Authorization Guard**: Mandated the implementation of `ProfileOwnerOrAdminGuard` to protect all parameterized profile mutation endpoints, strictly verifying that normal users can only mutate their own profile (`targetId === req.user.userId`), while administrators can manage any profile, rejecting unauthorized edits with `403 Forbidden`.
-- **Catch-All BFF Proxy Architecture**: Designed a unified Next.js App Router Route Handler (`/api/users/[[...path]]`) to proxy profile requests from client components to the NestJS backend, transparently injecting `httpOnly` cookie tokens as `Authorization: Bearer <token>` headers.
-- **Micro-Interaction Polish & UX Resilience**: Prompted for optimistic skill tag additions and removals, a work experience modal editor, dedicated loading skeleton states (`ProfileSkeleton`), and clear empty and error states.
-- **Administrative User Directory & Moderation**: Guided the implementation of the `/admin/users` portal featuring Shadcn-style pagination, dynamic search across name/email/title, active/deleted filtering tabs, modal profile editors, and soft-delete/restore capabilities with custom login rejection notices.
-- **Responsive Architecture (Zero `Name.....` Truncation & Zero Overflow)**: Mandated an exhaustive responsive overhaul across all 7 platform routes for `sm` (<640px) and `xs` (320px–460px) devices, strictly eliminating ellipsis text truncation (`Name.....`) and decoupling mobile header elements to prevent navbar hamburger menu clipping.
-
-### Day 4: Frontend Authentication Flow (React Hook Form, Zod & TanStack Query)
+### Day 4: Frontend Authentication Flow & Brand Identity
 - **Architectural Upgrade vs. Duplication**: Mandated an in-place upgrade of existing signup and login pages rather than creating parallel or duplicative routes, preserving the existing glassmorphic styling, background animations, and responsive layouts while modernizing the architecture.
-- **Form Validation & Ergonomics Contract**: Required strict adherence to React Hook Form with centralized Zod schemas, specifically enforcing `mode: 'onTouched'` so users are not penalized with distracting errors while typing initially, yet receive instantaneous inline feedback on blur and subsequent keystrokes.
+- **Form Validation & Ergonomics Contract**: Required strict adherence to React Hook Form with centralized Zod schemas (`frontend/src/lib/validations/auth.ts`), specifically enforcing `mode: 'onTouched'` so users are not penalized with distracting errors while typing initially, yet receive instantaneous inline feedback on blur and subsequent keystrokes.
 - **TanStack Query Mutation & Cache Architecture**: Directed the encapsulation of all authentication lifecycle mutations (`useSignupMutation`, `useLoginMutation`, `useLogoutMutation`) and current user hydration (`useCurrentUser`, `queryKey: ['auth', 'user']`), eliminating ad-hoc fetch logic and standardizing query cache invalidation.
 - **Edge Route Protection & Return Redirection**: Prompted for comprehensive route matching in Next.js `middleware.ts` covering `/dashboard/:path*`, `/profile/:path*`, and `/admin/:path*`, preserving the user's requested destination via `?redirect=` query parameters.
 - **Dual-Layer Double-Submit Defense**: Directed the implementation of submit locks featuring both programmatic in-flight early returns in `onSubmit` and reactive UI locks (`disabled={isPending}`, `aria-disabled={isPending}`, and inline animated spinners) to eliminate duplicate concurrent mutation requests.
-- **Axios Foundation Realignment**: Prompted the agent to switch the HTTP client layer from native `fetch` to `axios` to align with Day 2 architectural guidelines, requiring an Axios instance configured with `withCredentials: true`, response interceptors mapping to `ApiError`, and 100% backward compatibility for TanStack Query mutations.
+- **Axios Foundation Realignment**: Prompted the agent to switch the HTTP client layer to `axios` to align with Day 2 architectural guidelines, requiring an Axios instance configured with `withCredentials: true`, response interceptors mapping to `ApiError`, and 100% backward compatibility for TanStack Query mutations.
+- **Responsive Brand Asset Integration**: Prompted for replacing the generic placeholder SVG pulse with the newly provided brand PNG lockup. Mandated that the logo not be a static single size, but proportionally scaled and responsive per placement (`Navbar.tsx`, `page.tsx` hero centerpiece, `login/page.tsx`, and `signup/page.tsx`), and extracted a square 1:1 icon for browser tab favicons (`icon.png`).
+tions.
 
 ---
 
@@ -81,6 +79,7 @@
 - **Rejected Raw JSON Server Error Dumps**: Rejected exposing raw backend HTTP error payloads directly to users. Structured error envelope mappers (`extractAuthErrorMessage`) to extract meaningful messages (such as translating 409 Conflict to actionable guidance on duplicate emails).
 - **Rejected Client-Side `localStorage` Token Storage**: Re-evaluated and confirmed the `httpOnly` cookie strategy, rejecting suggestions to place JWTs in `localStorage` or `sessionStorage` where they would be exposed to client-side script injection.
 - **Rejected Fetch-Only Hardcoding**: Intervened after reviewing Day 2 architectural requirements which recommended an Axios-powered client. Directed a clean migration in `frontend/src/lib/api.ts` to use `axiosInstance` while ensuring callers passing Fetch-style options (`body: string`) are transparently supported.
+- **Rejected Raw Uncropped Image Embedding**: Analyzed the user's uploaded 1024×1024 logo PNG and detected over 350px of empty transparent padding around the actual artwork. Rejected embedding it raw, which would have rendered an unreadable, tiny micro-logo in the navbar. Used `sharp` to trim transparent bounds (yielding 628×281, aspect ratio 2.23:1) and extracted the standalone yellow geometric emblem (282×281).
 
 ---
 
@@ -117,5 +116,7 @@
 - **Anti-Enumeration Error Normalization**: Enforced that both non-existent account lookups and bad password attempts return identical safe error messages (`"Invalid email or password. Please verify your credentials."`), preventing malicious user enumeration attacks.
 - **Dual-Layer Double-Submit Race Condition**: Diagnosed potential duplicate network requests caused by users double-clicking submit or pressing Enter in rapid succession during slow network conditions. Mitigated by applying both programmatic early-return checks (`if (isPending) return;`) inside `onSubmit` and reactive UI locks (`disabled={isPending}` and `aria-disabled={isPending}` with an inline loading spinner).
 - **Axios Error Envelope Mapping & Cookie Forwarding**: Diagnosed that standard Axios errors throw `AxiosError` with response payloads nested in `error.response.data`, which would have broken existing UI error mappers expecting `ApiError(message, statusCode, errors)`. Implemented an Axios response interceptor that converts rejected HTTP responses into `ApiError` instances while setting `withCredentials: true` to guarantee `httpOnly` cookie transmission across Next.js BFF routes.
+- **Brand Icon & Next.js Favicon Pipeline**: Generated `frontend/src/app/icon.png` (64×64) from the extracted emblem mark and configured `metadata.icons` in `layout.tsx`, ensuring modern browsers cleanly render the high-DPI yellow brand emblem in tab bars.
+- **Aspect-Ratio Preservation**: Handled horizontal lockup scaling using `w-auto object-contain` on Next.js `<Image />` tags to guarantee zero distortion or squishing across screen widths from 320px up to 4K displays.
 
 
