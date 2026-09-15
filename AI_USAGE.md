@@ -45,6 +45,7 @@
 - **TanStack Query Mutation & Cache Architecture**: Directed the encapsulation of all authentication lifecycle mutations (`useSignupMutation`, `useLoginMutation`, `useLogoutMutation`) and current user hydration (`useCurrentUser`, `queryKey: ['auth', 'user']`), eliminating ad-hoc fetch logic and standardizing query cache invalidation.
 - **Edge Route Protection & Return Redirection**: Prompted for comprehensive route matching in Next.js `middleware.ts` covering `/dashboard/:path*`, `/profile/:path*`, and `/admin/:path*`, preserving the user's requested destination via `?redirect=` query parameters.
 - **Dual-Layer Double-Submit Defense**: Directed the implementation of submit locks featuring both programmatic in-flight early returns in `onSubmit` and reactive UI locks (`disabled={isPending}`, `aria-disabled={isPending}`, and inline animated spinners) to eliminate duplicate concurrent mutation requests.
+- **Axios Foundation Realignment**: Prompted the agent to switch the HTTP client layer from native `fetch` to `axios` to align with Day 2 architectural guidelines, requiring an Axios instance configured with `withCredentials: true`, response interceptors mapping to `ApiError`, and 100% backward compatibility for TanStack Query mutations.
 
 ---
 
@@ -79,6 +80,7 @@
 - **Rejected Aggressive Keystroke Error Feedback (`onChange` mode)**: Evaluated RHF validation modes and rejected default `onChange` validation on unblurred inputs, which displays disruptive validation errors while the user is still in the middle of typing. Enforced `mode: 'onTouched'` for a calm, professional developer experience.
 - **Rejected Raw JSON Server Error Dumps**: Rejected exposing raw backend HTTP error payloads directly to users. Structured error envelope mappers (`extractAuthErrorMessage`) to extract meaningful messages (such as translating 409 Conflict to actionable guidance on duplicate emails).
 - **Rejected Client-Side `localStorage` Token Storage**: Re-evaluated and confirmed the `httpOnly` cookie strategy, rejecting suggestions to place JWTs in `localStorage` or `sessionStorage` where they would be exposed to client-side script injection.
+- **Rejected Fetch-Only Hardcoding**: Intervened after reviewing Day 2 architectural requirements which recommended an Axios-powered client. Directed a clean migration in `frontend/src/lib/api.ts` to use `axiosInstance` while ensuring callers passing Fetch-style options (`body: string`) are transparently supported.
 
 ---
 
@@ -114,5 +116,6 @@
 - **Query Cache Invalidation on Session Termination**: Caught that existing logout logic only wiped the `httpOnly` cookie but failed to evict cached user state in TanStack Query (`['auth', 'user']`), which could allow stale identity data to momentarily render if another user logged in on the same browser session. Resolved by integrating `queryClient.removeQueries({ queryKey: ['auth'] })` and `queryClient.clear()` directly into the `useLogoutMutation` lifecycle.
 - **Anti-Enumeration Error Normalization**: Enforced that both non-existent account lookups and bad password attempts return identical safe error messages (`"Invalid email or password. Please verify your credentials."`), preventing malicious user enumeration attacks.
 - **Dual-Layer Double-Submit Race Condition**: Diagnosed potential duplicate network requests caused by users double-clicking submit or pressing Enter in rapid succession during slow network conditions. Mitigated by applying both programmatic early-return checks (`if (isPending) return;`) inside `onSubmit` and reactive UI locks (`disabled={isPending}` and `aria-disabled={isPending}` with an inline loading spinner).
+- **Axios Error Envelope Mapping & Cookie Forwarding**: Diagnosed that standard Axios errors throw `AxiosError` with response payloads nested in `error.response.data`, which would have broken existing UI error mappers expecting `ApiError(message, statusCode, errors)`. Implemented an Axios response interceptor that converts rejected HTTP responses into `ApiError` instances while setting `withCredentials: true` to guarantee `httpOnly` cookie transmission across Next.js BFF routes.
 
 

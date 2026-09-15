@@ -290,6 +290,12 @@ curl -X PATCH http://localhost:5000/users/<OTHER_USER_ID> \
 - Unauthenticated requests are redirected to `/login?redirect=<original_path>`.
 - Upon successful authentication, users are returned directly to their requested destination.
 
+#### H. Typed Axios API Client Foundation (`frontend/src/lib/api.ts`)
+- **Engine**: Powered by an `axios` instance configured with `withCredentials: true` and application/json headers for seamless cookie transmission.
+- **Interceptors**: Response interceptor normalizes error payloads and network failures into strongly-typed `ApiError` instances containing `statusCode`, `message`, and validation error arrays.
+- **Universal Routing**: Seamlessly delegates requests between Next.js internal BFF routes (`/api/auth/*`), relative endpoints, and absolute backend URLs (`NEXT_PUBLIC_API_URL`).
+- **Full Backward Compatibility**: Interoperable with standard Fetch options (`body: JSON.stringify(...)` or Axios `data: {...}`), ensuring zero breaking changes across TanStack Query mutations.
+
 ---
 
 ## 🔐 Environment Variables
