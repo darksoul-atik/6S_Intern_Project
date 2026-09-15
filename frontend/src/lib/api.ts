@@ -1,3 +1,5 @@
+import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -21,19 +23,49 @@ export class ApiError extends Error {
   }
 }
 
-export interface RequestOptions extends RequestInit {
+export interface RequestOptions extends Partial<AxiosRequestConfig> {
   params?: Record<string, string | number | boolean | undefined>;
+  body?: unknown;
 }
 
 /**
- * Generic API client for communicating with the Dev Community backend
+ * Configured Axios instance with withCredentials enabled for httpOnly cookies.
+ */
+export const axiosInstance = axios.create({
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+/**
+ * Interceptor to normalize Axios errors into typed ApiError instances
+ * matching the shared DevPulse error envelope.
+ */
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<ApiResponse>) => {
+    const errorData = error.response?.data;
+    const statusCode = errorData?.statusCode || error.response?.status || 500;
+    const message =
+      errorData?.message ||
+      error.message ||
+      `HTTP Error ${statusCode}`;
+    const errors = Array.isArray(errorData?.errors) ? errorData.errors : [];
+
+    return Promise.reject(new ApiError(message, statusCode, errors));
+  }
+);
+
+/**
+ * Typed API client powered by Axios for communicating with the NestJS backend
  * and Next.js internal BFF routes. Reusable across all routes, features, and HTTP verbs.
  */
 export async function apiClient<T = unknown>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<ApiResponse<T>> {
-  const { params, headers, ...restOptions } = options;
+  const { params, headers, body, data, method = 'GET', ...restOptions } = options;
 
   let requestUrl: string;
   if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
@@ -46,44 +78,43 @@ export async function apiClient<T = unknown>(
     requestUrl = `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
   }
 
-  const url = new URL(
-    requestUrl,
-    typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
-  );
-
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        url.searchParams.append(key, String(value));
-      }
-    });
+  // Parse body string if JSON string was supplied by caller
+  let requestData = data ?? body;
+  if (typeof requestData === 'string') {
+    try {
+      requestData = JSON.parse(requestData);
+    } catch {
+      // Keep as-is if not valid JSON
+    }
   }
 
-  const defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
+  try {
+    const response = await axiosInstance.request<ApiResponse<T>>({
+      url: requestUrl,
+      method,
+      params,
+      data: requestData,
+      headers: headers as Record<string, string>,
+      ...restOptions,
+    });
 
-  const response = await fetch(url.toString(), {
-    ...restOptions,
-    headers: {
-      ...defaultHeaders,
-      ...(headers as Record<string, string>),
-    },
-    // Include cookies for same-origin and cross-origin requests
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
-    const message =
-      errorBody.message || `HTTP ${response.status}: ${response.statusText}`;
-    const errors = Array.isArray(errorBody.errors) ? errorBody.errors : [];
+    return response.data;
+  } catch (err: unknown) {
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    if (axios.isAxiosError(err)) {
+      const errorData = err.response?.data as ApiResponse | undefined;
+      const statusCode = errorData?.statusCode || err.response?.status || 500;
+      const message =
+        errorData?.message || err.message || `HTTP Error ${statusCode}`;
+      const errors = Array.isArray(errorData?.errors) ? errorData.errors : [];
+      throw new ApiError(message, statusCode, errors);
+    }
     throw new ApiError(
-      message,
-      errorBody.statusCode || response.status,
-      errors
+      err instanceof Error ? err.message : 'Unknown network error',
+      500,
+      []
     );
   }
-
-  return response.json();
 }
