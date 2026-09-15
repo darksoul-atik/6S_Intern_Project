@@ -3,9 +3,12 @@
 import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiLogIn, FiEye, FiEyeOff, FiX, FiAlertTriangle, FiCheck } from 'react-icons/fi';
 import { apiClient, ApiError } from '@/lib/api';
+import { loginSchema, type LoginInput } from '@/lib/validations/auth';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
 import { useAuth } from '@/context/AuthContext';
 
@@ -14,12 +17,8 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const { login: setAuthUser } = useAuth();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
   const [capsLockOn, setCapsLockOn] = useState<boolean>(false);
 
@@ -27,22 +26,22 @@ function LoginForm() {
     ? 'Account created successfully! Please sign in with your new credentials.'
     : null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onTouched',
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const onSubmit = async (data: LoginInput) => {
     setErrorMessage(null);
-    setWarningMessage(null);
     setFieldErrors([]);
-
-    if (!email.trim() || !email.includes('@')) {
-      setWarningMessage('Please enter a valid email address (e.g. name@domain.com).');
-      return;
-    }
-    if (!password) {
-      setWarningMessage('Please enter your password to continue.');
-      return;
-    }
-
-    setIsLoading(true);
 
     try {
       const response = await apiClient<{
@@ -51,23 +50,9 @@ function LoginForm() {
       }>('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password,
+          email: data.email,
+          password: data.password,
         }),
-      }).catch(async (bffErr) => {
-        if (bffErr instanceof ApiError && bffErr.statusCode === 404) {
-          return apiClient<{
-            accessToken: string;
-            user: { id: string; name: string; email: string; role: string };
-          }>('/auth/login', {
-            method: 'POST',
-            body: JSON.stringify({
-              email: email.trim().toLowerCase(),
-              password,
-            }),
-          });
-        }
-        throw bffErr;
       });
 
       if (response.success && response.data?.user) {
@@ -86,8 +71,6 @@ function LoginForm() {
       } else {
         setErrorMessage('Network or server error. Please try again.');
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -208,73 +191,60 @@ function LoginForm() {
                     </div>
                   </motion.div>
                 )}
-
-                {warningMessage && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-200 backdrop-blur-md text-left shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-                  >
-                    <div className="flex items-start space-x-2">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold">
-                        <FiAlertTriangle className="h-3.5 w-3.5" />
-                      </span>
-                      <div>
-                        <p className="font-semibold text-amber-300 font-manrope">Notice</p>
-                        <p className="mt-0.5">{warningMessage}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
               </AnimatePresence>
 
-              {/* Login Form */}
-              <form onSubmit={handleSubmit} className="space-y-4 text-left">
+              {/* Login Form with RHF + Zod */}
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left" noValidate>
                 {/* Email */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-zinc-300 font-sans">
+                  <label htmlFor="login-email" className="text-xs font-medium text-zinc-300 font-sans">
                     Email Address
                   </label>
                   <input
                     id="login-email"
-                    name="email"
                     type="email"
                     autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (warningMessage) setWarningMessage(null);
-                    }}
+                    {...register('email')}
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? 'login-email-error' : undefined}
                     placeholder="name@work-email.com"
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 sm:px-4 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-sans"
+                    className={`w-full rounded-xl border px-3.5 sm:px-4 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all font-sans focus:outline-none focus:ring-2 ${
+                      errors.email
+                        ? 'border-red-500/60 bg-red-500/[0.05] focus:border-red-500 focus:ring-red-500/20'
+                        : 'border-white/10 bg-white/[0.04] focus:border-indigo-500 focus:bg-white/[0.07] focus:ring-indigo-500/20'
+                    }`}
                   />
+                  {errors.email && (
+                    <p id="login-email-error" className="text-xs text-red-400 mt-1 flex items-center space-x-1 font-sans">
+                      <FiAlertTriangle className="h-3 w-3 shrink-0" />
+                      <span>{errors.email.message}</span>
+                    </p>
+                  )}
                 </div>
 
                 {/* Password */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium text-zinc-300 font-sans">
+                    <label htmlFor="login-password" className="text-xs font-medium text-zinc-300 font-sans">
                       Password
                     </label>
                   </div>
                   <div className="relative">
                     <input
                       id="login-password"
-                      name="password"
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="current-password"
-                      required
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        if (warningMessage) setWarningMessage(null);
-                      }}
+                      {...register('password')}
+                      aria-invalid={!!errors.password}
+                      aria-describedby={errors.password ? 'login-password-error' : undefined}
                       onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       placeholder="••••••••••••"
-                      className="w-full rounded-xl border border-white/10 bg-white/[0.04] pl-3.5 sm:pl-4 pr-11 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-sans"
+                      className={`w-full rounded-xl border pl-3.5 sm:pl-4 pr-11 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all font-sans focus:outline-none focus:ring-2 ${
+                        errors.password
+                          ? 'border-red-500/60 bg-red-500/[0.05] focus:border-red-500 focus:ring-red-500/20'
+                          : 'border-white/10 bg-white/[0.04] focus:border-indigo-500 focus:bg-white/[0.07] focus:ring-indigo-500/20'
+                      }`}
                     />
                     <button
                       type="button"
@@ -295,16 +265,22 @@ function LoginForm() {
                       <span>Caps Lock is ON</span>
                     </div>
                   )}
+                  {errors.password && (
+                    <p id="login-password-error" className="text-xs text-red-400 mt-1 flex items-center space-x-1 font-sans">
+                      <FiAlertTriangle className="h-3 w-3 shrink-0" />
+                      <span>{errors.password.message}</span>
+                    </p>
+                  )}
                 </div>
 
                 {/* Submit Button */}
                 <button
                   id="login-submit-btn"
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                   className="w-full rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 py-3.5 text-xs sm:text-sm font-semibold font-manrope text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all hover:shadow-[0_0_28px_rgba(99,102,241,0.6)] hover:brightness-110 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center space-x-2 mt-4 cursor-pointer"
                 >
-                  {isLoading ? (
+                  {isSubmitting ? (
                     <>
                       <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       <span>Signing In...</span>
