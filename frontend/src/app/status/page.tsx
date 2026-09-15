@@ -19,8 +19,9 @@ import { apiClient, ApiError } from '@/lib/api';
 
 interface HealthData {
   status: string;
-  timestamp: string;
-  database: {
+  timestamp?: string;
+  db?: 'connected' | 'disconnected';
+  database?: {
     status: string;
     connectionState: number;
     host?: string;
@@ -47,6 +48,13 @@ export default function StatusPage() {
   });
 
   const isConnected = !isLoading && !isError && health?.status === 'ok';
+  const isDbConnected =
+    !isLoading &&
+    !isError &&
+    (health?.database?.status === 'connected' || health?.db === 'connected');
+  const dbConnectionState =
+    health?.database?.connectionState ?? (isDbConnected ? 1 : 0);
+
 
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 font-sans relative overflow-x-hidden selection:bg-indigo-500/30 selection:text-white">
@@ -280,14 +288,14 @@ export default function StatusPage() {
                 className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-full border ${
                   isLoading
                     ? 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                    : isConnected && health?.database?.status === 'connected'
+                    : isDbConnected
                     ? 'bg-emerald-500/10 text-emerald-300 border-emerald-400/30'
                     : 'bg-rose-500/10 text-rose-300 border-rose-400/30'
                 }`}
               >
                 {isLoading
                   ? 'Checking'
-                  : health?.database?.status === 'connected'
+                  : isDbConnected
                   ? 'Connected'
                   : 'Disconnected'}
               </span>
@@ -300,8 +308,8 @@ export default function StatusPage() {
               </div>
               <div className="flex items-center justify-between text-zinc-400">
                 <span>Connection State:</span>
-                <span className="text-emerald-400">
-                  {health?.database?.connectionState === 1 ? '1 (Connected)' : '0 (Disconnected)'}
+                <span className={isDbConnected ? 'text-emerald-400' : 'text-rose-400'}>
+                  {`${dbConnectionState} (${isDbConnected ? 'Connected' : 'Disconnected'})`}
                 </span>
               </div>
               <div className="flex items-center justify-between text-zinc-400">
