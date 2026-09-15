@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { FiLogIn, FiUserPlus, FiArrowRight, FiLogOut } from 'react-icons/fi';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
@@ -24,26 +25,17 @@ export default function HomePage() {
           className="w-full max-w-3xl space-y-6 sm:space-y-8"
         >
           {/* Centered Brand Logo */}
-          <div className="flex items-center justify-center space-x-3 sm:space-x-3.5">
-            <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-[1px] shadow-[0_0_28px_rgba(99,102,241,0.45)]">
-              <div className="flex h-full w-full items-center justify-center rounded-[15px] bg-[#080a10]">
-                <svg
-                  className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                </svg>
-              </div>
-            </div>
-            <span className="text-2xl sm:text-3xl font-bold font-manrope tracking-tight text-white">
-              DevPulse
-            </span>
+          <div className="flex items-center justify-center">
+            <Image
+              src="/images/logo.png"
+              alt="DevPulse Logo"
+              width={628}
+              height={281}
+              priority
+              className="h-12 min-[380px]:h-14 sm:h-16 md:h-20 w-auto object-contain drop-shadow-[0_0_28px_rgba(251,191,36,0.3)] transition-transform duration-300 hover:scale-105"
+            />
           </div>
+
 
           {/* Centered Motto Heading */}
           <h1 className="text-2xl min-[380px]:text-3xl sm:text-5xl md:text-6xl font-bold font-manrope tracking-tight text-white leading-[1.14]">

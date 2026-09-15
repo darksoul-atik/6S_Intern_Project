@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -82,27 +83,19 @@ export default function SignupPage() {
             {/* Brand Logo Link */}
             <Link
               href="/"
-              className="inline-flex items-center space-x-3 group"
+              className="inline-flex items-center group focus:outline-hidden"
+              aria-label="DevPulse Home"
             >
-              <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-[1px] shadow-[0_0_24px_rgba(99,102,241,0.4)] transition-transform group-hover:scale-105">
-                <div className="flex h-full w-full items-center justify-center rounded-[15px] bg-[#080a10]">
-                  <svg
-                    className="h-5 w-5 text-indigo-400"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                  </svg>
-                </div>
-              </div>
-              <span className="text-2xl sm:text-3xl font-bold font-manrope tracking-tight text-white">
-                DevPulse
-              </span>
+              <Image
+                src="/images/logo.png"
+                alt="DevPulse Logo"
+                width={628}
+                height={281}
+                priority
+                className="h-9 sm:h-11 md:h-12 w-auto object-contain drop-shadow-[0_0_20px_rgba(251,191,36,0.25)] transition-transform duration-200 group-hover:scale-105"
+              />
             </Link>
+
 
             {/* Motto */}
             <h1 className="text-2xl min-[400px]:text-3xl sm:text-4xl md:text-5xl font-bold font-manrope tracking-tight text-white leading-[1.14]">

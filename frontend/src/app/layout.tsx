@@ -19,6 +19,10 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: 'DevPulse — Where Code Meets Community',
   description: 'A modern developer community and technical collaboration platform.',
+  icons: {
+    icon: '/images/logo-icon.png',
+    apple: '/images/logo-icon.png',
+  },
 };
 
 export const viewport: Viewport = {

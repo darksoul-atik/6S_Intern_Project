@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { FiMenu, FiX, FiLogOut, FiUser, FiGrid, FiUsers, FiShield, FiActivity } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
@@ -29,26 +30,21 @@ export function Navbar() {
         
         {/* Left: Brand Logo & Desktop Nav */}
         <div className="flex items-center space-x-3 sm:space-x-6 min-w-0">
-          <Link href="/dashboard" className="flex items-center space-x-2 sm:space-x-3 group shrink-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-[1px] shadow-[0_0_18px_rgba(99,102,241,0.35)] transition-transform group-hover:scale-105">
-              <div className="flex h-full w-full items-center justify-center rounded-[11px] bg-[#080a10]">
-                <svg
-                  className="h-4 w-4 text-indigo-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                </svg>
-              </div>
-            </div>
-            <span className="text-base sm:text-lg font-bold font-manrope tracking-tight text-white">
-              DevPulse
-            </span>
+          <Link
+            href="/dashboard"
+            className="flex items-center group shrink-0 focus:outline-hidden"
+            aria-label="DevPulse Dashboard"
+          >
+            <Image
+              src="/images/logo.png"
+              alt="DevPulse Logo"
+              width={628}
+              height={281}
+              priority
+              className="h-7 sm:h-8 md:h-9 w-auto object-contain transition-transform group-hover:scale-105"
+            />
           </Link>
+
 
           {/* Desktop Nav Links */}
           <nav className="hidden sm:flex items-center space-x-1">
