@@ -40,7 +40,7 @@ function formatExpDate(val?: string): string {
   return val;
 }
 
-export default function ProfileViewPage({ params }: PageProps) {
+export default function DeveloperProfilePage({ params }: PageProps) {
   const resolvedParams = use(params);
   const targetId = resolvedParams.id;
   const { user: currentUser } = useAuth();
@@ -65,8 +65,7 @@ export default function ProfileViewPage({ params }: PageProps) {
       setLoading(true);
       setError(null);
       try {
-        const endpoint =
-          targetId === 'me' ? '/api/users/me' : `/api/users/${targetId}`;
+        const endpoint = `/api/users/${targetId}`;
         const res = await apiClient<UserProfile>(endpoint);
         if (active && res.data) {
           setProfile(res.data);
@@ -90,18 +89,14 @@ export default function ProfileViewPage({ params }: PageProps) {
     };
   }, [targetId]);
 
-  const profileId =
-    profile?.id || profile?._id || (targetId !== 'me' ? targetId : currentUser?.id);
-  const isOwner =
-    currentUser && (currentUser.id === profileId || targetId === 'me');
+  const profileId = profile?.id || profile?._id || targetId;
+  const isOwner = currentUser && currentUser.id === profileId;
   const isAdmin = currentUser?.role === 'admin';
   const canEdit = Boolean(isOwner || isAdmin);
 
   const handleShare = () => {
     if (typeof window !== 'undefined') {
-      const shareUrl = profileId
-        ? `${window.location.origin}/profile/${profileId}`
-        : window.location.href;
+      const shareUrl = `${window.location.origin}/developers/${profileId}`;
       navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -167,8 +162,7 @@ export default function ProfileViewPage({ params }: PageProps) {
         }
 
         try {
-          const endpoint =
-            targetId === 'me' ? '/api/users/me' : `/api/users/${profileId}`;
+          const endpoint = `/api/users/${profileId}`;
           const res = await apiClient<UserProfile>(endpoint, {
             method: 'PATCH',
             body: JSON.stringify({ avatarUrl: dataUrl }),
@@ -200,8 +194,7 @@ export default function ProfileViewPage({ params }: PageProps) {
     if (!profile) return;
     setAvatarUploading(true);
     try {
-      const endpoint =
-        targetId === 'me' ? '/api/users/me' : `/api/users/${profileId}`;
+      const endpoint = `/api/users/${profileId}`;
       const res = await apiClient<UserProfile>(endpoint, {
         method: 'PATCH',
         body: JSON.stringify({ avatarUrl: '' }),
@@ -368,9 +361,9 @@ export default function ProfileViewPage({ params }: PageProps) {
                 )}
               </button>
 
-              {canEdit && (
+              {isOwner && (
                 <Link
-                  href={`/profile/${profileId}/edit`}
+                  href="/profile/edit"
                   id="edit-profile-btn"
                   className="inline-flex items-center space-x-1.5 sm:space-x-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-3 sm:px-4 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
                 >
@@ -548,7 +541,7 @@ export default function ProfileViewPage({ params }: PageProps) {
             </div>
           </motion.div>
 
-          {/* Two-Column Grid: Skills & Work Experiences (Clean View Route) */}
+          {/* Two-Column Grid: Skills & Work Experiences */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-8">
             {/* Skills Column (1 col) */}
             <motion.div
@@ -584,7 +577,7 @@ export default function ProfileViewPage({ params }: PageProps) {
                   </div>
                   <p className="text-xs text-slate-500 font-sans">
                     {canEdit
-                      ? 'No skills listed yet. Add your core competencies on the edit page.'
+                      ? 'No skills listed yet. Add your core competencies on your profile.'
                       : 'This developer has not listed any skills yet.'}
                   </p>
                 </div>
@@ -649,7 +642,7 @@ export default function ProfileViewPage({ params }: PageProps) {
                   </div>
                   <p className="text-xs text-slate-500 font-sans">
                     {canEdit
-                      ? 'No work experience listed yet. Add your career milestones on the edit page.'
+                      ? 'No work experience listed yet. Add your career milestones on your profile.'
                       : 'This developer has not listed any work experience yet.'}
                   </p>
                 </div>
@@ -657,7 +650,7 @@ export default function ProfileViewPage({ params }: PageProps) {
             </motion.div>
           </div>
 
-          {/* Community Impact Stats Component (Under Skills & Experience, with matching text font, color and unified icon styling) */}
+          {/* Community Impact Stats Component */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}

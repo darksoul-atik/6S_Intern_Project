@@ -64,7 +64,7 @@ export function Navbar() {
                   Dashboard
                 </Link>
                 <Link
-                  href="/profile/me"
+                  href="/profile"
                   id="navbar-profile-link"
                   className={`rounded-lg px-3 py-1.5 text-xs font-semibold font-manrope transition-colors ${
                     pathname.startsWith('/profile')
@@ -112,7 +112,7 @@ export function Navbar() {
               {/* Desktop View (>= sm): User Pill with Full Name and Role + Logout Button */}
               <div className="hidden sm:flex items-center space-x-3">
                 <Link
-                  href="/profile/me"
+                  href="/profile"
                   id="navbar-user-badge-link"
                   className="flex items-center space-x-2 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] px-3 py-1.5 backdrop-blur-md shadow-xs transition-colors group cursor-pointer"
                 >
@@ -145,7 +145,7 @@ export function Navbar() {
               {/* Mobile View (< sm): Compact Avatar Dot Link + Hamburger Menu Toggle */}
               <div className="flex sm:hidden items-center space-x-2">
                 <Link
-                  href="/profile/me"
+                  href="/profile"
                   title="My Profile"
                   className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-emerald-500 p-[1px] shadow-xs active:scale-95 transition-transform"
                 >
@@ -193,7 +193,7 @@ export function Navbar() {
           {/* User Profile Card: FULL NAME without any truncation */}
           {user && (
             <Link
-              href="/profile/me"
+              href="/profile"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center space-x-3 p-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 transition-colors group cursor-pointer"
             >
@@ -242,7 +242,7 @@ export function Navbar() {
             </Link>
 
             <Link
-              href="/profile/me"
+              href="/profile"
               onClick={() => setMobileMenuOpen(false)}
               className={`flex items-center space-x-2.5 min-h-[44px] rounded-xl px-3.5 py-2.5 text-xs font-semibold font-manrope transition-colors ${
                 pathname.startsWith('/profile')
