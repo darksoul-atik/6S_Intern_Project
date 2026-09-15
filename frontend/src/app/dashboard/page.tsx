@@ -15,7 +15,7 @@ import { ApiError } from '@/lib/api';
 import {
   useVerifyMeMutation,
   useVerifyAdminMutation,
-} from '@/hooks/useDashboardQueries';
+} from '@/features/auth/auth.api';
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
