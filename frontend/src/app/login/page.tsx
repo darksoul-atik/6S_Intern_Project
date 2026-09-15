@@ -7,8 +7,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiLogIn, FiEye, FiEyeOff, FiX, FiAlertTriangle, FiCheck } from 'react-icons/fi';
-import { apiClient, ApiError } from '@/lib/api';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
+import { useLoginMutation, extractAuthErrorMessage } from '@/hooks/useAuthMutations';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
 import { useAuth } from '@/context/AuthContext';
 
@@ -16,6 +16,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login: setAuthUser } = useAuth();
+  const loginMutation = useLoginMutation();
 
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -44,16 +45,7 @@ function LoginForm() {
     setFieldErrors([]);
 
     try {
-      const response = await apiClient<{
-        accessToken?: string;
-        user: { id: string; name: string; email: string; role: string };
-      }>('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-        }),
-      });
+      const response = await loginMutation.mutateAsync(data);
 
       if (response.success && response.data?.user) {
         setAuthUser(response.data.user);
@@ -62,15 +54,10 @@ function LoginForm() {
       } else {
         setErrorMessage(response.message || 'Authentication failed. Please try again.');
       }
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setErrorMessage(err.message || 'Invalid email or password.');
-        if (err.errors && err.errors.length > 0) {
-          setFieldErrors(err.errors);
-        }
-      } else {
-        setErrorMessage('Network or server error. Please try again.');
-      }
+    } catch (err: unknown) {
+      const extracted = extractAuthErrorMessage(err);
+      setErrorMessage(extracted.message);
+      setFieldErrors(extracted.errors);
     }
   };
 
@@ -277,10 +264,10 @@ function LoginForm() {
                 <button
                   id="login-submit-btn"
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || loginMutation.isPending}
                   className="w-full rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 py-3.5 text-xs sm:text-sm font-semibold font-manrope text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all hover:shadow-[0_0_28px_rgba(99,102,241,0.6)] hover:brightness-110 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center space-x-2 mt-4 cursor-pointer"
                 >
-                  {isSubmitting ? (
+                  {isSubmitting || loginMutation.isPending ? (
                     <>
                       <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       <span>Signing In...</span>
