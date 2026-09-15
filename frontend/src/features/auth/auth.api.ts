@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, ApiError, ApiResponse } from '@/lib/api';
-import type { SignupInput, LoginInput } from '@/lib/validations/auth';
+import type { SignupInput, LoginInput } from './auth.schemas';
 
 export interface AuthUser {
   id: string;
@@ -127,4 +127,3 @@ export function useLogoutMutation() {
     },
   });
 }
-

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import type { AuthUser } from './useAuthMutations';
+import type { AuthUser } from '@/features/auth/auth.api';
 
 export const CURRENT_USER_QUERY_KEY = ['auth', 'user'] as const;
 

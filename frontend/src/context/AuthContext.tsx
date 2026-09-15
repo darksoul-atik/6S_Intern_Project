@@ -4,7 +4,7 @@ import React, { createContext, useContext, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentUser, CURRENT_USER_QUERY_KEY } from '@/hooks/useCurrentUser';
-import { useLogoutMutation, type AuthUser } from '@/hooks/useAuthMutations';
+import { useLogoutMutation, type AuthUser } from '@/features/auth/auth.api';
 
 export type UserSession = AuthUser;
 
