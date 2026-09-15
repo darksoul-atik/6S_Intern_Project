@@ -28,6 +28,7 @@ export const viewport: Viewport = {
   themeColor: '#07090e',
 };
 
+import { QueryProvider } from '@/providers/QueryProvider';
 import { AuthProvider } from '@/context/AuthContext';
 import { Navbar } from '@/components/Navbar';
 
@@ -46,10 +47,12 @@ export default function RootLayout({
         className="min-h-full bg-[#020205] text-white font-sans selection:bg-indigo-500/30 selection:text-white"
         suppressHydrationWarning
       >
-        <AuthProvider>
-          <Navbar />
-          <main>{children}</main>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <Navbar />
+            <main>{children}</main>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

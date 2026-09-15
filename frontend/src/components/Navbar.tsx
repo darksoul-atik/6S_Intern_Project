@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiMenu, FiX, FiLogOut, FiUser, FiGrid, FiUsers, FiShield } from 'react-icons/fi';
+import { FiMenu, FiX, FiLogOut, FiUser, FiGrid, FiUsers, FiShield, FiActivity } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 
 export function Navbar() {
@@ -87,6 +87,17 @@ export function Navbar() {
                     User List
                   </Link>
                 )}
+                <Link
+                  href="/status"
+                  id="navbar-status-link"
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold font-manrope transition-colors ${
+                    pathname === '/status'
+                      ? 'bg-white/10 text-white shadow-xs'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                  }`}
+                >
+                  Status
+                </Link>
               </>
             )}
           </nav>
@@ -257,6 +268,20 @@ export function Navbar() {
                 <span>User List</span>
               </Link>
             )}
+
+            <Link
+              href="/status"
+              id="navbar-mobile-status-link"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center space-x-2.5 min-h-[44px] rounded-xl px-3.5 py-2.5 text-xs font-semibold font-manrope transition-colors ${
+                pathname === '/status'
+                  ? 'bg-white/10 text-white shadow-xs'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+              }`}
+            >
+              <FiActivity className="h-4 w-4 text-cyan-400 shrink-0" />
+              <span>System Status</span>
+            </Link>
           </div>
 
           {/* Full-Width Mobile Logout Button */}

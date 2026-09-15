@@ -2,6 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { HealthService, type HealthResponse } from './health.service.js';
 import { HealthResponseDto } from './dto/health-response.dto.js';
+import { ErrorResponseDto } from '../common/dto/error-response.dto.js';
 
 @ApiTags('Health')
 @Controller('health')
@@ -19,8 +20,14 @@ export class HealthController {
     description: 'System health status retrieved successfully',
     type: HealthResponseDto,
   })
+  @ApiResponse({
+    status: 503,
+    description: 'Service or database connection degraded / unavailable',
+    type: ErrorResponseDto,
+  })
   getHealth(): HealthResponse {
     return this.healthService.check();
   }
 }
+
 
