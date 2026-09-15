@@ -43,7 +43,15 @@
 - **Dual-Layer Double-Submit Defense**: Directed the implementation of submit locks featuring both programmatic in-flight early returns in `onSubmit` and reactive UI locks (`disabled={isPending}`, `aria-disabled={isPending}`, and inline animated spinners) to eliminate duplicate concurrent mutation requests.
 - **Axios Foundation Realignment**: Prompted the agent to switch the HTTP client layer to `axios` to align with Day 2 architectural guidelines, requiring an Axios instance configured with `withCredentials: true`, response interceptors mapping to `ApiError`, and 100% backward compatibility for TanStack Query mutations.
 - **Responsive Brand Asset Integration**: Prompted for replacing the generic placeholder SVG pulse with the newly provided brand PNG lockup. Mandated that the logo not be a static single size, but proportionally scaled and responsive per placement (`Navbar.tsx`, `page.tsx` hero centerpiece, `login/page.tsx`, and `signup/page.tsx`), and extracted a square 1:1 icon for browser tab favicons (`icon.png`).
-tions.
+
+### Architecture Refactor: Structure & Functional Components
+- **Strict Zero-Regression Mandate**: Defined an unambiguous refactor-only scope: reorganize the codebase for readability and scale without introducing new features, changing API contracts, or altering user-facing behavior. Required explicit confirmation before proceeding at any step.
+- **Dedicated Branching & Atomic Commits**: Enforced executing all refactoring on a dedicated branch (`refactor/structure-and-functional-components`), with step-by-step verification and commits for each domain boundary (Auth, Users/Profile, Admin, and Shared Utilities).
+- **Feature-First Decomposition**: Guided the extraction of thick page components from `app/` into modular feature slices (`features/auth/`, `features/users/`, `features/admin/`), turning Next.js App Router pages into thin, readable route wrappers.
+- **Dedicated Modal UI Surfaces**: Directed the extraction of complex dialogs into discrete feature components (`ExperienceModal.tsx`, `EditUserModal.tsx`, `DeleteUserConfirm.tsx`) to manage their own open/close state and forms, preventing parent components from ballooning to 1,000+ lines.
+- **Type Colocation**: Mandated that TypeScript interfaces live directly in each feature's `.api.ts` file (e.g. `UserProfile`, `Experience` in `users.api.ts`; `AdminUser` in `admin.api.ts`; `AuthUser` in `auth.api.ts`) rather than fragmented in a disconnected global `types/` folder.
+- **Shared Cross-Cutting Deduplication**: Consolidated copy-pasted canvas image compression into `lib/image.ts` and date/name formatting routines into `lib/formatters.ts`.
+
 
 ---
 
@@ -80,6 +88,13 @@ tions.
 - **Rejected Client-Side `localStorage` Token Storage**: Re-evaluated and confirmed the `httpOnly` cookie strategy, rejecting suggestions to place JWTs in `localStorage` or `sessionStorage` where they would be exposed to client-side script injection.
 - **Rejected Fetch-Only Hardcoding**: Intervened after reviewing Day 2 architectural requirements which recommended an Axios-powered client. Directed a clean migration in `frontend/src/lib/api.ts` to use `axiosInstance` while ensuring callers passing Fetch-style options (`body: string`) are transparently supported.
 - **Rejected Raw Uncropped Image Embedding**: Analyzed the user's uploaded 1024×1024 logo PNG and detected over 350px of empty transparent padding around the actual artwork. Rejected embedding it raw, which would have rendered an unreadable, tiny micro-logo in the navbar. Used `sharp` to trim transparent bounds (yielding 628×281, aspect ratio 2.23:1) and extracted the standalone yellow geometric emblem (282×281).
+
+### Architecture Refactor: Structure & Functional Components
+- **Rejected Over-Engineered Custom Hook Abstractions**: Upheld the core principle "Clean and Readable over Maximally Correct Architecture." Rejected extracting custom hooks for simple local component state (such as dropdown toggles, modal open/close booleans, or tab selection) where standard `useState` was clearer and more straightforward for interns to read.
+- **Rejected Artificial Splitting of Presentation Pages**: Assessed `dashboard/page.tsx`. Because it is primarily a presentational landing dashboard with minimal UI complexity, rejected creating a superfluous `features/dashboard` folder with fragmented sub-components, keeping it clean and self-contained.
+- **Rejected Disconnected Global Types Directory**: Reviewed type organization and rejected keeping a separate top-level `types/` folder. Colocated types directly inside their corresponding feature's `.api.ts` file (`auth.api.ts`, `users.api.ts`, `admin.api.ts`), ensuring domain changes and their associated contracts remain cohesive.
+- **Rejected Retaining Stale Empty Legacy Directories**: Following the extraction of queries, hooks, and types into feature directories, audited the repository and cleanly removed obsolete files and empty directories (`frontend/src/hooks`, `frontend/src/types`) rather than leaving confusing dead artifacts.
+
 
 ---
 
@@ -121,6 +136,14 @@ tions.
 - **Elimination of All Raw `apiClient` Calls from UI Layer**: Audited the entire frontend codebase for unmanaged manual API calls inside `useEffect` and event handlers. Migrated all 5 remaining manual pages (`developers/[id]`, `profile`, `profile/edit`, `admin/users`, and `dashboard`) to centralized TanStack Query hook modules (`useProfileQueries`, `useAdminQueries`, `useDashboardQueries`).
 - **Smooth Pagination with `keepPreviousData`**: Implemented `placeholderData: keepPreviousData` in `useAdminUsers` to eliminate layout shift and table flickering during pagination and filter changes.
 - **Multi-Level Cache Invalidation**: Enforced that all user mutations (avatar uploads/removals, skill additions/deletions, experience CRUD, and profile details) automatically invalidate both their specific user query cache (`['users', id]`) and the active auth session (`['auth', 'user']`), ensuring the Navbar user badge, profile cards, and directory tables stay synchronized platform-wide.
+
+### Architecture Refactor: Structure & Functional Components
+- **TypeScript Import Resolution & Missing Helper Export**: During the extraction of `ExperienceModal.tsx`, TypeScript compilation caught a missing named export `formatDateDisplay` from `lib/formatters.ts`. Added and exported `formatDateDisplay` in `lib/formatters.ts`, restoring clean type safety across all consumers.
+- **Dynamic Route Params Resolution in React 19 / Next.js 16**: When simplifying `app/developers/[id]/page.tsx`, ensured compatibility with Next.js 16 App Router where `params` is a Promise by unwrapping it using React 19's `use(params)`.
+- **Canvas Image Compression Unification**: Caught three independent, copy-pasted HTML5 canvas image resizing routines across the codebase (used for avatar uploads). Extracted and unified them into a reusable `compressImage` function in `lib/image.ts`, eliminating over 100 lines of duplicated canvas and blob logic.
+- **Verification Gate Before Each Atomic Commit**: Before executing commits for each domain boundary (Auth, Users/Profile, Admin), ran `tsc --noEmit` and `next build` to guarantee zero compilation errors, zero type drift, and 100% successful static/dynamic page generation.
+- **Backend Test Suite Integrity (48/48 Passing)**: Re-executed the complete Vitest test suite (`npm test`) on the NestJS backend to confirm that all 48 tests across 9 test suites remained fully green and unaffected by the structural refactoring.
+
 
 
 

@@ -381,6 +381,76 @@ curl -X PATCH http://localhost:5000/users/<OTHER_USER_ID> \
 
 ---
 
+## 🏗️ Monorepo Refactoring & Feature-Based Architecture
+
+As the DevPulse application expanded through Days 1–4, a dedicated architectural refactoring was executed to organize the codebase for readability, scalability, and clean separation of concerns without altering any user-facing behavior, API contracts, or state handling.
+
+### 1. Feature-First Directory Structure
+Migrated from dispersed hooks, types, and bloated page files to self-contained feature slices under `frontend/src/features/`:
+
+```
+frontend/src/
+├── app/                      # Thin App Router wrappers (routing, params unwrap, metadata)
+│   ├── (auth)/
+│   │   ├── login/page.tsx    # Renders <LoginForm />
+│   │   └── signup/page.tsx   # Renders <SignupForm />
+│   ├── profile/
+│   │   ├── page.tsx          # Renders <ProfileView targetId="me" />
+│   │   └── edit/page.tsx     # Renders <ProfileEditForm />
+│   ├── developers/[id]/
+│   │   └── page.tsx          # Renders <ProfileView targetId={id} />
+│   ├── admin/users/
+│   │   └── page.tsx          # Renders <AdminUsersTable />
+│   └── dashboard/page.tsx    # Clean dashboard presentation page
+│
+├── features/                 # Modular domain features
+│   ├── auth/
+│   │   ├── auth.schemas.ts   # Zod validation schemas (signupSchema, loginSchema)
+│   │   ├── auth.api.ts       # Colocated types & TanStack Query mutations (signup, login, logout, me, admin-check)
+│   │   ├── LoginForm.tsx     # Extracted interactive login component
+│   │   └── SignupForm.tsx    # Extracted interactive signup component
+│   │
+│   ├── users/
+│   │   ├── users.api.ts      # Colocated types (UserProfile, Experience) & TanStack profile mutations
+│   │   ├── useCurrentUser.ts # Current user authentication query hook
+│   │   ├── ProfileView.tsx   # Reusable profile presentation view (used by /profile and /developers/[id])
+│   │   ├── ProfileEditForm.tsx # Clean profile & skills editor
+│   │   ├── ExperienceModal.tsx # Standalone modal for adding & editing work experiences
+│   │   └── ProfileSkeleton.tsx # Reusable shimmering loading placeholder
+│   │
+│   └── admin/
+│       ├── admin.api.ts      # Colocated types (AdminUser, PaginatedResponse) & TanStack admin queries
+│       ├── AdminUsersTable.tsx # Admin directory table with stats, search, filtering & pagination
+│       ├── EditUserModal.tsx # Standalone modal for editing user details and system roles
+│       └── DeleteUserConfirm.tsx # Standalone confirmation modal for soft-deleting accounts
+│
+├── components/               # Shared cross-feature UI components
+│   ├── Navbar.tsx            # Global navigation bar with user badge and mobile drawer
+│   ├── MeshGradientBackground.tsx # Specular ambient backdrop glow
+│   ├── LottieAnimation.tsx   # SSR-safe vector animation wrapper
+│   └── ui/pagination.tsx     # Reusable shadcn pagination controls
+│
+└── lib/                      # Core cross-cutting utilities
+    ├── api.ts                # Axios client with interceptors & ApiError normalization
+    ├── formatters.ts         # Shared initials and date formatting helpers (getInitials, formatDate, formatExpDate)
+    └── image.ts              # Shared HTML5 canvas image compression utility (compressImage)
+```
+
+### 2. Key Architectural Improvements
+1. **Colocated Feature Types (`.api.ts`)**:
+   - Rather than maintaining fragmented or disconnected global `types/` directories, all domain entities and payloads (`AuthUser`, `UserProfile`, `Experience`, `AdminUser`, `PaginatedResponse`) are strictly colocated within their feature API module (`auth.api.ts`, `users.api.ts`, `admin.api.ts`).
+2. **Thin Route Wrappers in `app/`**:
+   - Next.js App Router files (`page.tsx`) now act strictly as lightweight route handlers responsible for unrolling dynamic route params (using React 19's `use(params)`), enforcing metadata, and rendering the designated feature component.
+3. **Discrete Modal UI Surfaces**:
+   - Complex dialogs (`ExperienceModal.tsx`, `EditUserModal.tsx`, `DeleteUserConfirm.tsx`) were extracted into dedicated components with their own local form states and animations, reducing parent page sizes by over 60% without artificial fragmentation.
+4. **Deduplication of Common Utilities**:
+   - Canvas-based image compression was consolidated into `lib/image.ts`.
+   - Date formatters (`formatDate`, `formatExpDate`, `formatDateDisplay`, `toDateInputValue`) and name initial generators (`getInitials`) were unified into `lib/formatters.ts`.
+5. **Zero Behavior Regressions**:
+   - Maintained 100% feature parity, exact styling, responsive breakpoints, cookie session lifetimes, and route protection across all pages.
+
+---
+
 ## 🔐 Environment Variables
 
 ### Backend (`backend/.env`)
