@@ -25,7 +25,7 @@ import {
   FiUserX,
 } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
-import { apiClient, ApiError } from '@/lib/api';
+import { ApiError } from '@/lib/api';
 import {
   Pagination,
   PaginationContent,
@@ -35,43 +35,57 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-
-interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'user';
-  title?: string;
-  avatarUrl?: string | null;
-  isDeleted?: boolean;
-  deletedAt?: string | null;
-  createdAt: string;
-  updatedAt?: string;
-  skills?: string[];
-}
-
-interface PaginatedResponse {
-  users: AdminUser[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+import {
+  useAdminUsers,
+  useUpdateAdminUserMutation,
+  useSoftDeleteUserMutation,
+  useRestoreUserMutation,
+  type AdminUser,
+} from '@/hooks/useAdminQueries';
 
 export default function AdminUsersPage() {
   const router = useRouter();
   const { user: currentUser, isLoading: authLoading, isAuthenticated } = useAuth();
 
   // State
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [totalUsers, setTotalUsers] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [totalPages, setTotalPages] = useState<number>(1);
   const [limit] = useState<number>(8);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [activeSearch, setActiveSearch] = useState<string>('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'deleted'>('all');
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+
+  // TanStack Query Users Fetch
+  const {
+    data: paginatedData,
+    isLoading: isUsersLoading,
+    isFetching,
+    error: usersError,
+    refetch,
+  } = useAdminUsers(
+    {
+      page: currentPage,
+      limit,
+      search: activeSearch,
+      includeDeleted: true,
+    },
+    {
+      enabled: !authLoading && isAuthenticated && currentUser?.role === 'admin',
+    },
+  );
+
+  const users = paginatedData?.users || [];
+  const totalUsers = paginatedData?.total || 0;
+  const totalPages = paginatedData?.totalPages || 1;
+  const isLoading = isUsersLoading;
+
+  // TanStack Query Admin Mutations
+  const updateAdminUserMutation = useUpdateAdminUserMutation();
+  const softDeleteUserMutation = useSoftDeleteUserMutation();
+  const restoreUserMutation = useRestoreUserMutation();
+
+  const isSubmittingEdit = updateAdminUserMutation.isPending;
+  const isDeleting = softDeleteUserMutation.isPending;
 
   // Modals state
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
@@ -81,10 +95,8 @@ export default function AdminUsersPage() {
     role: 'admin' | 'user';
     title: string;
   }>({ name: '', email: '', role: 'user', title: '' });
-  const [isSubmittingEdit, setIsSubmittingEdit] = useState<boolean>(false);
 
   const [deletingUser, setDeletingUser] = useState<AdminUser | null>(null);
-  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   const [notification, setNotification] = useState<{
     type: 'success' | 'error';
@@ -123,57 +135,29 @@ export default function AdminUsersPage() {
     }
   };
 
-  // Fetch Users
-  const fetchUsers = useCallback(
-    async (page: number, search: string) => {
-      setIsLoading(true);
-      try {
-        const queryParams = new URLSearchParams({
-          page: page.toString(),
-          limit: limit.toString(),
-          includeDeleted: 'true',
-        });
-        if (search.trim()) {
-          queryParams.set('search', search.trim());
-        }
-
-        const res = await apiClient<PaginatedResponse>(`/api/users?${queryParams.toString()}`);
-        if (res.success && res.data) {
-          setUsers(res.data.users || []);
-          setTotalUsers(res.data.total || 0);
-          setCurrentPage(res.data.page || 1);
-          setTotalPages(res.data.totalPages || 1);
-        }
-      } catch (err) {
-        const message = err instanceof ApiError ? err.message : 'Failed to load users list';
-        showNotification('error', message);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [limit]
-  );
-
   useEffect(() => {
     document.title = 'User List — DevPulse';
   }, []);
 
   useEffect(() => {
-    if (!authLoading && isAuthenticated && currentUser?.role === 'admin') {
-      fetchUsers(currentPage, searchQuery);
+    if (usersError) {
+      const message =
+        usersError instanceof ApiError
+          ? usersError.message
+          : 'Failed to load users list';
+      showNotification('error', message);
     }
-  }, [authLoading, isAuthenticated, currentUser, currentPage, fetchUsers]);
+  }, [usersError]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    fetchUsers(1, searchQuery);
+    setActiveSearch(searchQuery);
   };
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
       setCurrentPage(newPage);
-      fetchUsers(newPage, searchQuery);
     }
   };
 
@@ -205,70 +189,58 @@ export default function AdminUsersPage() {
       return;
     }
 
-    setIsSubmittingEdit(true);
     try {
-      const res = await apiClient<AdminUser>(`/api/users/${editingUser.id}/admin`, {
-        method: 'PATCH',
-        body: JSON.stringify({
+      await updateAdminUserMutation.mutateAsync({
+        id: editingUser.id,
+        data: {
           name: editForm.name.trim(),
           email: editForm.email.trim().toLowerCase(),
           role: editForm.role,
           title: editForm.title.trim() || undefined,
-        }),
+        },
       });
 
-      if (res.success) {
-        showNotification('success', `User details for "${editForm.name}" updated successfully`);
-        setEditingUser(null);
-        fetchUsers(currentPage, searchQuery);
-      }
+      showNotification(
+        'success',
+        `User details for "${editForm.name}" updated successfully`,
+      );
+      setEditingUser(null);
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Failed to update user details';
+      const message =
+        err instanceof ApiError ? err.message : 'Failed to update user details';
       showNotification('error', message);
-    } finally {
-      setIsSubmittingEdit(false);
     }
   };
 
   // Delete User
   const handleConfirmDelete = async () => {
     if (!deletingUser) return;
-    setIsDeleting(true);
 
     try {
-      const res = await apiClient<{ message: string }>(`/api/users/${deletingUser.id}`, {
-        method: 'DELETE',
-      });
-
-      if (res.success) {
-        showNotification(
-          'success',
-          `User "${deletingUser.name}" has been deleted. They will be blocked from logging in with a deletion notice.`
-        );
-        setDeletingUser(null);
-        fetchUsers(currentPage, searchQuery);
-      }
+      await softDeleteUserMutation.mutateAsync(deletingUser.id);
+      showNotification(
+        'success',
+        `User "${deletingUser.name}" has been deleted. They will be blocked from logging in with a deletion notice.`,
+      );
+      setDeletingUser(null);
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Failed to delete user';
+      const message =
+        err instanceof ApiError ? err.message : 'Failed to delete user';
       showNotification('error', message);
-    } finally {
-      setIsDeleting(false);
     }
   };
 
   // Restore User
   const handleRestoreUser = async (targetUser: AdminUser) => {
     try {
-      const res = await apiClient<{ message: string }>(`/api/users/${targetUser.id}/restore`, {
-        method: 'POST',
-      });
-
-      if (res.success) {
-        showNotification('success', `Account for "${targetUser.name}" has been restored successfully`);
-        fetchUsers(currentPage, searchQuery);
-      }
+      await restoreUserMutation.mutateAsync(targetUser.id);
+      showNotification(
+        'success',
+        `Account for "${targetUser.name}" has been restored successfully`,
+      );
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Failed to restore user account';
+      const message =
+        err instanceof ApiError ? err.message : 'Failed to restore user account';
       showNotification('error', message);
     }
   };
@@ -369,11 +341,11 @@ export default function AdminUsersPage() {
           <div className="flex items-center space-x-3 shrink-0">
             <button
               type="button"
-              onClick={() => fetchUsers(currentPage, searchQuery)}
-              disabled={isLoading}
+              onClick={() => refetch()}
+              disabled={isLoading || isFetching}
               className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold font-manrope text-slate-700 hover:bg-slate-50 shadow-2xs transition-all disabled:opacity-50"
             >
-              <FiRefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin text-indigo-600' : ''}`} />
+              <FiRefreshCw className={`h-3.5 w-3.5 ${isLoading || isFetching ? 'animate-spin text-indigo-600' : ''}`} />
               <span>Refresh</span>
             </button>
           </div>
@@ -461,7 +433,8 @@ export default function AdminUsersPage() {
                 type="button"
                 onClick={() => {
                   setSearchQuery('');
-                  fetchUsers(1, '');
+                  setActiveSearch('');
+                  setCurrentPage(1);
                 }}
                 className="absolute right-16 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-[11px]"
               >

@@ -22,9 +22,14 @@ import {
   FiCheckCircle,
 } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
-import { apiClient, ApiError } from '@/lib/api';
+import { ApiError } from '@/lib/api';
 import type { UserProfile } from '@/types/profile';
 import { ProfileSkeleton } from '@/components/ProfileSkeleton';
+import {
+  useUserProfile,
+  useUpdateAvatarMutation,
+  useDeleteAvatarMutation,
+} from '@/hooks/useProfileQueries';
 
 function formatExpDate(val?: string): string {
   if (!val) return '';
@@ -39,48 +44,33 @@ function formatExpDate(val?: string): string {
 export default function OwnProfilePage() {
   const { user: currentUser, isLoading: authLoading } = useAuth();
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // TanStack Query Profile Data
+  const {
+    data: profile,
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = useUserProfile('me');
+
+  const error = queryError
+    ? queryError instanceof ApiError
+      ? queryError.message
+      : 'Failed to load profile'
+    : null;
+
   const [copied, setCopied] = useState(false);
 
-  // Avatar Management State
-  const [avatarUploading, setAvatarUploading] = useState(false);
+  // TanStack Query Avatar Mutations
+  const updateAvatarMutation = useUpdateAvatarMutation('me');
+  const deleteAvatarMutation = useDeleteAvatarMutation('me');
+  const avatarUploading =
+    updateAvatarMutation.isPending || deleteAvatarMutation.isPending;
+
   const [avatarToast, setAvatarToast] = useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    let active = true;
-
-    async function fetchProfile() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await apiClient<UserProfile>('/api/users/me');
-        if (active && res.data) {
-          setProfile(res.data);
-        }
-      } catch (err) {
-        if (active) {
-          if (err instanceof ApiError) {
-            setError(err.message);
-          } else {
-            setError('Failed to load profile');
-          }
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
-    fetchProfile();
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const profileId = profile?.id || profile?._id || currentUser?.id;
   const isOwner = true;
@@ -122,7 +112,6 @@ export default function OwnProfilePage() {
       return;
     }
 
-    setAvatarUploading(true);
     setAvatarToast(null);
 
     const reader = new FileReader();
@@ -156,25 +145,17 @@ export default function OwnProfilePage() {
         }
 
         try {
-          const res = await apiClient<UserProfile>('/api/users/me', {
-            method: 'PATCH',
-            body: JSON.stringify({ avatarUrl: dataUrl }),
+          await updateAvatarMutation.mutateAsync(dataUrl);
+          setAvatarToast({
+            type: 'success',
+            message: 'Profile picture updated successfully!',
           });
-          if (res.data) {
-            setProfile(res.data);
-            setAvatarToast({
-              type: 'success',
-              message: 'Profile picture updated successfully!',
-            });
-            setTimeout(() => setAvatarToast(null), 3000);
-          }
+          setTimeout(() => setAvatarToast(null), 3000);
         } catch (err) {
           const msg =
             err instanceof ApiError ? err.message : 'Failed to update avatar';
           setAvatarToast({ type: 'error', message: msg });
           setTimeout(() => setAvatarToast(null), 3500);
-        } finally {
-          setAvatarUploading(false);
         }
       };
       img.src = event.target?.result as string;
@@ -185,27 +166,18 @@ export default function OwnProfilePage() {
   // Remove Avatar Handler
   const handleRemoveAvatar = async () => {
     if (!profile) return;
-    setAvatarUploading(true);
     try {
-      const res = await apiClient<UserProfile>('/api/users/me', {
-        method: 'PATCH',
-        body: JSON.stringify({ avatarUrl: '' }),
+      await deleteAvatarMutation.mutateAsync();
+      setAvatarToast({
+        type: 'success',
+        message: 'Profile picture removed. Initials restored.',
       });
-      if (res.data) {
-        setProfile(res.data);
-        setAvatarToast({
-          type: 'success',
-          message: 'Profile picture removed. Initials restored.',
-        });
-        setTimeout(() => setAvatarToast(null), 3000);
-      }
+      setTimeout(() => setAvatarToast(null), 3000);
     } catch (err) {
       const msg =
         err instanceof ApiError ? err.message : 'Failed to remove avatar';
       setAvatarToast({ type: 'error', message: msg });
       setTimeout(() => setAvatarToast(null), 3500);
-    } finally {
-      setAvatarUploading(false);
     }
   };
 

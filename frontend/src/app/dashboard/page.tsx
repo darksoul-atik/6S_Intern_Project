@@ -11,27 +11,34 @@ import {
   FiActivity,
 } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
-import { apiClient, ApiError } from '@/lib/api';
+import { ApiError } from '@/lib/api';
+import {
+  useVerifyMeMutation,
+  useVerifyAdminMutation,
+} from '@/hooks/useDashboardQueries';
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
 
+  const verifyMeMutation = useVerifyMeMutation();
+  const verifyAdminMutation = useVerifyAdminMutation();
+
+  const meLoading = verifyMeMutation.isPending;
+  const adminLoading = verifyAdminMutation.isPending;
+
   const [meResult, setMeResult] = useState<Record<string, unknown> | null>(null);
-  const [meLoading, setMeLoading] = useState(false);
   const [adminResult, setAdminResult] = useState<{
     success: boolean;
     statusCode?: number;
     message?: string;
     data?: Record<string, unknown>;
   } | null>(null);
-  const [adminLoading, setAdminLoading] = useState(false);
 
-  // Test GET /api/auth/me
+  // Test GET /api/auth/me via TanStack Query mutation
   const handleTestMe = async () => {
-    setMeLoading(true);
     setMeResult(null);
     try {
-      const res = await apiClient<Record<string, unknown>>('/api/auth/me');
+      const res = await verifyMeMutation.mutateAsync();
       setMeResult(res as unknown as Record<string, unknown>);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -44,21 +51,18 @@ export default function DashboardPage() {
       } else {
         setMeResult({ success: false, message: 'Network or server error' });
       }
-    } finally {
-      setMeLoading(false);
     }
   };
 
-  // Test GET /api/auth/admin-check
+  // Test GET /api/auth/admin-check via TanStack Query mutation
   const handleTestAdmin = async () => {
-    setAdminLoading(true);
     setAdminResult(null);
     try {
-      const res = await apiClient<Record<string, unknown>>('/api/auth/admin-check');
+      const res = await verifyAdminMutation.mutateAsync();
       setAdminResult({
         success: res.success,
         message: res.message,
-        data: res.data,
+        data: res.data as Record<string, unknown> | undefined,
       });
     } catch (err) {
       if (err instanceof ApiError) {
@@ -74,8 +78,6 @@ export default function DashboardPage() {
           message: 'Network or server error',
         });
       }
-    } finally {
-      setAdminLoading(false);
     }
   };
 

@@ -21,9 +21,18 @@ import {
   FiCheckCircle,
 } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
-import { apiClient, ApiError } from '@/lib/api';
+import { ApiError } from '@/lib/api';
 import type { UserProfile, Experience } from '@/types/profile';
 import { ProfileSkeleton } from '@/components/ProfileSkeleton';
+import {
+  useUserProfile,
+  useUpdateProfileMutation,
+  useAddSkillMutation,
+  useRemoveSkillMutation,
+  useAddExperienceMutation,
+  useUpdateExperienceMutation,
+  useDeleteExperienceMutation,
+} from '@/hooks/useProfileQueries';
 
 function toDateInputValue(val?: string): string {
   if (!val) return '';
@@ -52,27 +61,57 @@ function formatDateDisplay(val?: string): string {
 export default function EditProfilePage() {
   const { user: currentUser, isLoading: authLoading } = useAuth();
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // TanStack Query Profile Data
+  const {
+    data: profile,
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = useUserProfile('me');
+
+  const error = queryError
+    ? queryError instanceof ApiError
+      ? queryError.message
+      : 'Failed to load profile for editing'
+    : null;
+
+  // TanStack Query Mutations
+  const updateProfileMutation = useUpdateProfileMutation('me');
+  const addSkillMutation = useAddSkillMutation();
+  const removeSkillMutation = useRemoveSkillMutation();
+  const addExperienceMutation = useAddExperienceMutation();
+  const updateExperienceMutation = useUpdateExperienceMutation();
+  const deleteExperienceMutation = useDeleteExperienceMutation();
 
   // Basic Profile Edit State
   const [name, setName] = useState('');
   const [title, setTitle] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [hasInitializedForm, setHasInitializedForm] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const [nameSuccess, setNameSuccess] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Sync initial profile values once loaded
+  useEffect(() => {
+    if (profile && !hasInitializedForm) {
+      setName(profile.name || '');
+      setTitle(profile.title || '');
+      setAvatarUrl(profile.avatarUrl || null);
+      setHasInitializedForm(true);
+    }
+  }, [profile, hasInitializedForm]);
+
   // Skills Edit State
   const [newSkillInput, setNewSkillInput] = useState('');
-  const [skillLoading, setSkillLoading] = useState(false);
   const [skillFeedback, setSkillFeedback] = useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+  const skillLoading =
+    addSkillMutation.isPending || removeSkillMutation.isPending;
 
   // Experience Edit State
   const [isExpModalOpen, setIsExpModalOpen] = useState(false);
@@ -83,12 +122,15 @@ export default function EditProfilePage() {
   const [expTo, setExpTo] = useState('');
   const [isExpPresent, setIsExpPresent] = useState(false);
   const [expDescription, setExpDescription] = useState('');
-  const [expLoading, setExpLoading] = useState(false);
   const [expError, setExpError] = useState<string | null>(null);
   const [expFeedback, setExpFeedback] = useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+  const expLoading =
+    addExperienceMutation.isPending ||
+    updateExperienceMutation.isPending ||
+    deleteExperienceMutation.isPending;
 
   const fromPickerRef = useRef<HTMLInputElement>(null);
   const toPickerRef = useRef<HTMLInputElement>(null);
@@ -100,39 +142,6 @@ export default function EditProfilePage() {
     if (words.length === 1) return words[0].charAt(0).toUpperCase();
     return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
   };
-
-  useEffect(() => {
-    let active = true;
-
-    async function fetchProfile() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await apiClient<UserProfile>('/api/users/me');
-        if (active && res.data) {
-          setProfile(res.data);
-          setName(res.data.name || '');
-          setTitle(res.data.title || '');
-          setAvatarUrl(res.data.avatarUrl || null);
-        }
-      } catch (err) {
-        if (active) {
-          if (err instanceof ApiError) {
-            setError(err.message);
-          } else {
-            setError('Failed to load profile for editing');
-          }
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
-    fetchProfile();
-    return () => {
-      active = false;
-    };
-  }, []);
 
   // Handle Avatar selection and canvas optimization
   const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -210,18 +219,12 @@ export default function EditProfilePage() {
     };
 
     try {
-      const res = await apiClient<UserProfile>('/api/users/me', {
-        method: 'PATCH',
-        body: JSON.stringify(payload),
-      });
-      if (res.data) {
-        setProfile(res.data);
-        setName(res.data.name || '');
-        setTitle(res.data.title || '');
-        setAvatarUrl(res.data.avatarUrl || null);
-        setNameSuccess(true);
-        setTimeout(() => setNameSuccess(false), 3000);
-      }
+      const updated = await updateProfileMutation.mutateAsync(payload);
+      setName(updated.name || '');
+      setTitle(updated.title || '');
+      setAvatarUrl(updated.avatarUrl || null);
+      setNameSuccess(true);
+      setTimeout(() => setNameSuccess(false), 3000);
     } catch (err) {
       if (err instanceof ApiError) {
         setNameError(err.message);
@@ -253,39 +256,21 @@ export default function EditProfilePage() {
       return;
     }
 
-    setSkillLoading(true);
     setSkillFeedback(null);
-
-    // Optimistic update
-    const previousSkills = [...(profile.skills || [])];
-    setProfile({
-      ...profile,
-      skills: [...previousSkills, trimmedSkill],
-    });
     setNewSkillInput('');
 
     try {
-      const res = await apiClient<UserProfile>('/api/users/me/skills', {
-        method: 'POST',
-        body: JSON.stringify({ skill: trimmedSkill }),
+      await addSkillMutation.mutateAsync(trimmedSkill);
+      setSkillFeedback({
+        type: 'success',
+        message: `Added skill "${trimmedSkill}"`,
       });
-      if (res.data) {
-        setProfile(res.data);
-        setSkillFeedback({
-          type: 'success',
-          message: `Added skill "${trimmedSkill}"`,
-        });
-        setTimeout(() => setSkillFeedback(null), 3000);
-      }
+      setTimeout(() => setSkillFeedback(null), 3000);
     } catch (err) {
-      // Rollback on error
-      setProfile({ ...profile, skills: previousSkills });
       const msg =
         err instanceof ApiError ? err.message : 'Failed to add skill';
       setSkillFeedback({ type: 'error', message: msg });
       setTimeout(() => setSkillFeedback(null), 3500);
-    } finally {
-      setSkillLoading(false);
     }
   };
 
@@ -293,31 +278,14 @@ export default function EditProfilePage() {
   const handleRemoveSkill = async (skillToRemove: string) => {
     if (!profile) return;
 
-    // Optimistic update
-    const previousSkills = [...(profile.skills || [])];
-    setProfile({
-      ...profile,
-      skills: previousSkills.filter((s) => s !== skillToRemove),
-    });
-
     try {
-      const res = await apiClient<UserProfile>(
-        `/api/users/me/skills/${encodeURIComponent(skillToRemove)}`,
-        {
-          method: 'DELETE',
-        },
-      );
-      if (res.data) {
-        setProfile(res.data);
-        setSkillFeedback({
-          type: 'success',
-          message: `Removed skill "${skillToRemove}"`,
-        });
-        setTimeout(() => setSkillFeedback(null), 3000);
-      }
+      await removeSkillMutation.mutateAsync(skillToRemove);
+      setSkillFeedback({
+        type: 'success',
+        message: `Removed skill "${skillToRemove}"`,
+      });
+      setTimeout(() => setSkillFeedback(null), 3000);
     } catch (err) {
-      // Rollback on error
-      setProfile({ ...profile, skills: previousSkills });
       const msg =
         err instanceof ApiError ? err.message : 'Failed to remove skill';
       setSkillFeedback({ type: 'error', message: msg });
@@ -362,7 +330,6 @@ export default function EditProfilePage() {
       return;
     }
 
-    setExpLoading(true);
     setExpError(null);
 
     const payload = {
@@ -376,38 +343,26 @@ export default function EditProfilePage() {
     try {
       if (editingExp) {
         // Update experience
-        const expSubId = editingExp._id || editingExp.id;
-        const res = await apiClient<UserProfile>(
-          `/api/users/me/experiences/${expSubId}`,
-          {
-            method: 'PATCH',
-            body: JSON.stringify(payload),
-          },
-        );
-        if (res.data) {
-          setProfile(res.data);
-          setExpFeedback({
-            type: 'success',
-            message: `Updated experience at "${payload.company}"`,
-          });
-          setIsExpModalOpen(false);
-          setTimeout(() => setExpFeedback(null), 3000);
-        }
+        const expSubId = editingExp._id || editingExp.id!;
+        await updateExperienceMutation.mutateAsync({
+          id: expSubId,
+          data: payload,
+        });
+        setExpFeedback({
+          type: 'success',
+          message: `Updated experience at "${payload.company}"`,
+        });
+        setIsExpModalOpen(false);
+        setTimeout(() => setExpFeedback(null), 3000);
       } else {
         // Add new experience
-        const res = await apiClient<UserProfile>('/api/users/me/experiences', {
-          method: 'POST',
-          body: JSON.stringify(payload),
+        await addExperienceMutation.mutateAsync(payload);
+        setExpFeedback({
+          type: 'success',
+          message: `Added experience at "${payload.company}"`,
         });
-        if (res.data) {
-          setProfile(res.data);
-          setExpFeedback({
-            type: 'success',
-            message: `Added experience at "${payload.company}"`,
-          });
-          setIsExpModalOpen(false);
-          setTimeout(() => setExpFeedback(null), 3000);
-        }
+        setIsExpModalOpen(false);
+        setTimeout(() => setExpFeedback(null), 3000);
       }
     } catch (err) {
       if (err instanceof ApiError) {
@@ -415,8 +370,6 @@ export default function EditProfilePage() {
       } else {
         setExpError('Failed to save work experience');
       }
-    } finally {
-      setExpLoading(false);
     }
   };
 
@@ -427,32 +380,14 @@ export default function EditProfilePage() {
       return;
     }
 
-    // Optimistic remove
-    const previousExps = [...(profile.experiences || [])];
-    setProfile({
-      ...profile,
-      experiences: previousExps.filter(
-        (e) => (e._id || e.id) !== expId,
-      ),
-    });
-
     try {
-      const res = await apiClient<UserProfile>(
-        `/api/users/me/experiences/${expId}`,
-        {
-          method: 'DELETE',
-        },
-      );
-      if (res.data) {
-        setProfile(res.data);
-        setExpFeedback({
-          type: 'success',
-          message: `Removed experience at "${company}"`,
-        });
-        setTimeout(() => setExpFeedback(null), 3000);
-      }
+      await deleteExperienceMutation.mutateAsync(expId);
+      setExpFeedback({
+        type: 'success',
+        message: `Removed experience at "${company}"`,
+      });
+      setTimeout(() => setExpFeedback(null), 3000);
     } catch (err) {
-      setProfile({ ...profile, experiences: previousExps });
       const msg =
         err instanceof ApiError ? err.message : 'Failed to delete experience';
       setExpFeedback({ type: 'error', message: msg });
