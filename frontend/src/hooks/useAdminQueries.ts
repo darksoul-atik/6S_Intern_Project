@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import { profileKeys } from './useProfileQueries';
+import { profileKeys } from '@/features/users/users.api';
 
 export interface AdminUser {
   id: string;

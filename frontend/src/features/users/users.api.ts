@@ -1,7 +1,33 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import type { UserProfile, Experience } from '@/types/profile';
-import { CURRENT_USER_QUERY_KEY } from '@/hooks/useCurrentUser';
+import { CURRENT_USER_QUERY_KEY } from './useCurrentUser';
+
+export interface Experience {
+  _id: string;
+  id?: string;
+  title: string;
+  company: string;
+  from: string;
+  to?: string;
+  description?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  _id?: string;
+  name: string;
+  email?: string;
+  role: 'user' | 'admin';
+  title?: string;
+  avatarUrl?: string;
+  reactionsCount?: number;
+  postsCount?: number;
+  topRankedCount?: number;
+  skills: string[];
+  experiences: Experience[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 /**
  * Centralized query key factory for user profiles.
