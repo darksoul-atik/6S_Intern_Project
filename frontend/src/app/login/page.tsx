@@ -40,7 +40,10 @@ function LoginForm() {
     },
   });
 
+  const isPending = isSubmitting || loginMutation.isPending;
+
   const onSubmit = async (data: LoginInput) => {
+    if (isPending) return;
     setErrorMessage(null);
     setFieldErrors([]);
 
@@ -264,10 +267,11 @@ function LoginForm() {
                 <button
                   id="login-submit-btn"
                   type="submit"
-                  disabled={isSubmitting || loginMutation.isPending}
+                  disabled={isPending}
+                  aria-disabled={isPending}
                   className="w-full rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 py-3.5 text-xs sm:text-sm font-semibold font-manrope text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all hover:shadow-[0_0_28px_rgba(99,102,241,0.6)] hover:brightness-110 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center space-x-2 mt-4 cursor-pointer"
                 >
-                  {isSubmitting || loginMutation.isPending ? (
+                  {isPending ? (
                     <>
                       <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       <span>Signing In...</span>
