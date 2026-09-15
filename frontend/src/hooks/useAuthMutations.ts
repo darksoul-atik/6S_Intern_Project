@@ -107,3 +107,24 @@ export function useLoginMutation() {
     },
   });
 }
+
+/**
+ * TanStack Query mutation hook for user logout.
+ * Clears the session cookie via /api/auth/logout and purges all TanStack Query caches.
+ */
+export function useLogoutMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<ApiResponse<null>, Error, void>({
+    mutationFn: async () => {
+      return apiClient<null>('/api/auth/logout', {
+        method: 'POST',
+      });
+    },
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: ['auth'] });
+      queryClient.clear();
+    },
+  });
+}
+

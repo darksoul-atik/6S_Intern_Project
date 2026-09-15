@@ -3,9 +3,8 @@
 import React, { createContext, useContext, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api';
 import { useCurrentUser, CURRENT_USER_QUERY_KEY } from '@/hooks/useCurrentUser';
-import type { AuthUser } from '@/hooks/useAuthMutations';
+import { useLogoutMutation, type AuthUser } from '@/hooks/useAuthMutations';
 
 export type UserSession = AuthUser;
 
@@ -24,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: user, isLoading, refetch } = useCurrentUser();
+  const logoutMutation = useLogoutMutation();
 
   const login = useCallback(
     (userData: UserSession) => {
@@ -34,16 +34,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await apiClient('/api/auth/logout', { method: 'POST' });
+      await logoutMutation.mutateAsync();
     } catch (err) {
       console.error('Logout error:', err);
-    } finally {
-      // Clear TanStack Query caches to remove user-specific data
+      // Guarantee query cache purge even on network disconnect
       queryClient.removeQueries({ queryKey: ['auth'] });
       queryClient.clear();
+    } finally {
       router.replace('/');
     }
-  }, [queryClient, router]);
+  }, [logoutMutation, queryClient, router]);
 
   const checkAuth = useCallback(async () => {
     await refetch();
