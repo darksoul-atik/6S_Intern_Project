@@ -3,61 +3,55 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUserPlus, FiEye, FiEyeOff, FiX, FiAlertTriangle, FiCheck } from 'react-icons/fi';
 import { apiClient, ApiError } from '@/lib/api';
+import { signupSchema, type SignupInput } from '@/lib/validations/auth';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
 
 export default function SignupPage() {
   const router = useRouter();
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [capsLockOn, setCapsLockOn] = useState<boolean>(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<SignupInput>({
+    resolver: zodResolver(signupSchema),
+    mode: 'onTouched',
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+    },
+  });
+
+  const onSubmit = async (data: SignupInput) => {
     setErrorMessage(null);
-    setWarningMessage(null);
     setFieldErrors([]);
     setSuccessMessage(null);
 
-    // Client-side basic pre-validation with specific warnings
-    if (!name.trim()) {
-      setWarningMessage('Please enter your full name before continuing.');
-      return;
-    }
-    if (!email.trim() || !email.includes('@')) {
-      setWarningMessage('Please enter a valid email address (e.g. name@domain.com).');
-      return;
-    }
-    if (password.length < 6) {
-      setWarningMessage('Password must be at least 6 characters long.');
-      return;
-    }
-
-    setIsLoading(true);
-
     try {
       // Calls BFF signup endpoint: POST /api/auth/signup
-      const response = await apiClient<{ id?: string; user?: { id: string; name: string; email: string; role: string } }>(
-        '/api/auth/signup',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            name: name.trim(),
-            email: email.trim().toLowerCase(),
-            password,
-          }),
-        }
-      );
+      const response = await apiClient<{
+        id?: string;
+        user?: { id: string; name: string; email: string; role: string };
+      }>('/api/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+        }),
+      });
 
       if (response.success) {
         setSuccessMessage(
@@ -76,8 +70,6 @@ export default function SignupPage() {
       } else {
         setErrorMessage('An unexpected network or server error occurred.');
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -187,25 +179,6 @@ export default function SignupPage() {
                   </motion.div>
                 )}
 
-                {warningMessage && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-200 backdrop-blur-md text-left shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-                  >
-                    <div className="flex items-start space-x-2">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold">
-                        <FiAlertTriangle className="h-3.5 w-3.5" />
-                      </span>
-                      <div>
-                        <p className="font-semibold text-amber-300 font-manrope">Notice</p>
-                        <p className="mt-0.5">{warningMessage}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
                 {successMessage && (
                   <motion.div
                     initial={{ opacity: 0, y: -8 }}
@@ -224,64 +197,82 @@ export default function SignupPage() {
                 )}
               </AnimatePresence>
 
-              {/* Registration Form */}
-              <form onSubmit={handleSubmit} className="space-y-4 text-left">
+              {/* Registration Form with RHF */}
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left" noValidate>
                 {/* Full Name */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-zinc-300 font-sans">
+                  <label htmlFor="signup-name" className="text-xs font-medium text-zinc-300 font-sans">
                     Full Name
                   </label>
                   <input
                     id="signup-name"
                     type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    {...register('name')}
+                    aria-invalid={!!errors.name}
+                    aria-describedby={errors.name ? 'signup-name-error' : undefined}
                     placeholder="e.g. Alex Chen"
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 sm:px-4 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-sans"
+                    className={`w-full rounded-xl border px-3.5 sm:px-4 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all font-sans focus:outline-none focus:ring-2 ${
+                      errors.name
+                        ? 'border-red-500/60 bg-red-500/[0.05] focus:border-red-500 focus:ring-red-500/20'
+                        : 'border-white/10 bg-white/[0.04] focus:border-indigo-500 focus:bg-white/[0.07] focus:ring-indigo-500/20'
+                    }`}
                   />
+                  {errors.name && (
+                    <p id="signup-name-error" className="text-xs text-red-400 mt-1 flex items-center space-x-1 font-sans">
+                      <FiAlertTriangle className="h-3 w-3 shrink-0" />
+                      <span>{errors.name.message}</span>
+                    </p>
+                  )}
                 </div>
 
                 {/* Email */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-zinc-300 font-sans">
+                  <label htmlFor="signup-email" className="text-xs font-medium text-zinc-300 font-sans">
                     Email Address
                   </label>
                   <input
                     id="signup-email"
-                    name="email"
                     type="email"
                     autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    {...register('email')}
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? 'signup-email-error' : undefined}
                     placeholder="name@work-email.com"
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 sm:px-4 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-sans"
+                    className={`w-full rounded-xl border px-3.5 sm:px-4 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all font-sans focus:outline-none focus:ring-2 ${
+                      errors.email
+                        ? 'border-red-500/60 bg-red-500/[0.05] focus:border-red-500 focus:ring-red-500/20'
+                        : 'border-white/10 bg-white/[0.04] focus:border-indigo-500 focus:bg-white/[0.07] focus:ring-indigo-500/20'
+                    }`}
                   />
+                  {errors.email && (
+                    <p id="signup-email-error" className="text-xs text-red-400 mt-1 flex items-center space-x-1 font-sans">
+                      <FiAlertTriangle className="h-3 w-3 shrink-0" />
+                      <span>{errors.email.message}</span>
+                    </p>
+                  )}
                 </div>
 
                 {/* Password */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-zinc-300 font-sans">
+                  <label htmlFor="signup-password" className="text-xs font-medium text-zinc-300 font-sans">
                     Password
                   </label>
                   <div className="relative">
                     <input
                       id="signup-password"
-                      name="password"
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="new-password"
-                      required
-                      minLength={6}
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        if (warningMessage) setWarningMessage(null);
-                      }}
+                      {...register('password')}
+                      aria-invalid={!!errors.password}
+                      aria-describedby={errors.password ? 'signup-password-error' : undefined}
                       onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       placeholder="Minimum 6 characters"
-                      className="w-full rounded-xl border border-white/10 bg-white/[0.04] pl-3.5 sm:pl-4 pr-11 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all focus:border-indigo-500 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-sans"
+                      className={`w-full rounded-xl border pl-3.5 sm:pl-4 pr-11 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all font-sans focus:outline-none focus:ring-2 ${
+                        errors.password
+                          ? 'border-red-500/60 bg-red-500/[0.05] focus:border-red-500 focus:ring-red-500/20'
+                          : 'border-white/10 bg-white/[0.04] focus:border-indigo-500 focus:bg-white/[0.07] focus:ring-indigo-500/20'
+                      }`}
                     />
                     <button
                       type="button"
@@ -302,19 +293,26 @@ export default function SignupPage() {
                       <span>Caps Lock is ON</span>
                     </div>
                   )}
-                  <p className="text-[11px] text-zinc-500 font-sans">
-                    Must be at least 6 characters. Never stored in plain text.
-                  </p>
+                  {errors.password ? (
+                    <p id="signup-password-error" className="text-xs text-red-400 mt-1 flex items-center space-x-1 font-sans">
+                      <FiAlertTriangle className="h-3 w-3 shrink-0" />
+                      <span>{errors.password.message}</span>
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-zinc-500 font-sans">
+                      Must be at least 6 characters. Never stored in plain text.
+                    </p>
+                  )}
                 </div>
 
                 {/* Submit Button */}
                 <button
                   id="signup-submit-btn"
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                   className="w-full rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 py-3.5 text-xs sm:text-sm font-semibold font-manrope text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all hover:shadow-[0_0_28px_rgba(99,102,241,0.6)] hover:brightness-110 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center space-x-2 mt-2 cursor-pointer"
                 >
-                  {isLoading ? (
+                  {isSubmitting ? (
                     <>
                       <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       <span>Creating Account...</span>
