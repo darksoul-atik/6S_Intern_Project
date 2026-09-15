@@ -7,8 +7,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUserPlus, FiEye, FiEyeOff, FiX, FiAlertTriangle, FiCheck } from 'react-icons/fi';
-import { apiClient, ApiError } from '@/lib/api';
 import { signupSchema, type SignupInput } from '@/lib/validations/auth';
+import { useSignupMutation, extractAuthErrorMessage } from '@/hooks/useAuthMutations';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
 
 export default function SignupPage() {
@@ -19,6 +19,8 @@ export default function SignupPage() {
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [capsLockOn, setCapsLockOn] = useState<boolean>(false);
+
+  const signupMutation = useSignupMutation();
 
   const {
     register,
@@ -40,18 +42,7 @@ export default function SignupPage() {
     setSuccessMessage(null);
 
     try {
-      // Calls BFF signup endpoint: POST /api/auth/signup
-      const response = await apiClient<{
-        id?: string;
-        user?: { id: string; name: string; email: string; role: string };
-      }>('/api/auth/signup', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: data.name,
-          email: data.email,
-          password: data.password,
-        }),
-      });
+      const response = await signupMutation.mutateAsync(data);
 
       if (response.success) {
         setSuccessMessage(
@@ -62,14 +53,9 @@ export default function SignupPage() {
         }, 1800);
       }
     } catch (err: unknown) {
-      if (err instanceof ApiError) {
-        setErrorMessage(err.message || 'Registration failed. Please review your input.');
-        if (err.errors && err.errors.length > 0) {
-          setFieldErrors(err.errors);
-        }
-      } else {
-        setErrorMessage('An unexpected network or server error occurred.');
-      }
+      const extracted = extractAuthErrorMessage(err);
+      setErrorMessage(extracted.message);
+      setFieldErrors(extracted.errors);
     }
   };
 
@@ -309,10 +295,10 @@ export default function SignupPage() {
                 <button
                   id="signup-submit-btn"
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || signupMutation.isPending}
                   className="w-full rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 py-3.5 text-xs sm:text-sm font-semibold font-manrope text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all hover:shadow-[0_0_28px_rgba(99,102,241,0.6)] hover:brightness-110 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center space-x-2 mt-2 cursor-pointer"
                 >
-                  {isSubmitting ? (
+                  {isSubmitting || signupMutation.isPending ? (
                     <>
                       <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       <span>Creating Account...</span>
