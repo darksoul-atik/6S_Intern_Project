@@ -5,13 +5,14 @@ import { User, UserSchema } from './schemas/user.schema.js';
 import { UsersService } from './users.service.js';
 import { UsersController } from './users.controller.js';
 import { ProfileOwnerOrAdminGuard } from './guards/profile-owner-or-admin.guard.js';
+import { ProfileController } from './profile.controller.js';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
   ],
-  controllers: [UsersController],
+  controllers: [UsersController, ProfileController],
   providers: [UsersService, ProfileOwnerOrAdminGuard],
   exports: [UsersService, MongooseModule],
 })
