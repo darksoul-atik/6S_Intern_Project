@@ -20,7 +20,7 @@ DevPulse is a high-performance, engineering-first developer community platform e
 ### Phase 2: Profiles, Forms, and Posts (Days 5–8)
 | Day | Milestone | Focus Areas | Status |
 |:---:|---|---|:---:|
-| **Day 5** | **Developer Profile API** | Headline, bio, skills, portfolioProjects Mongoose models, nested validation, ownership rules (`GET /profile/me`, `PATCH /profile/me`). | ⏳ *Next Up* |
+| **Day 5** | **Developer Profile API** | Headline, bio, skills, portfolioProjects Mongoose models, nested validation, conditional date rules, ownership rules (`GET /profile/me`, `PATCH /profile/me`, `/profile/me/projects`). | ✅ **Completed** |
 | **Day 6** | **Complex Developer Profile Form** | Dynamic forms with nested arrays, `useFieldArray` for portfolio projects, optimistic updates, delete confirmation dialog. | ⏳ *Upcoming* |
 | **Day 7** | **Posts API with Ownership & Pagination** | Post schema, authorId, CRUD endpoints, pagination metadata, author sanitization, query indexing. | ⏳ *Upcoming* |
 | **Day 8** | **Feed & Reusable Post Interface** | `PostCard`, feed components, `useInfiniteQuery`, Intersection Observer infinite scroll, query cache invalidation. | ⏳ *Upcoming* |
@@ -448,6 +448,104 @@ frontend/src/
    - Date formatters (`formatDate`, `formatExpDate`, `formatDateDisplay`, `toDateInputValue`) and name initial generators (`getInitials`) were unified into `lib/formatters.ts`.
 5. **Zero Behavior Regressions**:
    - Maintained 100% feature parity, exact styling, responsive breakpoints, cookie session lifetimes, and route protection across all pages.
+
+---
+
+## 👤 Day 5 — Developer Profile API (Models, Validation & Ownership Rules)
+
+### 1. MongoDB Schema Modeling
+* **Headline & Bio on User Document**:
+  * `headline`: Optional trimmed string (max 160 characters) representing professional title/tagline.
+  * `bio`: Optional trimmed string (max 2000 characters) for developer summary/about.
+* **Embedded Portfolio Projects (`PortfolioProjectSchema`)**:
+  * `title`: Required non-empty string (max 100 characters).
+  * `description`: Required non-empty string (max 1000 characters).
+  * `urls`: Array of valid HTTP/HTTPS URLs (max 5 links, deduplicated case-insensitively).
+  * `technologies`: Array of non-empty technology names (min 1, max 20 items, deduplicated case-insensitively).
+  * `startDate`: Required `YYYY-MM` calendar string.
+  * `endDate`: Optional `YYYY-MM` calendar string.
+  * `isCurrent`: Boolean flag designating ongoing/current projects.
+  * Auto-generated timestamps (`createdAt`, `updatedAt`) and Mongoose `id` projection transform.
+
+### 2. Nested Validation & Custom Constraints
+* **`PortfolioProjectDto` & `UpdatePortfolioProjectDto`**:
+  * Enforces string trimming and length bounds via `@Transform` and `@MinLength` / `@MaxLength`.
+  * URL format enforcement via `@IsUrl({ protocols: ['http', 'https'] })`.
+  * Array size and uniqueness enforcement via `@ArrayMinSize`, `@ArrayMaxSize`, and `@ArrayUnique`.
+* **Custom Constraint: `ValidPortfolioProjectEndDate`**:
+  * When `isCurrent === true`: Rejects payload if `endDate` is provided (`endDate must not be provided when isCurrent is true`).
+  * When `isCurrent === false`: Requires `endDate` in `YYYY-MM` format.
+  * Chronological Validation: Enforces that `endDate >= startDate` based on ISO `YYYY-MM` format comparison.
+* **Flexible Avatar Format in `UpdateProfileDto`**:
+  * Accepts standard `http://` / `https://` URLs, Base64 data URIs (`data:image/jpeg;base64,...`), and empty string `""` to allow profile photo removal.
+
+### 3. Ownership & Authorization Architecture
+* **Self-Service Profile (`/profile/me`)**:
+  * Dedicated [`ProfileController`](file:///c:/Users/hp/Downloads/6senseHQ/backend/src/users/profile.controller.ts) mounted at `/profile`.
+  * Scoped strictly to authenticated user via `@CurrentUser()` and `@UseGuards(JwtAuthGuard)`.
+* **Resource Ownership Guard (`ProfileOwnerOrAdminGuard`)**:
+  * Applied to parameterized user endpoints (`/users/:id/projects/...`).
+  * Enforces that regular developers cannot read, modify, or delete another developer's projects (HTTP 403 Forbidden).
+  * Grants bypass access to users with role `admin`.
+
+### 4. Public Profile Privacy Projections
+* **`GET /users/:id` (Public)**:
+  * Uses explicit projection: `.select('name headline bio avatarUrl skills experiences portfolioProjects')`.
+  * Sensitive and administrative attributes (`passwordHash`, `email`, `role`, `isDeleted`, `deletedAt`, `deletedReason`) are strictly omitted.
+* **`GET /profile/me` (Private)**:
+  * Returns authenticated user's profile including private identity claims for current session hydration.
+
+### 5. Day 5 API Verification Commands
+
+```bash
+# 1. Retrieve Authenticated User Profile
+curl -X GET http://localhost:5000/profile/me \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+
+# 2. Update Developer Headline & Bio
+curl -X PATCH http://localhost:5000/profile/me \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "headline": "Senior Full-Stack & Distributed Systems Architect",
+    "bio": "Passionate about high-throughput microservices, NestJS, and modern frontend architectures."
+  }'
+
+# 3. Add Portfolio Project (with nested validation)
+curl -X POST http://localhost:5000/profile/me/projects \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "DevPulse Platform",
+    "description": "Enterprise social developer portfolio and discussion system.",
+    "urls": ["https://github.com/example/devpulse", "https://devpulse.io"],
+    "technologies": ["TypeScript", "NestJS", "MongoDB", "React", "Next.js"],
+    "startDate": "2026-01",
+    "isCurrent": true
+  }'
+
+# 4. Partial Update of Portfolio Project by ID
+curl -X PATCH http://localhost:5000/profile/me/projects/<PROJECT_ID> \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "isCurrent": false,
+    "endDate": "2026-06"
+  }'
+
+# 5. Delete Portfolio Project by ID
+curl -X DELETE http://localhost:5000/profile/me/projects/<PROJECT_ID> \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+
+# 6. Retrieve Public Profile (Sanitized Projection)
+curl -X GET http://localhost:5000/users/<USER_ID>
+
+# 7. Unauthorized Mutation by Another User (Expect 403 Forbidden)
+curl -X PATCH http://localhost:5000/users/<OTHER_USER_ID>/projects/<PROJECT_ID> \
+  -H "Authorization: Bearer <USER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Tampered Title"}'
+```
 
 ---
 

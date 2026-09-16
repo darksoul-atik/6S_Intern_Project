@@ -144,6 +144,10 @@
 - **Verification Gate Before Each Atomic Commit**: Before executing commits for each domain boundary (Auth, Users/Profile, Admin), ran `tsc --noEmit` and `next build` to guarantee zero compilation errors, zero type drift, and 100% successful static/dynamic page generation.
 - **Backend Test Suite Integrity (48/48 Passing)**: Re-executed the complete Vitest test suite (`npm test`) on the NestJS backend to confirm that all 48 tests across 9 test suites remained fully green and unaffected by the structural refactoring.
 
-
-
-
+### Day 5 — Developer Profile API (Models, Nested Validation & Ownership Rules)
+- **Profile Title to Headline & Bio Migration**: Handled schema evolution from legacy single `title` field to discrete `headline` (max 160) and `bio` (max 2000) fields across Mongoose schema, service mutation handlers, search `$or` regex filters, and admin update DTOs.
+- **Base64 Data URI Avatar Validation Defense**: Caught an edge case where switching `avatarUrl` to `@IsUrl({ protocols: ['http', 'https'] })` caused client-side uploads (compressed canvas Base64 `data:image/jpeg;base64,...`) and photo removal (`avatarUrl: ''`) to be rejected with HTTP 400. Replaced with pattern matching both URL protocols and Data URIs while preserving empty-string unsetting.
+- **State-Transition Validation for Partial Updates**: Designed conditional validation in `updatePortfolioProject` to calculate projected project state (`nextStartDate`, `nextIsCurrent`, `nextEndDate`), ensuring partial PATCH updates cannot place a project into an illegal date state (e.g. updating `startDate` past existing `endDate`).
+- **Dedicated `ProfileController` Route Mapping**: Introduced `ProfileController` at `/profile` alongside existing `/users` controller to provide strict REST compliance with Day 5 specification (`GET /profile/me`, `PATCH /profile/me`, `POST/PATCH/DELETE /profile/me/projects`).
+- **Public Profile Privacy Enforcement**: Audited `GET /users/:id` to enforce strict projection whitelisting (`name headline bio avatarUrl skills experiences portfolioProjects`), guaranteeing zero leakage of private claims (`email`, `passwordHash`, `role`, `isDeleted`).
+- **Automated Test Coverage Expansion (67/67 Passing)**: Expanded test suite from 48 to 67 unit and validation tests across 11 test suites, verifying custom date constraints, URL validation, duplicate array filtering, project CRUD, and permission guards.

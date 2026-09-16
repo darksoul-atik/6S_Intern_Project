@@ -224,7 +224,7 @@ export class UsersController {
   @ApiOperation({
     summary: 'Get public developer profile by user ID',
     description:
-      'Returns publicly accessible developer profile (name, role, skills, experiences). Sensitive fields like passwordHash are omitted.',
+      'Returns publicly accessible developer profile (name, headline, bio, avatarUrl, skills, experiences, portfolioProjects). Sensitive fields like passwordHash and email are omitted.',
   })
   @ApiParam({
     name: 'id',
@@ -531,7 +531,7 @@ export class UsersController {
   @ApiOperation({
     summary: 'Admin edit of any user details (Admin only)',
     description:
-      'Allows an administrator to modify any user attribute including display name, email, role, and professional title.',
+      'Allows an administrator to modify any user attribute including display name, email, role, headline, and bio.',
   })
   @ApiParam({
     name: 'id',

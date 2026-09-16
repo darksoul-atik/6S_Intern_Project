@@ -180,6 +180,136 @@ describe('UsersService', () => {
     expect(result).toBeDefined();
   });
 
+  it('should update an existing portfolio project', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const projectId = '507f1f77bcf86cd799439022';
+    const mockUser: any = {
+      _id: validId,
+      portfolioProjects: [
+        {
+          _id: { toString: () => projectId },
+          title: 'Old Title',
+          startDate: '2026-01',
+          isCurrent: true,
+        },
+      ],
+      save: vi.fn().mockImplementation(function (this: any) {
+        return Promise.resolve(this);
+      }),
+    };
+    mockUserModel.findOne.mockReturnValue({
+      then: (resolve: any) => resolve(mockUser),
+      select: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(mockUser),
+      }),
+    });
+
+    await service.updatePortfolioProject(validId, projectId, {
+      title: 'New Title',
+      isCurrent: false,
+      endDate: '2026-05',
+    });
+
+    expect(mockUser.save).toHaveBeenCalled();
+    expect(mockUser.portfolioProjects[0].title).toBe('New Title');
+    expect(mockUser.portfolioProjects[0].isCurrent).toBe(false);
+    expect(mockUser.portfolioProjects[0].endDate).toBe('2026-05');
+  });
+
+  it('should throw BadRequestException on updatePortfolioProject if endDate < startDate', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const projectId = '507f1f77bcf86cd799439022';
+    const mockUser: any = {
+      _id: validId,
+      portfolioProjects: [
+        {
+          _id: { toString: () => projectId },
+          title: 'Project',
+          startDate: '2026-06',
+          isCurrent: true,
+        },
+      ],
+    };
+    mockUserModel.findOne.mockReturnValue({
+      then: (resolve: any) => resolve(mockUser),
+    });
+
+    await expect(
+      service.updatePortfolioProject(validId, projectId, {
+        isCurrent: false,
+        endDate: '2026-01',
+      }),
+    ).rejects.toThrow('endDate must be the same as or later than startDate');
+  });
+
+  it('should throw BadRequestException on updatePortfolioProject if isCurrent is true with endDate', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const projectId = '507f1f77bcf86cd799439022';
+    const mockUser: any = {
+      _id: validId,
+      portfolioProjects: [
+        {
+          _id: { toString: () => projectId },
+          title: 'Project',
+          startDate: '2026-01',
+          isCurrent: true,
+        },
+      ],
+    };
+    mockUserModel.findOne.mockReturnValue({
+      then: (resolve: any) => resolve(mockUser),
+    });
+
+    await expect(
+      service.updatePortfolioProject(validId, projectId, {
+        isCurrent: true,
+        endDate: '2026-05',
+      }),
+    ).rejects.toThrow('endDate must not be provided when isCurrent is true');
+  });
+
+  it('should throw NotFoundException on updatePortfolioProject if project does not exist', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const mockUser: any = {
+      _id: validId,
+      portfolioProjects: [],
+    };
+    mockUserModel.findOne.mockReturnValue({
+      then: (resolve: any) => resolve(mockUser),
+    });
+
+    await expect(
+      service.updatePortfolioProject(validId, 'nonexistent', { title: 'New' }),
+    ).rejects.toThrow("Portfolio project with ID 'nonexistent' not found");
+  });
+
+  it('should remove an existing portfolio project', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const projectId = '507f1f77bcf86cd799439022';
+    const mockUser: any = {
+      _id: validId,
+      portfolioProjects: [
+        {
+          _id: { toString: () => projectId },
+          title: 'Project To Delete',
+        },
+      ],
+      save: vi.fn().mockImplementation(function (this: any) {
+        return Promise.resolve(this);
+      }),
+    };
+    mockUserModel.findOne.mockReturnValue({
+      then: (resolve: any) => resolve(mockUser),
+      select: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(mockUser),
+      }),
+    });
+
+    await service.removePortfolioProject(validId, projectId);
+    expect(mockUser.save).toHaveBeenCalled();
+    expect(mockUser.portfolioProjects).toHaveLength(0);
+  });
+
   it('should add a skill and avoid duplicates', async () => {
     const validId = '507f1f77bcf86cd799439011';
     const mockUser = {
