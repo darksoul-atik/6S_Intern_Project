@@ -90,8 +90,10 @@ describe('UsersService', () => {
       skills: ['React'],
       experiences: [],
     };
-    mockUserModel.findById.mockReturnValue({
-      exec: vi.fn().mockResolvedValue(mockUser),
+    mockUserModel.findOne.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(mockUser),
+      }),
     });
 
     const result = await service.getProfileById(validId);
@@ -100,8 +102,10 @@ describe('UsersService', () => {
 
   it('should throw NotFoundException on getProfileById if user does not exist', async () => {
     const validId = '507f1f77bcf86cd799439011';
-    mockUserModel.findById.mockReturnValue({
-      exec: vi.fn().mockResolvedValue(null),
+    mockUserModel.findOne.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(null),
+      }),
     });
 
     await expect(service.getProfileById(validId)).rejects.toThrow(
@@ -118,24 +122,62 @@ describe('UsersService', () => {
         return Promise.resolve(this);
       }),
     };
-    mockUserModel.findById.mockReturnValue({
-      exec: vi.fn().mockResolvedValue(mockUser),
+    mockUserModel.findOne.mockReturnValue({
+      then: (resolve: any) => resolve(mockUser),
+      select: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(mockUser),
+      }),
     });
 
-    const result = await service.updateBasicProfile(validId, { name: '  New Name  ' });
+    const result = await service.updateBasicProfile(validId, { name: 'New Name' });
     expect(result.name).toBe('New Name');
     expect(mockUser.save).toHaveBeenCalled();
   });
 
   it('should throw NotFoundException on updateBasicProfile if user does not exist', async () => {
     const validId = '507f1f77bcf86cd799439011';
-    mockUserModel.findById.mockReturnValue({
-      exec: vi.fn().mockResolvedValue(null),
+    mockUserModel.findOne.mockReturnValue({
+      then: (resolve: any) => resolve(null),
+      select: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(null),
+      }),
     });
 
     await expect(
       service.updateBasicProfile(validId, { name: 'New Name' }),
     ).rejects.toThrow('User profile not found');
+  });
+
+  it('should add a portfolio project to profile', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const mockUser: any = {
+      _id: validId,
+      portfolioProjects: [],
+      save: vi.fn().mockImplementation(function (this: any) {
+        return Promise.resolve(this);
+      }),
+    };
+    mockUserModel.findOne.mockReturnValue({
+      then: (resolve: any) => resolve(mockUser),
+      select: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(mockUser),
+      }),
+    });
+
+    const projectDto: any = {
+      title: 'DevPulse',
+      description: 'Developer networking platform',
+      urls: ['https://devpulse.io'],
+      technologies: ['NestJS', 'React'],
+      startDate: '2026-01',
+      isCurrent: true,
+    };
+
+    const result = await service.addPortfolioProject(validId, projectDto);
+    expect(mockUser.save).toHaveBeenCalled();
+    expect(mockUser.portfolioProjects.length).toBe(1);
+    expect(mockUser.portfolioProjects[0].title).toBe('DevPulse');
+    expect(result).toBeDefined();
   });
 
   it('should add a skill and avoid duplicates', async () => {
