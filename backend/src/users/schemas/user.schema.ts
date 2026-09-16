@@ -77,7 +77,10 @@ export class User {
   role!: UserRole;
 
   @Prop({ required: false, trim: true, default: null })
-  title?: string;
+  headline?: string;
+
+  @Prop({ required: false, trim: true, default: null })
+  bio?: string;
 
   @Prop({ required: false, default: null })
   avatarUrl?: string;

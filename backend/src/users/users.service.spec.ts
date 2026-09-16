@@ -367,7 +367,7 @@ describe('UsersService', () => {
         name: 'Old Name',
         email: 'old@example.com',
         role: 'user',
-        title: 'Junior',
+        headline: 'Junior',
         save: vi.fn().mockImplementation(function (this: any) {
           return Promise.resolve(this);
         }),
@@ -383,13 +383,13 @@ describe('UsersService', () => {
         name: 'New Name',
         email: 'new@example.com',
         role: 'admin',
-        title: 'Senior Engineer',
+        headline: 'Senior Engineer',
       });
 
       expect(result.name).toBe('New Name');
       expect(result.email).toBe('new@example.com');
       expect(result.role).toBe('admin');
-      expect(result.title).toBe('Senior Engineer');
+      expect(result.headline).toBe('Senior Engineer');
     });
   });
 });

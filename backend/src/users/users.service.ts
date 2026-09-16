@@ -72,11 +72,18 @@ export class UsersService {
     if (updateDto.name !== undefined) {
       user.name = updateDto.name.trim();
     }
-    if (updateDto.title !== undefined) {
-      if (updateDto.title && updateDto.title.trim()) {
-        user.title = updateDto.title.trim();
+    if (updateDto.headline !== undefined) {
+      if (updateDto.headline && updateDto.headline.trim()) {
+        user.headline = updateDto.headline.trim();
       } else {
-        user.set('title', undefined);
+        user.set('headline', undefined);
+      }
+    }
+    if (updateDto.bio !== undefined) {
+      if (updateDto.bio && updateDto.bio.trim()) {
+        user.bio = updateDto.bio.trim();
+      } else {
+        user.set('bio', undefined);
       }
     }
     if (updateDto.avatarUrl !== undefined) {
@@ -241,7 +248,8 @@ export class UsersService {
       filter.$or = [
         { name: { $regex: term, $options: 'i' } },
         { email: { $regex: term, $options: 'i' } },
-        { title: { $regex: term, $options: 'i' } },
+        { headline: { $regex: term, $options: 'i' } },
+        { bio: { $regex: term, $options: 'i' } },
       ];
     }
 
@@ -329,7 +337,8 @@ export class UsersService {
 
     if (dto.name !== undefined) user.name = dto.name.trim();
     if (dto.role !== undefined) user.role = dto.role;
-    if (dto.title !== undefined) user.title = dto.title.trim() || undefined;
+    if (dto.headline !== undefined) user.headline = dto.headline.trim() || undefined;
+    if (dto.bio !== undefined) user.bio = dto.bio.trim() || undefined;
     if (dto.avatarUrl !== undefined) user.avatarUrl = dto.avatarUrl || undefined;
 
     if (dto.isDeleted !== undefined) {

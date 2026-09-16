@@ -33,13 +33,22 @@ export class AdminUpdateUserDto {
   role?: 'admin' | 'user';
 
   @ApiPropertyOptional({
-    description: 'Professional title or headline of the developer',
+    description: 'Professional headline of the developer',
     example: 'Senior Full-Stack Engineer',
     maxLength: 100,
   })
   @IsOptional()
   @IsString()
-  title?: string;
+  headline?: string;
+
+  @ApiPropertyOptional({
+    description: 'Biography / summary of the developer',
+    example: 'Building scalable distributed systems.',
+    maxLength: 1000,
+  })
+  @IsOptional()
+  @IsString()
+  bio?: string;
 
   @ApiPropertyOptional({
     description: 'Avatar image URL, Base64 data URI, or null to remove',
