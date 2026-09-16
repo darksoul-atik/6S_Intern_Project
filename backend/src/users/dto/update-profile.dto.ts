@@ -1,7 +1,7 @@
 import { Transform } from 'class-transformer';
 import {
   IsString,
-  IsUrl,
+  Matches,
   MaxLength,
   MinLength,
   ValidateIf,
@@ -63,16 +63,15 @@ export class UpdateProfileDto {
   // Avatar URL
   // -------------------------
 
-  @ValidateIf((_object, value) => value !== undefined && value !== null)
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  @IsUrl(
-    {
-      protocols: ['http', 'https'],
-      require_protocol: true,
-    },
-    {
-      message: 'avatarUrl must be a valid HTTP or HTTPS URL',
-    },
+  @ValidateIf(
+    (_object, value) => value !== undefined && value !== null && value !== '',
   )
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString({
+    message: 'avatarUrl must be a string',
+  })
+  @Matches(/^(https?:\/\/|data:image\/)/, {
+    message: 'avatarUrl must be a valid HTTP/HTTPS URL or Base64 data URI',
+  })
   avatarUrl?: string | null;
 }

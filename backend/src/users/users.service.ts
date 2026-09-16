@@ -6,9 +6,13 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
+
 import { User, UserDocument } from './schemas/user.schema.js';
+
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
+import { PortfolioProjectDto } from './dto/portfolio-project.dto.js';
 import { AdminUpdateUserDto } from './dto/admin-update-user.dto.js';
+
 import {
   CreateExperienceDto,
   UpdateExperienceDto,
@@ -25,86 +29,156 @@ export interface PaginatedUsersResult {
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
   ) {}
+
+  // ---------------------------------------------------------------------------
+  // Basic user lookup
+  // ---------------------------------------------------------------------------
 
   async create(userData: Partial<User>): Promise<UserDocument> {
     const createdUser = new this.userModel(userData);
+
     return createdUser.save();
   }
 
   async findByEmail(email: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ email: email.toLowerCase().trim() }).exec();
+    return this.userModel
+      .findOne({
+        email: email.toLowerCase().trim(),
+      })
+      .exec();
   }
 
   async findById(id: string): Promise<UserDocument | null> {
     if (!/^[0-9a-fA-F]{24}$/.test(id)) {
       return null;
     }
+
     return this.userModel.findById(id).exec();
   }
 
+  // ---------------------------------------------------------------------------
+  // Existing account/current-user lookup
+  // ---------------------------------------------------------------------------
+
   async getMe(userId: string): Promise<UserDocument> {
     const user = await this.findById(userId);
+
     if (!user) {
       throw new NotFoundException('User profile not found');
     }
+
     return user;
   }
 
-  async getProfileById(id: string): Promise<UserDocument> {
-    const user = await this.findById(id);
+  // ---------------------------------------------------------------------------
+  // Day 5: private profile
+  // GET /profile/me will use this
+  // ---------------------------------------------------------------------------
+
+  async getMyProfile(userId: string): Promise<UserDocument> {
+    const user = await this.userModel
+      .findOne({
+        _id: userId,
+        isDeleted: { $ne: true },
+      })
+      .select(
+        'name headline bio avatarUrl skills experiences portfolioProjects',
+      )
+      .exec();
+
     if (!user) {
-      throw new NotFoundException(`Developer profile with ID '${id}' not found`);
+      throw new NotFoundException('User profile not found');
     }
+
     return user;
   }
+
+  // ---------------------------------------------------------------------------
+  // Public developer profile
+  // Only explicitly approved public profile fields are returned
+  // ---------------------------------------------------------------------------
+
+  async getProfileById(id: string): Promise<UserDocument> {
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      throw new NotFoundException(
+        `Developer profile with ID '${id}' not found`,
+      );
+    }
+
+    const user = await this.userModel
+      .findOne({
+        _id: id,
+        isDeleted: { $ne: true },
+      })
+      .select(
+        'name headline bio avatarUrl skills experiences portfolioProjects',
+      )
+      .exec();
+
+    if (!user) {
+      throw new NotFoundException(
+        `Developer profile with ID '${id}' not found`,
+      );
+    }
+
+    return user;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Day 5: basic profile update
+  // PATCH /profile/me will use this
+  // ---------------------------------------------------------------------------
 
   async updateBasicProfile(
     userId: string,
-    updateDto: UpdateProfileDto,
+    updateProfileDto: UpdateProfileDto,
   ): Promise<UserDocument> {
-    const user = await this.findById(userId);
+    const user = await this.userModel.findOne({
+      _id: userId,
+      isDeleted: { $ne: true },
+    });
+
     if (!user) {
       throw new NotFoundException('User profile not found');
     }
 
-    if (updateDto.name !== undefined) {
-      user.name = updateDto.name.trim();
-    }
-    if (updateDto.headline !== undefined) {
-      if (updateDto.headline && updateDto.headline.trim()) {
-        user.headline = updateDto.headline.trim();
-      } else {
-        user.set('headline', undefined);
-      }
-    }
-    if (updateDto.bio !== undefined) {
-      if (updateDto.bio && updateDto.bio.trim()) {
-        user.bio = updateDto.bio.trim();
-      } else {
-        user.set('bio', undefined);
-      }
-    }
-    if (updateDto.avatarUrl !== undefined) {
-      if (updateDto.avatarUrl && updateDto.avatarUrl.trim()) {
-        user.avatarUrl = updateDto.avatarUrl.trim();
-      } else {
-        user.set('avatarUrl', undefined);
-      }
+    if (updateProfileDto.name !== undefined) {
+      user.name = updateProfileDto.name;
     }
 
-    return user.save();
+    if (updateProfileDto.headline !== undefined) {
+      user.headline = updateProfileDto.headline ?? undefined;
+    }
 
+    if (updateProfileDto.bio !== undefined) {
+      user.bio = updateProfileDto.bio ?? undefined;
+    }
+
+    if (updateProfileDto.avatarUrl !== undefined) {
+      user.avatarUrl = updateProfileDto.avatarUrl ?? undefined;
+    }
+
+    await user.save();
+
+    return this.getMyProfile(userId);
   }
+
+  // ---------------------------------------------------------------------------
+  // Skills
+  // ---------------------------------------------------------------------------
 
   async addSkill(userId: string, skill: string): Promise<UserDocument> {
     const user = await this.findById(userId);
+
     if (!user) {
       throw new NotFoundException('User profile not found');
     }
 
     const trimmed = skill.trim();
+
     if (!trimmed) {
       throw new BadRequestException('Skill name cannot be empty');
     }
@@ -114,10 +188,12 @@ export class UsersService {
     }
 
     const exists = user.skills.some(
-      (s) => s.toLowerCase() === trimmed.toLowerCase(),
+      (existingSkill) => existingSkill.toLowerCase() === trimmed.toLowerCase(),
     );
+
     if (!exists) {
       user.skills.push(trimmed);
+
       return user.save();
     }
 
@@ -126,13 +202,18 @@ export class UsersService {
 
   async removeSkill(userId: string, skill: string): Promise<UserDocument> {
     const user = await this.findById(userId);
+
     if (!user) {
       throw new NotFoundException('User profile not found');
     }
 
     const trimmed = skill.trim().toLowerCase();
+
     if (user.skills && user.skills.length > 0) {
-      user.skills = user.skills.filter((s) => s.toLowerCase() !== trimmed);
+      user.skills = user.skills.filter(
+        (existingSkill) => existingSkill.toLowerCase() !== trimmed,
+      );
+
       return user.save();
     }
 
@@ -141,6 +222,7 @@ export class UsersService {
 
   async updateSkills(userId: string, skills: string[]): Promise<UserDocument> {
     const user = await this.findById(userId);
+
     if (!user) {
       throw new NotFoundException('User profile not found');
     }
@@ -151,6 +233,7 @@ export class UsersService {
     for (const raw of skills) {
       const trimmed = raw.trim();
       const lower = trimmed.toLowerCase();
+
       if (trimmed.length > 0 && !seen.has(lower)) {
         seen.add(lower);
         cleaned.push(trimmed);
@@ -158,14 +241,20 @@ export class UsersService {
     }
 
     user.skills = cleaned;
+
     return user.save();
   }
+
+  // ---------------------------------------------------------------------------
+  // Experiences
+  // ---------------------------------------------------------------------------
 
   async addExperience(
     userId: string,
     expDto: CreateExperienceDto,
   ): Promise<UserDocument> {
     const user = await this.findById(userId);
+
     if (!user) {
       throw new NotFoundException('User profile not found');
     }
@@ -191,23 +280,42 @@ export class UsersService {
     expDto: UpdateExperienceDto,
   ): Promise<UserDocument> {
     const user = await this.findById(userId);
+
     if (!user) {
       throw new NotFoundException('User profile not found');
     }
 
     const expIndex = user.experiences.findIndex(
-      (e) => e._id?.toString() === experienceId,
+      (experience) => experience._id?.toString() === experienceId,
     );
+
     if (expIndex === -1) {
-      throw new NotFoundException(`Experience with ID '${experienceId}' not found`);
+      throw new NotFoundException(
+        `Experience with ID '${experienceId}' not found`,
+      );
     }
 
     const target = user.experiences[expIndex];
-    if (expDto.title !== undefined) target.title = expDto.title.trim();
-    if (expDto.company !== undefined) target.company = expDto.company.trim();
-    if (expDto.from !== undefined) target.from = expDto.from.trim();
-    if (expDto.to !== undefined) target.to = expDto.to.trim();
-    if (expDto.description !== undefined) target.description = expDto.description.trim();
+
+    if (expDto.title !== undefined) {
+      target.title = expDto.title.trim();
+    }
+
+    if (expDto.company !== undefined) {
+      target.company = expDto.company.trim();
+    }
+
+    if (expDto.from !== undefined) {
+      target.from = expDto.from.trim();
+    }
+
+    if (expDto.to !== undefined) {
+      target.to = expDto.to.trim();
+    }
+
+    if (expDto.description !== undefined) {
+      target.description = expDto.description.trim();
+    }
 
     return user.save();
   }
@@ -217,20 +325,66 @@ export class UsersService {
     experienceId: string,
   ): Promise<UserDocument> {
     const user = await this.findById(userId);
+
     if (!user) {
       throw new NotFoundException('User profile not found');
     }
 
     const expIndex = user.experiences.findIndex(
-      (e) => e._id?.toString() === experienceId,
+      (experience) => experience._id?.toString() === experienceId,
     );
+
     if (expIndex === -1) {
-      throw new NotFoundException(`Experience with ID '${experienceId}' not found`);
+      throw new NotFoundException(
+        `Experience with ID '${experienceId}' not found`,
+      );
     }
 
     user.experiences.splice(expIndex, 1);
+
     return user.save();
   }
+
+  // ---------------------------------------------------------------------------
+  // Day 5: Portfolio Projects
+  // POST /profile/me/projects will use this
+  // ---------------------------------------------------------------------------
+
+  async addPortfolioProject(
+    userId: string,
+    projectDto: PortfolioProjectDto,
+  ): Promise<UserDocument> {
+    const user = await this.userModel.findOne({
+      _id: userId,
+      isDeleted: { $ne: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    if (!user.portfolioProjects) {
+      user.portfolioProjects = [];
+    }
+
+    user.portfolioProjects.push({
+      title: projectDto.title,
+      description: projectDto.description,
+      urls: projectDto.urls ?? [],
+      technologies: projectDto.technologies,
+      startDate: projectDto.startDate,
+      endDate: projectDto.endDate,
+      isCurrent: projectDto.isCurrent,
+    });
+
+    await user.save();
+
+    return this.getMyProfile(userId);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Admin user list
+  // ---------------------------------------------------------------------------
 
   async findAllUsers(query: {
     page: number;
@@ -239,25 +393,50 @@ export class UsersService {
     includeDeleted?: boolean;
   }): Promise<PaginatedUsersResult> {
     const filter: Record<string, unknown> = {};
+
     if (!query.includeDeleted) {
       filter.isDeleted = { $ne: true };
     }
 
     if (query.search && query.search.trim()) {
       const term = query.search.trim();
+
       filter.$or = [
-        { name: { $regex: term, $options: 'i' } },
-        { email: { $regex: term, $options: 'i' } },
-        { headline: { $regex: term, $options: 'i' } },
-        { bio: { $regex: term, $options: 'i' } },
+        {
+          name: {
+            $regex: term,
+            $options: 'i',
+          },
+        },
+        {
+          email: {
+            $regex: term,
+            $options: 'i',
+          },
+        },
+        {
+          headline: {
+            $regex: term,
+            $options: 'i',
+          },
+        },
+        {
+          bio: {
+            $regex: term,
+            $options: 'i',
+          },
+        },
       ];
     }
 
     const total = await this.userModel.countDocuments(filter).exec();
+
     const users = await this.userModel
       .find(filter)
       .select('-passwordHash')
-      .sort({ createdAt: -1 })
+      .sort({
+        createdAt: -1,
+      })
       .skip((query.page - 1) * query.limit)
       .limit(query.limit)
       .exec();
@@ -271,21 +450,35 @@ export class UsersService {
     };
   }
 
+  // ---------------------------------------------------------------------------
+  // Admin delete
+  // ---------------------------------------------------------------------------
+
   async deleteUser(
     targetUserId: string,
     currentAdminId: string,
-  ): Promise<{ id: string; name: string; email: string; isDeleted: boolean; message: string }> {
+  ): Promise<{
+    id: string;
+    name: string;
+    email: string;
+    isDeleted: boolean;
+    message: string;
+  }> {
     if (targetUserId === currentAdminId) {
-      throw new BadRequestException('Administrators cannot delete their own account');
+      throw new BadRequestException(
+        'Administrators cannot delete their own account',
+      );
     }
 
     const user = await this.findById(targetUserId);
+
     if (!user) {
       throw new NotFoundException(`User with ID '${targetUserId}' not found`);
     }
 
     user.isDeleted = true;
     user.deletedAt = new Date();
+
     await user.save();
 
     return {
@@ -297,16 +490,26 @@ export class UsersService {
     };
   }
 
-  async restoreUser(
-    targetUserId: string,
-  ): Promise<{ id: string; name: string; email: string; isDeleted: boolean; message: string }> {
+  // ---------------------------------------------------------------------------
+  // Admin restore
+  // ---------------------------------------------------------------------------
+
+  async restoreUser(targetUserId: string): Promise<{
+    id: string;
+    name: string;
+    email: string;
+    isDeleted: boolean;
+    message: string;
+  }> {
     const user = await this.findById(targetUserId);
+
     if (!user) {
       throw new NotFoundException(`User with ID '${targetUserId}' not found`);
     }
 
     user.isDeleted = false;
     user.deletedAt = undefined;
+
     await user.save();
 
     return {
@@ -318,31 +521,55 @@ export class UsersService {
     };
   }
 
+  // ---------------------------------------------------------------------------
+  // Admin update
+  // ---------------------------------------------------------------------------
+
   async adminUpdateUser(
     targetUserId: string,
     dto: AdminUpdateUserDto,
   ): Promise<UserDocument> {
     const user = await this.findById(targetUserId);
+
     if (!user) {
       throw new NotFoundException(`User with ID '${targetUserId}' not found`);
     }
 
     if (dto.email && dto.email.toLowerCase().trim() !== user.email) {
       const existing = await this.findByEmail(dto.email);
+
       if (existing && existing._id.toString() !== targetUserId) {
-        throw new ConflictException('Email is already registered by another user');
+        throw new ConflictException(
+          'Email is already registered by another user',
+        );
       }
+
       user.email = dto.email.toLowerCase().trim();
     }
 
-    if (dto.name !== undefined) user.name = dto.name.trim();
-    if (dto.role !== undefined) user.role = dto.role;
-    if (dto.headline !== undefined) user.headline = dto.headline.trim() || undefined;
-    if (dto.bio !== undefined) user.bio = dto.bio.trim() || undefined;
-    if (dto.avatarUrl !== undefined) user.avatarUrl = dto.avatarUrl || undefined;
+    if (dto.name !== undefined) {
+      user.name = dto.name.trim();
+    }
+
+    if (dto.role !== undefined) {
+      user.role = dto.role;
+    }
+
+    if (dto.headline !== undefined) {
+      user.headline = dto.headline.trim() || undefined;
+    }
+
+    if (dto.bio !== undefined) {
+      user.bio = dto.bio.trim() || undefined;
+    }
+
+    if (dto.avatarUrl !== undefined) {
+      user.avatarUrl = dto.avatarUrl || undefined;
+    }
 
     if (dto.isDeleted !== undefined) {
       user.isDeleted = dto.isDeleted;
+
       user.deletedAt = dto.isDeleted ? new Date() : undefined;
     }
 
