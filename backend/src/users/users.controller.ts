@@ -32,6 +32,8 @@ import { Roles } from '../auth/decorators/roles.decorator.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy.js';
 import { ProfileOwnerOrAdminGuard } from './guards/profile-owner-or-admin.guard.js';
+import { PortfolioProjectDto } from './dto/portfolio-project.dto.js';
+import { UpdatePortfolioProjectDto } from './dto/update-portfolio-project.dto.js';
 
 @ApiTags('users')
 @Controller('users')
@@ -130,7 +132,10 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Add a new work experience to profile' })
   @ApiResponse({ status: 200, description: 'Experience successfully added' })
-  @ApiResponse({ status: 400, description: 'Validation error in experience payload' })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation error in experience payload',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async addExperience(
     @CurrentUser() user: AuthenticatedUser,
@@ -143,7 +148,10 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update an existing work experience entry' })
-  @ApiParam({ name: 'experienceId', description: 'ID of the experience subdocument' })
+  @ApiParam({
+    name: 'experienceId',
+    description: 'ID of the experience subdocument',
+  })
   @ApiResponse({ status: 200, description: 'Experience successfully updated' })
   @ApiResponse({ status: 404, description: 'Experience not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -163,7 +171,10 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Remove a work experience entry' })
-  @ApiParam({ name: 'experienceId', description: 'ID of the experience subdocument' })
+  @ApiParam({
+    name: 'experienceId',
+    description: 'ID of the experience subdocument',
+  })
   @ApiResponse({ status: 200, description: 'Experience successfully deleted' })
   @ApiResponse({ status: 404, description: 'Experience not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -202,7 +213,10 @@ export class UsersController {
       page: pageNum,
       limit: limitNum,
       search,
-      includeDeleted: includeDeleted === 'true' || includeDeleted === '1' || includeDeleted === undefined,
+      includeDeleted:
+        includeDeleted === 'true' ||
+        includeDeleted === '1' ||
+        includeDeleted === undefined,
     });
   }
 
@@ -233,13 +247,16 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, ProfileOwnerOrAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Update user profile by ID (Owner or Admin)",
+    summary: 'Update user profile by ID (Owner or Admin)',
     description:
       'Allows updating basic profile fields for the specified user ID. Only accessible by the account owner or an admin.',
   })
   @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the user' })
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
-  @ApiResponse({ status: 403, description: 'Forbidden: Cannot edit another user profile' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden: Cannot edit another user profile',
+  })
   @ApiResponse({ status: 404, description: 'User not found' })
   async updateProfileById(
     @Param('id') id: string,
@@ -266,7 +283,9 @@ export class UsersController {
   @Delete(':id/skills/:skill')
   @UseGuards(JwtAuthGuard, ProfileOwnerOrAdminGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Remove a skill from a user profile (Owner or Admin)' })
+  @ApiOperation({
+    summary: 'Remove a skill from a user profile (Owner or Admin)',
+  })
   @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the user' })
   @ApiParam({ name: 'skill', description: 'Name of the skill to remove' })
   @ApiResponse({ status: 200, description: 'Skill successfully removed' })
@@ -282,7 +301,9 @@ export class UsersController {
   @Put(':id/skills')
   @UseGuards(JwtAuthGuard, ProfileOwnerOrAdminGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update/replace complete skills array (Owner or Admin)' })
+  @ApiOperation({
+    summary: 'Update/replace complete skills array (Owner or Admin)',
+  })
   @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the user' })
   @ApiResponse({ status: 200, description: 'Skills successfully updated' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
@@ -297,7 +318,9 @@ export class UsersController {
   @Post(':id/experiences')
   @UseGuards(JwtAuthGuard, ProfileOwnerOrAdminGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Add a new work experience to profile (Owner or Admin)' })
+  @ApiOperation({
+    summary: 'Add a new work experience to profile (Owner or Admin)',
+  })
   @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the user' })
   @ApiResponse({ status: 200, description: 'Experience successfully added' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
@@ -312,9 +335,14 @@ export class UsersController {
   @Patch(':id/experiences/:experienceId')
   @UseGuards(JwtAuthGuard, ProfileOwnerOrAdminGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update work experience entry by ID (Owner or Admin)' })
+  @ApiOperation({
+    summary: 'Update work experience entry by ID (Owner or Admin)',
+  })
   @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the user' })
-  @ApiParam({ name: 'experienceId', description: 'ID of the experience subdocument' })
+  @ApiParam({
+    name: 'experienceId',
+    description: 'ID of the experience subdocument',
+  })
   @ApiResponse({ status: 200, description: 'Experience successfully updated' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'User or Experience not found' })
@@ -329,9 +357,14 @@ export class UsersController {
   @Delete(':id/experiences/:experienceId')
   @UseGuards(JwtAuthGuard, ProfileOwnerOrAdminGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Remove work experience entry by ID (Owner or Admin)' })
+  @ApiOperation({
+    summary: 'Remove work experience entry by ID (Owner or Admin)',
+  })
   @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the user' })
-  @ApiParam({ name: 'experienceId', description: 'ID of the experience subdocument' })
+  @ApiParam({
+    name: 'experienceId',
+    description: 'ID of the experience subdocument',
+  })
   @ApiResponse({ status: 200, description: 'Experience successfully deleted' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'User or Experience not found' })
@@ -340,6 +373,110 @@ export class UsersController {
     @Param('experienceId') experienceId: string,
   ) {
     return this.usersService.removeExperience(id, experienceId);
+  }
+
+  @Post(':id/projects')
+  @UseGuards(JwtAuthGuard, ProfileOwnerOrAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Add a portfolio project to a user profile (Owner or Admin)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB ObjectId of the user',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Portfolio project added successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid portfolio project data',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async addPortfolioProjectById(
+    @Param('id') id: string,
+    @Body() projectDto: PortfolioProjectDto,
+  ) {
+    return this.usersService.addPortfolioProject(id, projectDto);
+  }
+
+  @Patch(':id/projects/:projectId')
+  @UseGuards(JwtAuthGuard, ProfileOwnerOrAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Update a portfolio project (Owner or Admin)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB ObjectId of the user',
+  })
+  @ApiParam({
+    name: 'projectId',
+    description: 'ID of the portfolio project subdocument',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Portfolio project updated successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid portfolio project data',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User or portfolio project not found',
+  })
+  async updatePortfolioProjectById(
+    @Param('id') id: string,
+    @Param('projectId') projectId: string,
+    @Body() dto: UpdatePortfolioProjectDto,
+  ) {
+    return this.usersService.updatePortfolioProject(id, projectId, dto);
+  }
+
+  @Delete(':id/projects/:projectId')
+  @UseGuards(JwtAuthGuard, ProfileOwnerOrAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Delete a portfolio project (Owner or Admin)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB ObjectId of the user',
+  })
+  @ApiParam({
+    name: 'projectId',
+    description: 'ID of the portfolio project subdocument',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Portfolio project deleted successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User or portfolio project not found',
+  })
+  async removePortfolioProjectById(
+    @Param('id') id: string,
+    @Param('projectId') projectId: string,
+  ) {
+    return this.usersService.removePortfolioProject(id, projectId);
   }
 
   @Delete(':id')
@@ -351,7 +488,10 @@ export class UsersController {
     description:
       'Marks user as deleted so they cannot log in. Login will respond that the profile was deleted by an admin.',
   })
-  @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the user to delete' })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB ObjectId of the user to delete',
+  })
   @ApiResponse({ status: 200, description: 'User account marked as deleted' })
   @ApiResponse({ status: 400, description: 'Cannot delete own admin account' })
   @ApiResponse({ status: 403, description: 'Forbidden: Admin access required' })
@@ -370,8 +510,14 @@ export class UsersController {
   @ApiOperation({
     summary: 'Restore soft-deleted user account (Admin only)',
   })
-  @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the user to restore' })
-  @ApiResponse({ status: 200, description: 'User account restored successfully' })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB ObjectId of the user to restore',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User account restored successfully',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden: Admin access required' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async restoreUser(@Param('id') id: string) {
@@ -387,11 +533,17 @@ export class UsersController {
     description:
       'Allows an administrator to modify any user attribute including display name, email, role, and professional title.',
   })
-  @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the user to update' })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB ObjectId of the user to update',
+  })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
   @ApiResponse({ status: 403, description: 'Forbidden: Admin access required' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @ApiResponse({ status: 409, description: 'Conflict: Email already registered' })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict: Email already registered',
+  })
   async adminUpdateUser(
     @Param('id') id: string,
     @Body() dto: AdminUpdateUserDto,
