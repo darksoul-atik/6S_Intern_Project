@@ -8,7 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 
 import { User, UserDocument } from './schemas/user.schema.js';
-
+import { UpdatePortfolioProjectDto } from './dto/update-portfolio-project.dto.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { PortfolioProjectDto } from './dto/portfolio-project.dto.js';
 import { AdminUpdateUserDto } from './dto/admin-update-user.dto.js';
@@ -376,6 +376,137 @@ export class UsersService {
       endDate: projectDto.endDate,
       isCurrent: projectDto.isCurrent,
     });
+
+    await user.save();
+
+    return this.getMyProfile(userId);
+  }
+
+  async updatePortfolioProject(
+    userId: string,
+    projectId: string,
+    dto: UpdatePortfolioProjectDto,
+  ): Promise<UserDocument> {
+    const user = await this.userModel.findOne({
+      _id: userId,
+      isDeleted: { $ne: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    const project = user.portfolioProjects.find(
+      (item) => item._id?.toString() === projectId,
+    );
+
+    if (!project) {
+      throw new NotFoundException(
+        `Portfolio project with ID '${projectId}' not found`,
+      );
+    }
+
+    /*
+     * First calculate what the final project state would be
+     * after applying this PATCH.
+     */
+    const nextStartDate = dto.startDate ?? project.startDate;
+
+    const nextIsCurrent = dto.isCurrent ?? project.isCurrent;
+
+    let nextEndDate = project.endDate;
+
+    /*
+     * Current project:
+     * endDate must not exist.
+     */
+    if (nextIsCurrent) {
+      if (dto.endDate !== undefined) {
+        throw new BadRequestException(
+          'endDate must not be provided when isCurrent is true',
+        );
+      }
+
+      nextEndDate = undefined;
+    } else {
+      /*
+       * Finished project:
+       * use new endDate if provided,
+       * otherwise keep the existing one.
+       */
+      nextEndDate = dto.endDate ?? project.endDate;
+
+      if (!nextEndDate) {
+        throw new BadRequestException(
+          'endDate is required when isCurrent is false',
+        );
+      }
+
+      if (nextEndDate < nextStartDate) {
+        throw new BadRequestException(
+          'endDate must be the same as or later than startDate',
+        );
+      }
+    }
+
+    /*
+     * Apply only fields actually sent by the client.
+     */
+    if (dto.title !== undefined) {
+      project.title = dto.title;
+    }
+
+    if (dto.description !== undefined) {
+      project.description = dto.description;
+    }
+
+    if (dto.urls !== undefined) {
+      project.urls = dto.urls;
+    }
+
+    if (dto.technologies !== undefined) {
+      project.technologies = dto.technologies;
+    }
+
+    if (dto.startDate !== undefined) {
+      project.startDate = dto.startDate;
+    }
+
+    if (dto.isCurrent !== undefined) {
+      project.isCurrent = dto.isCurrent;
+    }
+
+    project.endDate = nextEndDate;
+
+    await user.save();
+
+    return this.getMyProfile(userId);
+  }
+
+  async removePortfolioProject(
+    userId: string,
+    projectId: string,
+  ): Promise<UserDocument> {
+    const user = await this.userModel.findOne({
+      _id: userId,
+      isDeleted: { $ne: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    const projectIndex = user.portfolioProjects.findIndex(
+      (project) => project._id?.toString() === projectId,
+    );
+
+    if (projectIndex === -1) {
+      throw new NotFoundException(
+        `Portfolio project with ID '${projectId}' not found`,
+      );
+    }
+
+    user.portfolioProjects.splice(projectIndex, 1);
 
     await user.save();
 
