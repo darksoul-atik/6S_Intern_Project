@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -10,6 +10,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy.js';
+import { PortfolioProjectDto } from './dto/portfolio-project.dto.js';
 
 @ApiTags('profile')
 @Controller('profile')
@@ -63,5 +64,32 @@ export class ProfileController {
     @Body() dto: UpdateProfileDto,
   ) {
     return this.usersService.updateBasicProfile(user.userId, dto);
+  }
+
+  @Post('me/projects')
+  @ApiOperation({
+    summary: 'Add a portfolio project to authenticated user profile',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Portfolio project added successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid portfolio project data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User profile not found',
+  })
+  async addPortfolioProject(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() projectDto: PortfolioProjectDto,
+  ) {
+    return this.usersService.addPortfolioProject(user.userId, projectDto);
   }
 }
