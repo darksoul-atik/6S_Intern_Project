@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -11,6 +20,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy.js';
 import { PortfolioProjectDto } from './dto/portfolio-project.dto.js';
+import { UpdatePortfolioProjectDto } from './dto/update-portfolio-project.dto.js';
 
 @ApiTags('profile')
 @Controller('profile')
@@ -91,5 +101,60 @@ export class ProfileController {
     @Body() projectDto: PortfolioProjectDto,
   ) {
     return this.usersService.addPortfolioProject(user.userId, projectDto);
+  }
+
+  @Patch('me/projects/:projectId')
+  @ApiOperation({
+    summary: 'Update a portfolio project',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Portfolio project updated successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid portfolio project data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Portfolio project not found',
+  })
+  async updatePortfolioProject(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('projectId') projectId: string,
+    @Body() dto: UpdatePortfolioProjectDto,
+  ) {
+    return this.usersService.updatePortfolioProject(
+      user.userId,
+      projectId,
+      dto,
+    );
+  }
+
+  @Delete('me/projects/:projectId')
+  @ApiOperation({
+    summary: 'Delete a portfolio project',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Portfolio project deleted successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Portfolio project not found',
+  })
+  async removePortfolioProject(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('projectId') projectId: string,
+  ) {
+    return this.usersService.removePortfolioProject(user.userId, projectId);
   }
 }
