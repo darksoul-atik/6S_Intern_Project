@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, HttpStatus, ServiceUnavailableException } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { HealthService, type HealthResponse } from './health.service.js';
 import { HealthResponseDto } from './dto/health-response.dto.js';
@@ -26,7 +26,16 @@ export class HealthController {
     type: ErrorResponseDto,
   })
   getHealth(): HealthResponse {
-    return this.healthService.check();
+    const health = this.healthService.check();
+    if (health.data.db !== 'connected') {
+      throw new ServiceUnavailableException({
+        message: 'Database connection is degraded or unavailable',
+        error: 'Service Unavailable',
+        statusCode: HttpStatus.SERVICE_UNAVAILABLE,
+        data: health.data,
+      });
+    }
+    return health;
   }
 }
 

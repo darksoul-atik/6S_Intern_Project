@@ -21,7 +21,11 @@ export const signupSchema = z.object({
     .string()
     .min(1, 'Password is required')
     .min(6, 'Password must be at least 6 characters')
-    .max(100, 'Password is too long'),
+    .max(100, 'Password is too long')
+    .refine(
+      (val) => val.trim().length >= 6,
+      'Password must contain at least 6 non-whitespace characters',
+    ),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;

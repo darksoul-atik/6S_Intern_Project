@@ -8,7 +8,7 @@ export interface DatabaseHealth {
 }
 
 export interface HealthStatus {
-  status: 'ok';
+  status: 'ok' | 'degraded';
   db: 'connected' | 'disconnected';
   database: DatabaseHealth;
   timestamp: string;
@@ -31,7 +31,7 @@ export class HealthService {
     return {
       success: true,
       data: {
-        status: 'ok',
+        status: isDbConnected ? 'ok' : 'degraded',
         db: isDbConnected ? 'connected' : 'disconnected',
         database: {
           status: isDbConnected ? 'connected' : 'disconnected',

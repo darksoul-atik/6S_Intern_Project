@@ -15,12 +15,18 @@ import { RolesGuard } from './guards/roles.guard.js';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET', 'devpulse_fallback_secret'),
-        signOptions: {
-          expiresIn: (configService.get<string>('JWT_EXPIRES_IN', '7d') || '7d') as any,
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error('CRITICAL SECURITY CONFIGURATION ERROR: JWT_SECRET environment variable is missing.');
+        }
+        return {
+          secret,
+          signOptions: {
+            expiresIn: (configService.get<string>('JWT_EXPIRES_IN', '7d') || '7d') as any,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
   ],

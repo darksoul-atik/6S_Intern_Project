@@ -11,15 +11,17 @@ export interface ApiResponse<T = unknown> {
   errors?: string[];
 }
 
-export class ApiError extends Error {
+export class ApiError<T = unknown> extends Error {
   statusCode: number;
   errors: string[];
+  data?: T;
 
-  constructor(message: string, statusCode = 400, errors: string[] = []) {
+  constructor(message: string, statusCode = 400, errors: string[] = [], data?: T) {
     super(message);
     this.name = 'ApiError';
     this.statusCode = statusCode;
     this.errors = errors;
+    this.data = data;
   }
 }
 
@@ -52,8 +54,9 @@ axiosInstance.interceptors.response.use(
       error.message ||
       `HTTP Error ${statusCode}`;
     const errors = Array.isArray(errorData?.errors) ? errorData.errors : [];
+    const data = errorData?.data;
 
-    return Promise.reject(new ApiError(message, statusCode, errors));
+    return Promise.reject(new ApiError(message, statusCode, errors, data));
   }
 );
 

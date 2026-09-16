@@ -53,9 +53,12 @@ export class AuthService {
       throw new ConflictException('Email is already registered');
     }
 
-    // Hash the password with bcrypt (never store or log plain text)
+    // Hash the password with bcrypt (never store or log plain text, preserve exact password characters)
+    if (!signupDto.password || signupDto.password.trim().length < 6) {
+      throw new ConflictException('Password must contain at least 6 non-whitespace characters');
+    }
     const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(signupDto.password.trim(), saltRounds);
+    const passwordHash = await bcrypt.hash(signupDto.password, saltRounds);
 
     // Explicitly enforce role as 'user' for public signup
     const newUser = await this.usersService.create({

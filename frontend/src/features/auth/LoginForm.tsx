@@ -31,6 +31,7 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -62,6 +63,16 @@ export function LoginForm() {
       const extracted = extractAuthErrorMessage(err);
       setErrorMessage(extracted.message);
       setFieldErrors(extracted.errors);
+
+      // Map backend validation errors back to specific form fields
+      extracted.errors.forEach((e) => {
+        const lower = e.toLowerCase();
+        if (lower.includes('email')) {
+          setError('email', { type: 'server', message: e });
+        } else if (lower.includes('password')) {
+          setError('password', { type: 'server', message: e });
+        }
+      });
     }
   };
 
@@ -157,7 +168,11 @@ export function LoginForm() {
                     exit={{ opacity: 0, height: 0 }}
                     className="mb-6 overflow-hidden"
                   >
-                    <div className="flex items-start space-x-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs font-sans text-rose-200">
+                    <div
+                      role="alert"
+                      aria-live="assertive"
+                      className="flex items-start space-x-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs font-sans text-rose-200"
+                    >
                       <FiAlertTriangle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
                       <div className="flex-1 space-y-1">
                         <p className="font-semibold font-manrope">{errorMessage}</p>

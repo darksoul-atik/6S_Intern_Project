@@ -46,3 +46,6 @@ Thumbs.db
 .turbo
 *.tsbuildinfo
 next-env.d.ts
+*.rar
+*.zip
+*.tar.gz

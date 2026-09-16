@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, Matches } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class SignupDto {
@@ -30,5 +30,8 @@ export class SignupDto {
   @IsNotEmpty({ message: 'Password is required' })
   @IsString({ message: 'Password must be a string' })
   @MinLength(6, { message: 'Password must be at least 6 characters long' })
+  @Matches(/^(?=.*\S).{6,}$/, {
+    message: 'Password must contain at least 6 characters including non-whitespace',
+  })
   password!: string;
 }

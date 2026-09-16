@@ -26,6 +26,7 @@ export function SignupForm() {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
@@ -60,6 +61,18 @@ export function SignupForm() {
       const extracted = extractAuthErrorMessage(err);
       setErrorMessage(extracted.message);
       setFieldErrors(extracted.errors);
+
+      // Map backend validation errors back to specific form fields
+      extracted.errors.forEach((e) => {
+        const lower = e.toLowerCase();
+        if (lower.includes('email')) {
+          setError('email', { type: 'server', message: e });
+        } else if (lower.includes('password')) {
+          setError('password', { type: 'server', message: e });
+        } else if (lower.includes('name')) {
+          setError('name', { type: 'server', message: e });
+        }
+      });
     }
   };
 
@@ -136,6 +149,8 @@ export function SignupForm() {
               <AnimatePresence mode="wait">
                 {errorMessage && (
                   <motion.div
+                    role="alert"
+                    aria-live="assertive"
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}

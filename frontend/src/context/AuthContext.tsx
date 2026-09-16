@@ -12,6 +12,7 @@ interface AuthContextType {
   user: UserSession | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  authError: string | null;
   login: (userData: UserSession) => void;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
@@ -22,8 +23,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: user, isLoading, refetch } = useCurrentUser();
+  const { data: user, isLoading, isError, error, refetch } = useCurrentUser();
   const logoutMutation = useLogoutMutation();
+
+  const authError = isError && error
+    ? (error instanceof Error ? error.message : 'Authentication service error')
+    : null;
 
   const login = useCallback(
     (userData: UserSession) => {
@@ -53,8 +58,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user: user ?? null,
-        isAuthenticated: !!user,
+        isAuthenticated: Boolean(user) && !isError,
         isLoading,
+        authError,
         login,
         logout,
         checkAuth,

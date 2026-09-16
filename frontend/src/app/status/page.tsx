@@ -40,18 +40,34 @@ export default function StatusPage() {
   } = useQuery<HealthData | undefined>({
     queryKey: ['health'],
     queryFn: async () => {
-      const res = await apiClient<HealthData>('/health');
-      return res.data;
+      try {
+        const res = await apiClient<HealthData>('/health');
+        return res.data;
+      } catch (err) {
+        if (err instanceof ApiError && err.statusCode === 503 && err.data) {
+          return err.data as HealthData;
+        }
+        throw err;
+      }
     },
     retry: 2,
     refetchInterval: 30000, // Background refresh every 30s
   });
 
-  const isConnected = !isLoading && !isError && health?.status === 'ok';
   const isDbConnected =
     !isLoading &&
     !isError &&
     (health?.database?.status === 'connected' || health?.db === 'connected');
+  const isFullyOperational =
+    !isLoading && !isError && health?.status === 'ok' && isDbConnected;
+  const isDegraded =
+    !isLoading &&
+    !isError &&
+    Boolean(health) &&
+    (health?.status === 'degraded' || !isDbConnected);
+  const isUnavailable = !isLoading && (isError || !health);
+  const isApiReachable = !isLoading && !isError && Boolean(health);
+
   const dbConnectionState =
     health?.database?.connectionState ?? (isDbConnected ? 1 : 0);
 
@@ -113,8 +129,10 @@ export default function StatusPage() {
           className={`rounded-3xl border p-5 sm:p-7 backdrop-blur-2xl transition-all shadow-xl ${
             isLoading
               ? 'border-indigo-500/30 bg-indigo-950/20'
-              : isConnected
+              : isFullyOperational
               ? 'border-emerald-500/30 bg-emerald-950/20'
+              : isDegraded
+              ? 'border-amber-500/30 bg-amber-950/20'
               : 'border-rose-500/30 bg-rose-950/20'
           }`}
         >
@@ -124,15 +142,19 @@ export default function StatusPage() {
                 className={`h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 border ${
                   isLoading
                     ? 'border-indigo-400/40 bg-indigo-500/20 text-indigo-300'
-                    : isConnected
+                    : isFullyOperational
                     ? 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.3)]'
+                    : isDegraded
+                    ? 'border-amber-400/40 bg-amber-500/20 text-amber-300 shadow-[0_0_16px_rgba(245,158,11,0.3)]'
                     : 'border-rose-400/40 bg-rose-500/20 text-rose-300 shadow-[0_0_16px_rgba(244,63,94,0.3)]'
                 }`}
               >
                 {isLoading ? (
                   <FiRefreshCw className="h-5 w-5 animate-spin text-indigo-400" />
-                ) : isConnected ? (
+                ) : isFullyOperational ? (
                   <FiCheckCircle className="h-6 w-6 text-emerald-400" />
+                ) : isDegraded ? (
+                  <FiAlertTriangle className="h-6 w-6 text-amber-400" />
                 ) : (
                   <FiAlertTriangle className="h-6 w-6 text-rose-400" />
                 )}
@@ -145,15 +167,19 @@ export default function StatusPage() {
                 <h2 className="text-lg sm:text-xl font-bold font-manrope text-white tracking-tight break-words">
                   {isLoading
                     ? 'Pinging DevPulse API & Database...'
-                    : isConnected
+                    : isFullyOperational
                     ? 'All Systems Operational'
+                    : isDegraded
+                    ? 'System Degraded: Database Disconnected'
                     : 'Backend Service Unavailable'}
                 </h2>
                 <p className="text-xs text-zinc-300 font-sans leading-relaxed">
                   {isLoading
                     ? 'Querying live health check endpoint (/health) with TanStack Query.'
-                    : isConnected
+                    : isFullyOperational
                     ? 'NestJS REST API and MongoDB connection cluster are healthy and accepting traffic.'
+                    : isDegraded
+                    ? 'NestJS REST API is online, but MongoDB connection is disconnected or degraded.'
                     : 'Unable to reach backend server. The UI remains resilient and responsive without crashing.'}
                 </p>
               </div>
@@ -166,8 +192,10 @@ export default function StatusPage() {
                 className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold font-mono uppercase tracking-wider border ${
                   isLoading
                     ? 'border-indigo-400/30 bg-indigo-500/10 text-indigo-300'
-                    : isConnected
+                    : isFullyOperational
                     ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-xs'
+                    : isDegraded
+                    ? 'border-amber-400/30 bg-amber-500/10 text-amber-300'
                     : 'border-rose-400/30 bg-rose-500/10 text-rose-300'
                 }`}
               >
@@ -175,17 +203,21 @@ export default function StatusPage() {
                   className={`h-2 w-2 rounded-full ${
                     isLoading
                       ? 'bg-indigo-400 animate-ping'
-                      : isConnected
+                      : isFullyOperational
                       ? 'bg-emerald-400 animate-pulse'
+                      : isDegraded
+                      ? 'bg-amber-400 animate-pulse'
                       : 'bg-rose-400'
                   }`}
                 />
                 <span>
                   {isLoading
                     ? 'Checking'
-                    : isConnected
+                    : isFullyOperational
                     ? 'Operational'
-                    : 'Degraded / Offline'}
+                    : isDegraded
+                    ? 'Degraded'
+                    : 'Offline'}
                 </span>
               </span>
             </div>
@@ -240,12 +272,12 @@ export default function StatusPage() {
                 className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-full border ${
                   isLoading
                     ? 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                    : isConnected
+                    : isApiReachable
                     ? 'bg-emerald-500/10 text-emerald-300 border-emerald-400/30'
                     : 'bg-rose-500/10 text-rose-300 border-rose-400/30'
                 }`}
               >
-                {isLoading ? 'Checking' : isConnected ? 'Online (200 OK)' : 'Offline'}
+                {isLoading ? 'Checking' : isApiReachable ? 'Online' : 'Offline'}
               </span>
             </div>
 

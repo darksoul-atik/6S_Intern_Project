@@ -25,7 +25,7 @@ describe('HealthService', () => {
     const result = service.check();
 
     expect(result.success).toBe(true);
-    expect(result.data.status).toBe('ok');
+    expect(result.data.status).toBe('degraded');
     expect(result.data.db).toBe('disconnected');
     expect(result.data.database.status).toBe('disconnected');
     expect(result.data.database.connectionState).toBe(0);
