@@ -5,6 +5,12 @@ export type UserDocument = HydratedDocument<User>;
 
 export type UserRole = 'admin' | 'user';
 
+/*
+|--------------------------------------------------------------------------
+| Experience section
+|--------------------------------------------------------------------------
+*/
+
 @Schema({
   timestamps: true,
   toJSON: {
@@ -12,6 +18,7 @@ export type UserRole = 'admin' | 'user';
       if (ret._id) {
         ret.id = ret._id.toString();
       }
+
       return ret;
     },
   },
@@ -40,6 +47,12 @@ export class Experience {
 
 export const ExperienceSchema = SchemaFactory.createForClass(Experience);
 
+/*
+|--------------------------------------------------------------------------
+| Portfolio Project section
+|--------------------------------------------------------------------------
+*/
+
 @Schema({
   timestamps: true,
   toJSON: {
@@ -47,7 +60,58 @@ export const ExperienceSchema = SchemaFactory.createForClass(Experience);
       if (ret._id) {
         ret.id = ret._id.toString();
       }
+
+      return ret;
+    },
+  },
+})
+export class PortfolioProject {
+  _id?: Types.ObjectId;
+
+  @Prop({ required: true, trim: true })
+  title!: string;
+
+  @Prop({ required: true, trim: true })
+  description!: string;
+
+  @Prop({ type: [String], default: [] })
+  urls!: string[];
+
+  @Prop({ type: [String], default: [] })
+  technologies!: string[];
+
+  @Prop({ required: true, trim: true })
+  startDate!: string;
+
+  @Prop({ required: false, trim: true })
+  endDate?: string;
+
+  @Prop({ type: Boolean, default: false })
+  isCurrent!: boolean;
+
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export const PortfolioProjectSchema =
+  SchemaFactory.createForClass(PortfolioProject);
+
+/*
+|--------------------------------------------------------------------------
+| User document
+|--------------------------------------------------------------------------
+*/
+
+@Schema({
+  timestamps: true,
+  toJSON: {
+    transform: (_doc, ret: Record<string, unknown>) => {
+      if (ret._id) {
+        ret.id = ret._id.toString();
+      }
+
       delete ret.passwordHash;
+
       return ret;
     },
   },
@@ -99,6 +163,9 @@ export class User {
 
   @Prop({ type: [ExperienceSchema], default: [] })
   experiences!: Experience[];
+
+  @Prop({ type: [PortfolioProjectSchema], default: [] })
+  portfolioProjects!: PortfolioProject[];
 
   @Prop({ type: Boolean, default: false, index: true })
   isDeleted?: boolean;
