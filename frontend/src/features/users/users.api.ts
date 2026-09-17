@@ -81,6 +81,7 @@ export interface UserProfile {
   title?: string;
 
   reactionsCount?: number;
+  commentsCount?: number;
   postsCount?: number;
   topRankedCount?: number;
 

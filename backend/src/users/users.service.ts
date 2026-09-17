@@ -85,7 +85,7 @@ export class UsersService {
         isDeleted: { $ne: true },
       })
       .select(
-        'name headline bio avatarUrl skills experiences portfolioProjects',
+        'name headline bio avatarUrl skills experiences portfolioProjects postsCount commentsCount reactionsCount topRankedCount createdAt',
       )
       .exec();
 
@@ -114,7 +114,7 @@ export class UsersService {
         isDeleted: { $ne: true },
       })
       .select(
-        'name headline bio avatarUrl skills experiences portfolioProjects',
+        'name headline bio avatarUrl skills experiences portfolioProjects postsCount commentsCount reactionsCount topRankedCount createdAt',
       )
       .exec();
 

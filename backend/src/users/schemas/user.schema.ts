@@ -153,6 +153,9 @@ export class User {
   reactionsCount?: number;
 
   @Prop({ type: Number, default: 0 })
+  commentsCount?: number;
+
+  @Prop({ type: Number, default: 0 })
   postsCount?: number;
 
   @Prop({ type: Number, default: 0 })

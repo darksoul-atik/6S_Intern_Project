@@ -8,19 +8,26 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 
 import {
+  FiActivity,
   FiAlertCircle,
   FiArrowLeft,
   FiAward,
   FiBriefcase,
+  FiCalendar,
   FiCamera,
   FiCheck,
   FiCheckCircle,
   FiEdit3,
+  FiExternalLink,
+  FiFileText,
   FiFolder,
+  FiGlobe,
+  FiMessageSquare,
   FiShare2,
   FiShield,
   FiTrash2,
 } from "react-icons/fi";
+import { LuTrophy } from "react-icons/lu";
 
 import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/api";
@@ -78,6 +85,21 @@ function formatProjectMonth(value?: string | null) {
     month: "short",
     year: "numeric",
   });
+}
+
+function cleanProjectUrl(raw: string): string {
+  if (!raw) return "";
+  try {
+    const url = raw.startsWith("http") ? raw : `https://${raw}`;
+    const parsed = new URL(url);
+    const path = parsed.pathname !== "/" ? parsed.pathname : "";
+    return parsed.hostname.replace(/^www\./, "") + path;
+  } catch {
+    return raw
+      .replace(/^https?:\/\//i, "")
+      .replace(/^www\./i, "")
+      .replace(/\/$/, "");
+  }
 }
 
 export function ProfileView({ targetId = "me" }: ProfileViewProps) {
@@ -371,6 +393,13 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
 
   const projectsCount = profile.portfolioProjects?.length ?? 0;
 
+  const memberSince = profile.createdAt
+    ? new Date(profile.createdAt).toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric",
+      })
+    : null;
+
   /*
   |--------------------------------------------------------------------------
   | UI
@@ -387,12 +416,12 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
 
       {/* Radiant Glow Orbs */}
       <div
-        className="absolute top-12 left-1/4 -translate-x-1/2 w-137.5 h-125 rounded-full bg-linear-to-tr from-indigo-300/35 via-blue-200/25 to-transparent blur-[120px] pointer-events-none"
+        className="absolute top-12 left-1/4 -translate-x-1/2 w-137.5 h-125 rounded-full bg-linear-to-tr from-indigo-300/30 via-emerald-200/20 to-transparent blur-[120px] pointer-events-none"
         aria-hidden="true"
       />
 
       <div
-        className="absolute top-28 right-1/4 translate-x-1/3 w-150 h-130 rounded-full bg-linear-to-bl from-purple-300/35 via-violet-200/25 to-transparent blur-[130px] pointer-events-none"
+        className="absolute top-28 right-1/4 translate-x-1/3 w-150 h-130 rounded-full bg-linear-to-bl from-emerald-300/25 via-indigo-200/20 to-transparent blur-[130px] pointer-events-none"
         aria-hidden="true"
       />
 
@@ -416,7 +445,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                 type="button"
                 onClick={handleShare}
                 id="share-profile-btn"
-                className="inline-flex items-center space-x-1.5 text-xs font-semibold font-manrope text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-slate-200/70 rounded-xl px-3 sm:px-3.5 py-2 backdrop-blur-md shadow-xs transition-all cursor-pointer"
+                className="inline-flex items-center space-x-1.5 text-xs font-semibold font-manrope text-slate-600 hover:text-indigo-600 bg-white/70 hover:bg-white border border-slate-200/70 rounded-xl px-3 sm:px-3.5 py-2 backdrop-blur-md shadow-xs transition-all cursor-pointer"
               >
                 {copied ? (
                   <>
@@ -509,7 +538,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="h-full w-full bg-linear-to-br from-indigo-500 via-purple-500 to-emerald-500 flex items-center justify-center text-white font-bold font-manrope text-2xl sm:text-3xl shadow-inner">
+                      <div className="h-full w-full bg-linear-to-br from-indigo-600 to-emerald-500 flex items-center justify-center text-white font-bold font-manrope text-2xl sm:text-3xl shadow-inner">
                         {initials}
                       </div>
                     )}
@@ -571,11 +600,17 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                     </h1>
 
                     {isOwner && isAdmin && (
-                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold font-manrope bg-purple-50 text-purple-700 border border-purple-200 shadow-2xs">
-                        <FiShield className="h-3 w-3" />
-
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold font-manrope bg-indigo-500/10 text-indigo-700 border border-indigo-500/25 backdrop-blur-md shadow-[0_2px_8px_rgba(99,102,241,0.1)]">
+                        <FiShield className="h-3.5 w-3.5 text-indigo-600" />
                         <span>Admin</span>
                       </span>
+                    )}
+
+                    {memberSince && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium font-sans text-slate-500 bg-white/70 border border-white/90 backdrop-blur-md shadow-2xs">
+                        <FiCalendar className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                        <span>Member since {memberSince}</span>
+                      </div>
                     )}
                   </div>
 
@@ -597,50 +632,50 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                 </div>
               </div>
 
-              {/* Derived Public Stats */}
-              <div className="flex items-center gap-3 w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
+              {/* Derived Public Stats - Matching Glass Icons */}
+              <div className="grid grid-cols-3 gap-2.5 sm:gap-3.5 w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
                 {/* Skills */}
-                <div className="flex-1 md:flex-initial text-center px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200/60 shadow-2xs">
-                  <div className="flex items-center justify-center space-x-1 text-slate-400 mb-1">
-                    <FiAward className="h-3.5 w-3.5 text-purple-500" />
-
-                    <span className="text-[11px] font-medium font-manrope text-slate-500">
-                      Skills
-                    </span>
+                <div className="group flex flex-col items-center justify-center min-w-[92px] sm:min-w-[108px] px-3.5 py-3 rounded-2xl bg-white/70 hover:bg-white/90 border border-white/90 hover:border-indigo-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
+                  <div className="h-10 w-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-600 flex items-center justify-center backdrop-blur-md shadow-2xs transition-transform group-hover:scale-110">
+                    <FiAward className="h-5 w-5 text-indigo-600" />
                   </div>
 
-                  <div className="text-lg font-bold font-manrope text-slate-900">
+                  <div className="text-lg sm:text-xl font-extrabold font-manrope text-slate-900 mt-2 tracking-tight">
                     {skillsCount}
+                  </div>
+
+                  <div className="text-[10px] sm:text-[11px] font-bold font-manrope text-slate-500 uppercase tracking-wider mt-0.5">
+                    Skills
                   </div>
                 </div>
 
                 {/* Experience */}
-                <div className="flex-1 md:flex-initial text-center px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200/60 shadow-2xs">
-                  <div className="flex items-center justify-center space-x-1 text-slate-400 mb-1">
-                    <FiBriefcase className="h-3.5 w-3.5 text-indigo-500" />
-
-                    <span className="text-[11px] font-medium font-manrope text-slate-500">
-                      Experience
-                    </span>
+                <div className="group flex flex-col items-center justify-center min-w-[92px] sm:min-w-[108px] px-3.5 py-3 rounded-2xl bg-white/70 hover:bg-white/90 border border-white/90 hover:border-emerald-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
+                  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 flex items-center justify-center backdrop-blur-md shadow-2xs transition-transform group-hover:scale-110">
+                    <FiBriefcase className="h-5 w-5 text-emerald-600" />
                   </div>
 
-                  <div className="text-lg font-bold font-manrope text-slate-900">
+                  <div className="text-lg sm:text-xl font-extrabold font-manrope text-slate-900 mt-2 tracking-tight">
                     {experienceCount}
+                  </div>
+
+                  <div className="text-[10px] sm:text-[11px] font-bold font-manrope text-slate-500 uppercase tracking-wider mt-0.5">
+                    Experience
                   </div>
                 </div>
 
                 {/* Projects */}
-                <div className="flex-1 md:flex-initial text-center px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200/60 shadow-2xs">
-                  <div className="flex items-center justify-center space-x-1 text-slate-400 mb-1">
-                    <FiFolder className="h-3.5 w-3.5 text-emerald-500" />
-
-                    <span className="text-[11px] font-medium font-manrope text-slate-500">
-                      Projects
-                    </span>
+                <div className="group flex flex-col items-center justify-center min-w-[92px] sm:min-w-[108px] px-3.5 py-3 rounded-2xl bg-white/70 hover:bg-white/90 border border-white/90 hover:border-indigo-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
+                  <div className="h-10 w-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-600 flex items-center justify-center backdrop-blur-md shadow-2xs transition-transform group-hover:scale-110">
+                    <FiFolder className="h-5 w-5 text-indigo-600" />
                   </div>
 
-                  <div className="text-lg font-bold font-manrope text-slate-900">
+                  <div className="text-lg sm:text-xl font-extrabold font-manrope text-slate-900 mt-2 tracking-tight">
                     {projectsCount}
+                  </div>
+
+                  <div className="text-[10px] sm:text-[11px] font-bold font-manrope text-slate-500 uppercase tracking-wider mt-0.5">
+                    Projects
                   </div>
                 </div>
               </div>
@@ -654,7 +689,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
               <div className="rounded-3xl border border-white/80 bg-white/75 p-6 sm:p-7 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <div className="flex items-center space-x-2">
-                    <div className="h-7 w-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <div className="h-7 w-7 rounded-lg bg-indigo-500/10 text-indigo-600 flex items-center justify-center">
                       <FiAward className="h-4 w-4" />
                     </div>
 
@@ -663,8 +698,12 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                     </h3>
                   </div>
 
-                  <span className="text-[11px] font-semibold font-manrope text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                    {profile.skills?.length || 0}
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold font-manrope bg-indigo-500/10 text-indigo-700 border border-indigo-500/20 backdrop-blur-md shadow-2xs">
+                    <FiAward className="h-3.5 w-3.5 text-indigo-600" />
+                    <span>
+                      {profile.skills?.length || 0}{" "}
+                      {profile.skills?.length === 1 ? "Skill" : "Skills"}
+                    </span>
                   </span>
                 </div>
 
@@ -673,7 +712,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                     {profile.skills.map((skill, index) => (
                       <span
                         key={`${skill}-${index}`}
-                        className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold font-manrope bg-linear-to-r from-slate-50 to-slate-100 text-slate-700 border border-slate-200/80 shadow-2xs hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+                        className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-semibold font-manrope bg-white/70 hover:bg-white/95 text-slate-700 hover:text-indigo-600 border border-white/90 hover:border-indigo-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] backdrop-blur-md transition-all duration-150 hover:scale-105"
                       >
                         {skill}
                       </span>
@@ -701,7 +740,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
               <div className="rounded-3xl border border-white/80 bg-white/75 p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl space-y-6">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <div className="flex items-center space-x-2">
-                    <div className="h-7 w-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <div className="h-7 w-7 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
                       <FiBriefcase className="h-4 w-4" />
                     </div>
 
@@ -710,8 +749,14 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                     </h3>
                   </div>
 
-                  <span className="text-[11px] font-semibold font-manrope text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                    {profile.experiences?.length || 0} Positions
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold font-manrope bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 backdrop-blur-md shadow-2xs">
+                    <FiBriefcase className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>
+                      {profile.experiences?.length || 0}{" "}
+                      {profile.experiences?.length === 1
+                        ? "Position"
+                        : "Positions"}
+                    </span>
                   </span>
                 </div>
 
@@ -723,7 +768,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                         className="relative group"
                       >
                         {/* Timeline Dot */}
-                        <div className="absolute -left-6 top-1.5 h-4 w-4 rounded-full border-2 border-white bg-indigo-600 shadow-xs transition-transform group-hover:scale-125" />
+                        <div className="absolute -left-6 top-1.5 h-4 w-4 rounded-full border-2 border-white bg-emerald-600 shadow-[0_0_10px_rgba(16,185,129,0.4)] transition-transform group-hover:scale-125" />
 
                         <div className="space-y-1.5">
                           <div className="flex flex-wrap items-center justify-between gap-1">
@@ -731,13 +776,16 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                               {experience.title}
                             </h4>
 
-                            <span className="text-[11px] font-medium font-manrope text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                              {formatExpDate(experience.from)} —{" "}
-                              {formatExpDate(experience.to)}
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold font-manrope text-slate-600 bg-white/85 border border-slate-200/70 backdrop-blur-md shadow-2xs">
+                              <FiCalendar className="h-3 w-3 text-emerald-600 shrink-0" />
+                              <span>
+                                {formatExpDate(experience.from)} —{" "}
+                                {formatExpDate(experience.to)}
+                              </span>
                             </span>
                           </div>
 
-                          <div className="text-xs font-semibold font-sans text-indigo-600">
+                          <div className="text-xs font-semibold font-sans text-emerald-600">
                             {experience.company}
                           </div>
 
@@ -757,7 +805,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                     {canEdit && (
                       <Link
                         href="/profile/edit"
-                        className="inline-block text-indigo-600 hover:underline font-semibold"
+                        className="inline-block text-emerald-600 hover:underline font-semibold"
                       >
                         + Add Work Experience in Edit
                       </Link>
@@ -773,7 +821,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
             {/* Portfolio Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
-                <div className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                <div className="h-7 w-7 rounded-lg bg-indigo-500/10 text-indigo-600 flex items-center justify-center">
                   <FiFolder className="h-4 w-4" />
                 </div>
 
@@ -782,8 +830,11 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                 </h3>
               </div>
 
-              <span className="text-[11px] font-semibold font-manrope text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                {projectsCount} {projectsCount === 1 ? "Project" : "Projects"}
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold font-manrope bg-indigo-500/10 text-indigo-700 border border-indigo-500/20 backdrop-blur-md shadow-2xs">
+                <FiFolder className="h-3.5 w-3.5 text-indigo-600" />
+                <span>
+                  {projectsCount} {projectsCount === 1 ? "Project" : "Projects"}
+                </span>
               </span>
             </div>
 
@@ -821,8 +872,9 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                         </div>
 
                         {project.isCurrent && (
-                          <span className="shrink-0 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                            Current
+                          <span className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold font-manrope text-emerald-700 bg-white/80 border border-white/90 backdrop-blur-md shadow-2xs">
+                            <FiCheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                            <span>Currently working on</span>
                           </span>
                         )}
                       </div>
@@ -835,36 +887,55 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                       {/* Technologies */}
                       {project.technologies &&
                         project.technologies.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {project.technologies.map(
-                              (technology, technologyIndex) => (
+                          <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                            {project.technologies
+                              .flatMap((tech) =>
+                                typeof tech === "string"
+                                  ? tech.split(/,\s*/)
+                                  : [],
+                              )
+                              .filter(Boolean)
+                              .map((technology, technologyIndex) => (
                                 <span
                                   key={`${technology}-${technologyIndex}`}
-                                  className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold font-manrope bg-indigo-50 text-indigo-700 border border-indigo-100"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold font-manrope bg-white/90 text-slate-700 border border-slate-200/90 hover:border-indigo-300 hover:bg-indigo-50/40 hover:text-indigo-600 shadow-2xs backdrop-blur-md transition-all duration-150"
                                 >
-                                  {technology}
+                                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500/80 shrink-0" />
+                                  <span>{technology}</span>
                                 </span>
-                              ),
-                            )}
+                              ))}
                           </div>
                         )}
 
                       {/* URLs */}
                       {project.urls && project.urls.length > 0 && (
-                        <div className="pt-3 border-t border-slate-100 space-y-2">
-                          {project.urls.map((url, urlIndex) => (
-                            <a
-                              key={`${url}-${urlIndex}`}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors min-w-0"
-                            >
-                              <FiShare2 className="h-3.5 w-3.5 shrink-0" />
+                        <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                          {project.urls.map((url, urlIndex) => {
+                            const fullHref = url.startsWith("http")
+                              ? url
+                              : `https://${url}`;
+                            const displayLabel = cleanProjectUrl(url);
 
-                              <span className="truncate">{url}</span>
-                            </a>
-                          ))}
+                            return (
+                              <a
+                                key={`${url}-${urlIndex}`}
+                                href={fullHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group/link inline-flex items-center gap-2 max-w-full px-3.5 py-1.5 rounded-xl text-xs font-semibold font-manrope text-slate-700 hover:text-indigo-600 bg-white/90 hover:bg-white border border-slate-200/90 hover:border-indigo-300 shadow-2xs hover:shadow-xs backdrop-blur-md transition-all"
+                              >
+                                <div className="h-5 w-5 rounded-lg bg-indigo-500/10 text-indigo-600 flex items-center justify-center shrink-0 group-hover/link:bg-indigo-600 group-hover/link:text-white transition-colors">
+                                  <FiGlobe className="h-3 w-3" />
+                                </div>
+
+                                <span className="truncate font-medium text-slate-700 group-hover/link:text-indigo-600 transition-colors">
+                                  {displayLabel}
+                                </span>
+
+                                <FiExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-400 group-hover/link:text-indigo-600 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-all ml-0.5" />
+                              </a>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -885,6 +956,83 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                 )}
               </div>
             )}
+          </div>
+
+          {/* Community & Engagement Stats */}
+          <div className="rounded-3xl border border-white/80 bg-white/75 p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl space-y-6">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <div className="h-7 w-7 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                  <FiActivity className="h-4 w-4" />
+                </div>
+
+                <h3 className="text-sm font-bold font-manrope text-slate-900">
+                  Community & Engagement Stats
+                </h3>
+              </div>
+
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold font-manrope text-slate-700 bg-white/85 border border-white/90 backdrop-blur-md shadow-2xs">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                <FiActivity className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span>Developer Activity</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Published Posts */}
+              <div className="group rounded-2xl border border-white/90 bg-white/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-slate-300 backdrop-blur-xl transition-all duration-200 flex items-center gap-4 hover:-translate-y-0.5">
+                <div className="h-12 w-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-600 flex items-center justify-center shrink-0 backdrop-blur-md shadow-[0_2px_10px_rgba(99,102,241,0.12)] transition-transform group-hover:scale-110">
+                  <FiFileText className="h-6 w-6 text-indigo-600" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 tracking-tight">
+                    {profile.postsCount ?? 0}
+                  </div>
+
+                  <div className="text-xs font-bold font-manrope text-slate-700 mt-1">
+                    Total Posts
+                  </div>
+                </div>
+              </div>
+
+              {/* Comments */}
+              <div className="group rounded-2xl border border-white/90 bg-white/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-slate-300 backdrop-blur-xl transition-all duration-200 flex items-center gap-4 hover:-translate-y-0.5">
+                <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 flex items-center justify-center shrink-0 backdrop-blur-md shadow-[0_2px_10px_rgba(16,185,129,0.12)] transition-transform group-hover:scale-110">
+                  <FiMessageSquare className="h-6 w-6 text-emerald-600" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 tracking-tight">
+                    {profile.commentsCount ?? profile.reactionsCount ?? 0}
+                  </div>
+
+                  <div className="text-xs font-bold font-manrope text-slate-700 mt-1">
+                    Total Comments
+                  </div>
+                </div>
+              </div>
+
+              {/* Times Being #1 */}
+              <div className="group rounded-2xl border border-amber-200/90 bg-linear-to-br from-amber-50/40 via-white to-orange-50/20 p-5 shadow-[0_4px_20px_rgba(245,158,11,0.04)] hover:shadow-md hover:border-amber-300 backdrop-blur-xl transition-all duration-200 flex items-center gap-4 hover:-translate-y-0.5">
+                <div className="h-12 w-12 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-600 flex items-center justify-center shrink-0 backdrop-blur-md shadow-[0_2px_10px_rgba(245,158,11,0.15)] transition-transform group-hover:scale-110">
+                  <LuTrophy className="h-6 w-6 text-amber-600" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="text-2xl sm:text-3xl font-extrabold font-manrope text-slate-900 tracking-tight flex items-baseline gap-1.5">
+                    {profile.topRankedCount ?? 0}
+                    <span className="text-xs font-semibold text-amber-600 font-manrope">
+                      Times
+                    </span>
+                  </div>
+
+                  <div className="text-xs font-bold font-manrope text-slate-700 mt-1">
+                    #1 Top Ranked
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -1023,51 +1023,66 @@ export function ProfileEditForm() {
             <form onSubmit={handleSaveProfile} className="space-y-6 pt-1">
               {/* Avatar */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-4 rounded-2xl bg-white/80 border border-slate-200/80 shadow-2xs">
-                <div className="flex flex-col items-center gap-2 shrink-0">
-                  <div className="relative group">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-tr from-indigo-600 via-purple-600 to-emerald-500 p-0.5 shadow-sm overflow-hidden">
-                      {watchedAvatarUrl ? (
-                        <img
-                          src={watchedAvatarUrl}
-                          alt="Avatar preview"
-                          className="h-full w-full object-cover rounded-[14px]"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-slate-900 text-white font-manrope font-bold text-xl tracking-tight">
-                          {getInitials(watchedName || profile.name)}
-                        </div>
-                      )}
-                    </div>
+                <div className="relative group shrink-0">
+                  <div className="relative h-20 w-20 sm:h-22 sm:w-22 rounded-2xl overflow-hidden shadow-md ring-4 ring-white/90 transition-transform group-hover:scale-[1.02]">
+                    {watchedAvatarUrl ? (
+                      <img
+                        src={watchedAvatarUrl}
+                        alt="Avatar preview"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full bg-linear-to-br from-indigo-600 to-emerald-500 flex items-center justify-center text-white font-bold font-manrope text-xl sm:text-2xl shadow-inner">
+                        {getInitials(watchedName || profile.name)}
+                      </div>
+                    )}
+
+                    {/* Upload spinner overlay */}
+                    {avatarUploading && (
+                      <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white">
+                        <div className="h-6 w-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center justify-between gap-1.5 w-20">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/gif"
-                      className="hidden"
-                      onChange={handleAvatarFileChange}
-                    />
-
+                  {/* Attached Frosted White Glass Action Buttons */}
+                  <div className="absolute -bottom-2 -right-2 flex items-center gap-1.5 z-20">
                     <button
                       type="button"
                       disabled={avatarUploading}
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex-1 inline-flex items-center justify-center h-8 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer disabled:opacity-50"
+                      title={
+                        avatarUploading
+                          ? "Uploading..."
+                          : "Change profile picture"
+                      }
+                      aria-label="Change profile picture"
+                      className="h-8 w-8 sm:h-8.5 sm:w-8.5 rounded-full bg-white/85 hover:bg-white text-slate-700 hover:text-indigo-600 border border-white/90 backdrop-blur-xl shadow-[0_4px_16px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(99,102,241,0.2)] flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 cursor-pointer group/btn"
                     >
-                      <FiCamera className="h-3.5 w-3.5 text-indigo-400" />
+                      <FiCamera className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-600 group-hover/btn:text-indigo-600 transition-colors" />
                     </button>
 
                     {watchedAvatarUrl && (
                       <button
                         type="button"
                         onClick={handleRemoveAvatar}
-                        className="flex-1 inline-flex items-center justify-center h-8 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] shadow-md hover:border-red-500/40 transition-all cursor-pointer"
+                        disabled={avatarUploading}
+                        title="Remove picture"
+                        aria-label="Remove picture"
+                        className="h-8 w-8 sm:h-8.5 sm:w-8.5 rounded-full bg-white/85 hover:bg-white text-slate-400 hover:text-rose-600 border border-white/90 backdrop-blur-xl shadow-[0_4px_16px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(244,63,94,0.2)] flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 cursor-pointer group/del"
                       >
-                        <FiTrash2 className="h-3.5 w-3.5 text-red-400" />
+                        <FiTrash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-400 group-hover/del:text-rose-600 transition-colors" />
                       </button>
                     )}
                   </div>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    className="hidden"
+                    onChange={handleAvatarFileChange}
+                  />
                 </div>
 
                 <div className="space-y-1.5 flex-1">
