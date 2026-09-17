@@ -4,6 +4,44 @@ const YEAR_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 /*
 |--------------------------------------------------------------------------
+| Valid Web URL Helper
+|--------------------------------------------------------------------------
+*/
+
+export function isValidWebUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return false;
+    }
+
+    const hostname = parsed.hostname;
+
+    if (!hostname || hostname.includes(" ")) {
+      return false;
+    }
+
+    if (hostname === "localhost") {
+      return true;
+    }
+
+    const isIpv4 = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname);
+
+    if (isIpv4) {
+      return true;
+    }
+
+    return /^([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/.test(
+      hostname,
+    );
+  } catch {
+    return false;
+  }
+}
+
+/*
+|--------------------------------------------------------------------------
 | Project URLs
 |--------------------------------------------------------------------------
 */
@@ -13,10 +51,9 @@ const projectUrlsSchema = z
     z
       .string()
       .trim()
-      .url("Each URL must be a valid HTTP or HTTPS URL")
       .refine(
-        (value) => value.startsWith("http://") || value.startsWith("https://"),
-        "Each URL must be a valid HTTP or HTTPS URL",
+        (value) => isValidWebUrl(value),
+        "Each URL must be a valid HTTP or HTTPS URL (e.g. https://example.com)",
       ),
   )
   .max(5, "URLs cannot contain more than 5 links")
