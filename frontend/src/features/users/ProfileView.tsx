@@ -347,17 +347,18 @@ export function ProfileView({ targetId = 'me' }: ProfileViewProps) {
                     )}
                   </div>
 
-                  {/* Camera icon trigger */}
+                  {/* Attached Frosted White Glass Action Buttons */}
                   {canEdit && (
-                    <div className="absolute -bottom-2 -right-2 flex items-center space-x-1">
+                    <div className="absolute -bottom-2 -right-2 flex items-center gap-1.5 z-20">
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={avatarUploading}
-                        title="Change profile picture"
-                        className="h-8 w-8 rounded-full bg-white text-slate-700 hover:text-indigo-600 shadow-md border border-slate-200/80 flex items-center justify-center transition-transform hover:scale-110 active:scale-95 disabled:opacity-50 cursor-pointer"
+                        title={avatarUploading ? "Uploading..." : "Change profile picture"}
+                        aria-label="Change profile picture"
+                        className="h-8 w-8 sm:h-8.5 sm:w-8.5 rounded-full bg-white/85 hover:bg-white text-slate-700 hover:text-indigo-600 border border-white/90 backdrop-blur-xl shadow-[0_4px_16px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(99,102,241,0.2)] flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 cursor-pointer group/btn"
                       >
-                        <FiCamera className="h-3.5 w-3.5" />
+                        <FiCamera className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-600 group-hover/btn:text-indigo-600 transition-colors" />
                       </button>
 
                       {profile.avatarUrl && (
@@ -366,9 +367,10 @@ export function ProfileView({ targetId = 'me' }: ProfileViewProps) {
                           onClick={handleRemoveAvatar}
                           disabled={avatarUploading}
                           title="Remove picture"
-                          className="h-8 w-8 rounded-full bg-white text-slate-400 hover:text-rose-600 shadow-md border border-slate-200/80 flex items-center justify-center transition-transform hover:scale-110 active:scale-95 disabled:opacity-50 cursor-pointer"
+                          aria-label="Remove picture"
+                          className="h-8 w-8 sm:h-8.5 sm:w-8.5 rounded-full bg-white/85 hover:bg-white text-slate-400 hover:text-rose-600 border border-white/90 backdrop-blur-xl shadow-[0_4px_16px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(244,63,94,0.2)] flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 cursor-pointer group/del"
                         >
-                          <FiTrash2 className="h-3.5 w-3.5" />
+                          <FiTrash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-400 group-hover/del:text-rose-600 transition-colors" />
                         </button>
                       )}
                     </div>
