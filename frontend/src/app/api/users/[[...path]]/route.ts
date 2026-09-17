@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 async function handleProxy(
   req: NextRequest,
@@ -10,28 +9,32 @@ async function handleProxy(
   method: string,
 ) {
   const { path = [] } = await paramsPromise;
-  const cookieStore = await cookies();
-  const token = cookieStore.get('devpulse_token')?.value;
 
-  const targetPath = path.join('/');
+  const cookieStore = await cookies();
+  const token = cookieStore.get("devpulse_token")?.value;
+
+  const targetPath = path.join("/");
+
   const targetUrl = new URL(
-    `${API_BASE_URL}/users${targetPath ? `/${targetPath}` : ''}${req.nextUrl.search}`,
+    `${API_BASE_URL}/profile${targetPath ? `/${targetPath}` : ""}${req.nextUrl.search}`,
   );
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
+
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  let body: string | undefined = undefined;
-  if (['POST', 'PATCH', 'PUT'].includes(method)) {
+  let body: string | undefined;
+
+  if (["POST", "PATCH", "PUT"].includes(method)) {
     try {
       const jsonBody = await req.json();
       body = JSON.stringify(jsonBody);
     } catch {
-      // Body might be empty
+      // Request may not have a body
     }
   }
 
@@ -43,15 +46,19 @@ async function handleProxy(
     });
 
     const data = await backendRes.json().catch(() => ({}));
-    return NextResponse.json(data, { status: backendRes.status });
+
+    return NextResponse.json(data, {
+      status: backendRes.status,
+    });
   } catch (error: unknown) {
     const message =
-      error instanceof Error ? error.message : 'Internal Server Error';
+      error instanceof Error ? error.message : "Internal Server Error";
+
     return NextResponse.json(
       {
         success: false,
         statusCode: 500,
-        message: `BFF Users Proxy Error: ${message}`,
+        message: `BFF Profile Proxy Error: ${message}`,
         errors: [],
       },
       { status: 500 },
@@ -63,33 +70,26 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ path?: string[] }> },
 ) {
-  return handleProxy(req, params, 'GET');
+  return handleProxy(req, params, "GET");
 }
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ path?: string[] }> },
 ) {
-  return handleProxy(req, params, 'POST');
+  return handleProxy(req, params, "POST");
 }
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ path?: string[] }> },
 ) {
-  return handleProxy(req, params, 'PATCH');
-}
-
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ path?: string[] }> },
-) {
-  return handleProxy(req, params, 'PUT');
+  return handleProxy(req, params, "PATCH");
 }
 
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ path?: string[] }> },
 ) {
-  return handleProxy(req, params, 'DELETE');
+  return handleProxy(req, params, "DELETE");
 }

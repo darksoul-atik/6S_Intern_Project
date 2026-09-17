@@ -87,29 +87,85 @@ Self-service admin registration via public APIs is strictly disabled to prevent 
 In DevPulse, developer profiles are designed around **open discovery** coupled with **strict authorization boundaries**:
 
 #### 1. Why `GET /users/:id` is Public (Unauthenticated):
-- **Peer & Talent Discovery**: DevPulse is an engineering community platform. Requiring authentication just to view a developer's skills and work experience introduces unnecessary friction for peer networking, recruiters, and prospective collaborators.
+- **Peer & Talent Discovery**: DevPulse is an engineering community platform. Requiring authentication just to view a developer's skills, bio, and portfolio projects introduces unnecessary friction for peer networking, recruiters, and prospective collaborators.
 - **Search & Shareability**: Developers can share direct links to their DevPulse profile on GitHub, resumes, or social profiles without forcing recipients to create an account first.
-- **Data Protection Guarantee**: Sensitive fields such as `passwordHash` and authentication state are explicitly excluded via Mongoose projection (`.select('-passwordHash')`). Only public-facing developer attributes (`name`, `role`, `skills`, `experiences`, `createdAt`, `updatedAt`) are exposed.
+- **Data Protection Guarantee**: Sensitive fields such as `passwordHash`, `email`, `role`, `isDeleted`, and `deletedAt` are explicitly excluded via Mongoose projection (`.select('name headline bio avatarUrl skills experiences portfolioProjects')`). Only public-facing developer attributes are exposed.
 
 #### 2. Strict Ownership & Admin Authorization on Mutations:
 - **No Anonymous Edits**: All write operations require a valid JWT Bearer token (`JwtAuthGuard`).
-- **Owner-Only Edits**: Users can only update their own profile (`/users/me` or `/users/:id` where `:id` matches `req.user.userId`).
-- **Administrative Override**: Users with role `admin` can edit any developer profile to manage spam, inappropriate content, or compliance.
-- **Strict 403 Forbidden**: If a non-admin attempts to mutate another developer's profile, the system rejects the request immediately with `403 Forbidden` (`You do not have permission to modify this profile`) enforced by `ProfileOwnerOrAdminGuard`.
+- **Dedicated Self-Service Controller (`/profile/*`)**: Authenticated developers manage their own profile and portfolio projects via `/profile/me` and `/profile/me/projects` without needing to specify their own user ID in path parameters.
+- **Parameterized Resource Ownership (`/users/:id/projects/...`)**: Standard users can only update their own resources. If a non-admin attempts to mutate another developer's profile or projects, the system rejects the request immediately with `403 Forbidden` (`You are not authorized to modify another user's profile`) enforced by `ProfileOwnerOrAdminGuard`.
+- **Administrative Override**: Users with role `admin` bypass ownership checks to moderate spam, inappropriate content, or compliance issues across any account.
 
-### Profile Endpoints Reference
+---
+
+## 📊 Developer Profile Schema & Data Models
+
+### 1. User Profile Attributes
+* **`headline`** (optional): Trimmed string, maximum 160 characters. Represents professional title or engineering tagline.
+* **`bio`** (optional): Trimmed string, maximum 2000 characters. Detailed developer summary and background.
+* **`avatarUrl`** (optional): Flexible profile image string. Supports standard `http://` / `https://` URLs, Base64 image data URIs (`data:image/jpeg;base64,...`), and empty string `""` to unset/clear the avatar photo.
+* **`skills`**: Array of trimmed, case-deduplicated strings.
+* **`experiences`**: Array of embedded work experience subdocuments (`title`, `company`, `from`, `to`, `description`).
+* **`portfolioProjects`**: Array of embedded portfolio project subdocuments.
+
+### 2. Embedded Portfolio Project Subdocument (`PortfolioProjectSchema`)
+* **`_id`**: MongoDB ObjectId generated automatically for each embedded subdocument.
+* **`title`**: Required, non-empty trimmed string (max 100 characters).
+* **`description`**: Required, non-empty trimmed string (max 1000 characters).
+* **`urls`**: Array of valid HTTP/HTTPS URLs (maximum 5 links, deduplicated case-insensitively).
+* **`technologies`**: Array of non-empty strings (minimum 1, maximum 20 items, deduplicated case-insensitively).
+* **`startDate`**: Required string in `YYYY-MM` ISO month format (regex `/^\d{4}-(0[1-9]|1[0-2])$/`).
+* **`endDate`**: Optional string in `YYYY-MM` ISO month format.
+* **`isCurrent`**: Required boolean flag indicating ongoing/active projects.
+* **`createdAt` / `updatedAt`**: Automatic timestamps managed by Mongoose.
+
+---
+
+## ⚖️ Validation & Business Rules
+
+### 1. Custom Date Constraint (`ValidPortfolioProjectEndDate`)
+Portfolio project date validity enforces strict business invariants via a custom Class-Validator constraint:
+- **Ongoing Projects (`isCurrent: true`)**: `endDate` must **not** be provided. Supplying an `endDate` while `isCurrent` is true returns `400 Bad Request` (`"endDate must not be provided when isCurrent is true"`).
+- **Completed Projects (`isCurrent: false`)**: `endDate` is strictly **required** in valid `YYYY-MM` format. Omitting it returns `400 Bad Request` (`"endDate is required when isCurrent is false"`).
+- **Chronological Ordering**: `endDate` must be the same month as or later than `startDate` (`endDate >= startDate`). Reversing dates returns `400 Bad Request` (`"endDate must be the same as or later than startDate"`).
+
+### 2. Partial Project Updates (`UpdatePortfolioProjectDto`)
+When updating projects via `PATCH /profile/me/projects/:projectId` or `PATCH /users/:id/projects/:projectId`:
+- State transition evaluation calculates the combined next state (merging DTO values with existing project values).
+- Switching `isCurrent` from `false` to `true` automatically unsets `endDate`.
+- Switching `isCurrent` from `true` to `false` requires a valid `endDate >= startDate`.
+
+---
+
+## 📡 Complete Profile Endpoints Contract
+
+### Dedicated Self-Service Profile Endpoints (`/profile/*`)
+
+| Method | Endpoint | Auth | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/profile/me` | Bearer JWT | Retrieve authenticated developer profile (including private fields) |
+| `PATCH` | `/profile/me` | Bearer JWT | Update basic profile (`name`, `headline`, `bio`, `avatarUrl`) |
+| `POST` | `/profile/me/projects` | Bearer JWT | Add a new portfolio project to authenticated user |
+| `PATCH` | `/profile/me/projects/:projectId` | Bearer JWT | Partially update a portfolio project by subdocument ID |
+| `DELETE`| `/profile/me/projects/:projectId` | Bearer JWT | Remove a portfolio project by subdocument ID |
+
+### Public & Parameterized User Endpoints (`/users/:id/*`)
 
 | Method | Endpoint | Auth Required | Role / Permissions | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/users/:id` | No | Public | Fetch public profile (skills, experiences, name, role) |
+| `GET` | `/users/:id` | No | Public | Fetch sanitized developer profile (name, headline, bio, avatarUrl, skills, experiences, portfolioProjects) |
 | `GET` | `/users/me` | Yes (JWT) | Authenticated User | Fetch currently logged-in user profile |
-| `PATCH` | `/users/me` | Yes (JWT) | Authenticated User | Update current user basic profile (name) |
+| `PATCH` | `/users/me` | Yes (JWT) | Authenticated User | Update basic profile (name, headline, bio, avatarUrl) |
 | `POST` | `/users/me/skills` | Yes (JWT) | Authenticated User | Add a skill (case-trimmed, deduplicated) |
 | `DELETE` | `/users/me/skills/:skill` | Yes (JWT) | Authenticated User | Remove a skill |
 | `PUT` | `/users/me/skills` | Yes (JWT) | Authenticated User | Replace entire skills list |
 | `POST` | `/users/me/experiences` | Yes (JWT) | Authenticated User | Add work experience subdocument |
 | `PATCH` | `/users/me/experiences/:expId`| Yes (JWT) | Authenticated User | Update work experience by subdocument ID |
 | `DELETE` | `/users/me/experiences/:expId`| Yes (JWT) | Authenticated User | Delete work experience by subdocument ID |
+| `POST` | `/users/:id/projects` | Yes (JWT) | Owner or Admin | Add portfolio project to target user ID (`403` if unauthorized) |
+| `PATCH` | `/users/:id/projects/:projectId` | Yes (JWT) | Owner or Admin | Update portfolio project on target user ID (`403` if unauthorized) |
+| `DELETE`| `/users/:id/projects/:projectId` | Yes (JWT) | Owner or Admin | Delete portfolio project on target user ID (`403` if unauthorized) |
 | `PATCH` | `/users/:id` | Yes (JWT) | Owner or Admin | Update profile for target user ID (`403` if unauthorized) |
 | `POST` | `/users/:id/skills` | Yes (JWT) | Owner or Admin | Add skill to target user ID (`403` if unauthorized) |
 | `DELETE` | `/users/:id/skills/:skill` | Yes (JWT) | Owner or Admin | Remove skill from target user ID (`403` if unauthorized) |
@@ -117,6 +173,55 @@ In DevPulse, developer profiles are designed around **open discovery** coupled w
 | `POST` | `/users/:id/experiences` | Yes (JWT) | Owner or Admin | Add experience to target user ID (`403` if unauthorized) |
 | `PATCH` | `/users/:id/experiences/:expId`| Yes (JWT) | Owner or Admin | Update experience on target user ID (`403` if unauthorized) |
 | `DELETE` | `/users/:id/experiences/:expId`| Yes (JWT) | Owner or Admin | Delete experience on target user ID (`403` if unauthorized) |
+
+---
+
+## 🧪 Testing Profile Endpoints (cURL / Hoppscotch)
+
+```bash
+# 1. Fetch Authenticated Developer Profile
+curl -X GET http://localhost:5000/profile/me \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+
+# 2. Update Headline, Bio, and Avatar
+curl -X PATCH http://localhost:5000/profile/me \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "headline": "Lead Full-Stack & Distributed Systems Architect",
+    "bio": "Building high-performance web platforms and developer tools.",
+    "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb"
+  }'
+
+# 3. Add an Ongoing Portfolio Project (isCurrent: true, no endDate)
+curl -X POST http://localhost:5000/profile/me/projects \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "DevPulse Community Hub",
+    "description": "Collaborative developer networking and portfolio platform.",
+    "urls": ["https://github.com/example/devpulse"],
+    "technologies": ["NestJS", "TypeScript", "MongoDB", "React"],
+    "startDate": "2024-01",
+    "isCurrent": true
+  }'
+
+# 4. Partially Update Portfolio Project by Subdocument ID
+curl -X PATCH http://localhost:5000/profile/me/projects/<PROJECT_ID> \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "isCurrent": false,
+    "endDate": "2024-06"
+  }'
+
+# 5. Delete Portfolio Project
+curl -X DELETE http://localhost:5000/profile/me/projects/<PROJECT_ID> \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+
+# 6. Fetch Sanitized Public Profile
+curl -X GET http://localhost:5000/users/<USER_ID>
+```
 
 
 ## Deployment
