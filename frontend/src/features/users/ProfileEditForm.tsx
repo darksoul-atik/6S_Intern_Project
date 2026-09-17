@@ -41,6 +41,7 @@ import {
 } from "./users.api";
 
 import { profileFormSchema, type ProfileFormValues } from "./profile.schemas";
+import { PortfolioProjectFields } from "./PortfolioProjectFields";
 
 import { ProfileSkeleton } from "./ProfileSkeleton";
 import { ExperienceModal } from "./ExperienceModal";
@@ -1025,52 +1026,16 @@ export function ProfileEditForm() {
             ) : (
               <div className="space-y-4">
                 {projectFields.map((field, index) => (
-                  <div
-                    /*
-                     * CRITICAL:
-                     *
-                     * Use RHF's stable field.id.
-                     *
-                     * Never:
-                     * key={index}
-                     *
-                     * Never replace this
-                     * with projectId.
-                     */
+                  <PortfolioProjectFields
                     key={field.id}
-                    className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 sm:p-5 shadow-2xs"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-bold font-manrope text-slate-900">
-                          Project {index + 1}
-                        </p>
-
-                        <p className="text-[11px] text-slate-400 font-mono mt-1 break-all">
-                          {field.projectId
-                            ? `Saved project: ${field.projectId}`
-                            : "New unsaved project"}
-                        </p>
-                      </div>
-
-                      {/*
-                       * TEMPORARY Task 5
-                       * behavior.
-                       *
-                       * Confirmation comes
-                       * later in Task 10.
-                       */}
-                      <button
-                        type="button"
-                        onClick={() => removeProject(index)}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 px-3 py-1.5 text-xs font-semibold font-manrope text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition-all cursor-pointer"
-                      >
-                        <FiTrash2 className="h-3.5 w-3.5" />
-
-                        <span>Remove</span>
-                      </button>
-                    </div>
-                  </div>
+                    index={index}
+                    projectId={field.projectId}
+                    register={register}
+                    control={control}
+                    setValue={setValue}
+                    errors={errors}
+                    onRemove={() => removeProject(index)}
+                  />
                 ))}
               </div>
             )}
