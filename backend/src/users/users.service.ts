@@ -74,6 +74,45 @@ export class UsersService {
   }
 
   // ---------------------------------------------------------------------------
+  // Day 7: post count helpers
+  // ---------------------------------------------------------------------------
+
+  async incrementPostsCount(userId: string): Promise<void> {
+    const result = await this.userModel
+      .updateOne(
+        {
+          _id: userId,
+          isDeleted: { $ne: true },
+        },
+        {
+          $inc: { postsCount: 1 },
+        },
+      )
+      .exec();
+
+    if (result.matchedCount === 0) {
+      throw new NotFoundException('User profile not found');
+    }
+  }
+
+  async decrementPostsCount(userId: string): Promise<void> {
+    const result = await this.userModel
+      .updateOne(
+        {
+          _id: userId,
+        },
+        {
+          $inc: { postsCount: -1 },
+        },
+      )
+      .exec();
+
+    if (result.matchedCount === 0) {
+      throw new NotFoundException('User profile not found');
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Day 5: private profile
   // GET /profile/me will use this
   // ---------------------------------------------------------------------------
