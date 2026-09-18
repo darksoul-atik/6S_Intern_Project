@@ -24,6 +24,12 @@ export class PostsService {
     private readonly usersService: UsersService,
   ) {}
 
+  /*
+  |--------------------------------------------------------------------------
+  | Find Post or Throw 404
+  |--------------------------------------------------------------------------
+  */
+
   async findPostByIdOrThrow(postId: string): Promise<PostDocument> {
     if (!/^[0-9a-fA-F]{24}$/.test(postId)) {
       throw new NotFoundException(`Post with ID '${postId}' not found`);
@@ -38,6 +44,12 @@ export class PostsService {
     return post;
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | Create Post
+  |--------------------------------------------------------------------------
+  */
+
   async createPost(
     authorId: string,
     dto: CreatePostDto,
@@ -46,9 +58,7 @@ export class PostsService {
       authorId,
       title: dto.title,
       body: dto.body,
-
       commentCount: 0,
-
       reactionCounts: {
         like: 0,
         dislike: 0,
@@ -62,27 +72,18 @@ export class PostsService {
     return savedPost;
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | List Posts
+  |--------------------------------------------------------------------------
+  */
+
   async findAllPosts(query: {
     page: number;
     limit: number;
   }): Promise<PaginatedPostsResult> {
-    /*
-     * Total number of posts.
-     *
-     * This is used to calculate pagination metadata.
-     */
     const total = await this.postModel.countDocuments().exec();
 
-    /*
-     * Main feed query.
-     *
-     * Sort:
-     * newest posts first.
-     *
-     * _id is used as the secondary sort field
-     * so ordering stays deterministic when two
-     * posts have the same createdAt value.
-     */
     const posts = await this.postModel
       .find()
       .sort({
@@ -91,14 +92,6 @@ export class PostsService {
       })
       .skip((query.page - 1) * query.limit)
       .limit(query.limit)
-
-      /*
-       * Populate author information in bulk.
-       *
-       * Only public/safe fields are selected.
-       *
-       * email, role and passwordHash are NOT returned.
-       */
       .populate({
         path: 'authorId',
         select: 'name headline avatarUrl',
@@ -110,15 +103,35 @@ export class PostsService {
       total,
       page: query.page,
       limit: query.limit,
-
-      /*
-       * Keep the same pagination convention already
-       * used by UsersService.
-       *
-       * An empty database still reports page 1
-       * as the only page.
-       */
       totalPages: Math.ceil(total / query.limit) || 1,
     };
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Get One Post
+  |--------------------------------------------------------------------------
+  */
+
+  async findOnePost(postId: string): Promise<PostDocument> {
+    /*
+     * Reuse our existing ID validation + not-found logic.
+     */
+    const post = await this.findPostByIdOrThrow(postId);
+
+    /*
+     * Populate only safe/public author fields.
+     *
+     * Do NOT expose:
+     * email
+     * role
+     * passwordHash
+     */
+    await post.populate({
+      path: 'authorId',
+      select: 'name headline avatarUrl',
+    });
+
+    return post;
   }
 }
