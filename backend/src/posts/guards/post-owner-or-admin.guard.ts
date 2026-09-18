@@ -20,10 +20,10 @@ export class PostOwnerOrAdminGuard implements CanActivate {
     const postId = request.params?.id;
 
     /*
-     * Normally JwtAuthGuard handles missing authentication first.
+     * JwtAuthGuard should normally reject unauthenticated
+     * requests before this guard runs.
      *
-     * This is still a safety check, following the same pattern
-     * already used by ProfileOwnerOrAdminGuard.
+     * Keep this as a defensive check.
      */
     if (!user) {
       throw new ForbiddenException('Authentication required');
@@ -32,27 +32,29 @@ export class PostOwnerOrAdminGuard implements CanActivate {
     /*
      * Admin override.
      *
-     * Admins are allowed to edit/delete any post.
+     * Admins may manage any user's post.
      */
     if (user.role === 'admin') {
       return true;
     }
 
     /*
-     * For normal users, find the post so we can check
-     * who actually owns it.
+     * IMPORTANT:
      *
-     * findPostByIdOrThrow() also handles:
-     * - malformed IDs
-     * - nonexistent posts
+     * Use the ANY-post lookup here.
+     *
+     * The guard must be able to check ownership for:
+     *
+     * - active posts
+     * - soft-deleted posts
+     *
+     * because restore and permanent-delete operate
+     * on soft-deleted posts.
      */
-    const post = await this.postsService.findPostByIdOrThrow(postId);
+    const post = await this.postsService.findAnyPostByIdOrThrow(postId);
 
     /*
-     * MongoDB stores authorId as ObjectId.
-     * JWT userId is a string.
-     *
-     * Convert ObjectId to string before comparing.
+     * Post author owns the resource.
      */
     if (post.authorId.toString() === user.userId) {
       return true;

@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import type { Model } from 'mongoose';
+import { Types, type Model } from 'mongoose';
 
 import { Post, type PostDocument } from './schemas/post.schema.js';
 
@@ -51,13 +51,6 @@ export class PostsService {
   |--------------------------------------------------------------------------
   | Find ANY Post
   |--------------------------------------------------------------------------
-  |
-  | Can find both:
-  | - active
-  | - soft-deleted
-  |
-  | Used mainly for ownership / lifecycle operations.
-  |--------------------------------------------------------------------------
   */
 
   async findAnyPostByIdOrThrow(postId: string): Promise<PostDocument> {
@@ -75,10 +68,6 @@ export class PostsService {
   /*
   |--------------------------------------------------------------------------
   | Find ACTIVE Post
-  |--------------------------------------------------------------------------
-  |
-  | Soft-deleted posts are excluded directly
-  | from the MongoDB query.
   |--------------------------------------------------------------------------
   */
 
@@ -120,10 +109,6 @@ export class PostsService {
       .exec();
 
     if (!post) {
-      /*
-       * If the Post exists but is active, give the
-       * lifecycle-specific error.
-       */
       const existingPost = await this.postModel.findById(postId).exec();
 
       if (existingPost) {
@@ -173,10 +158,6 @@ export class PostsService {
 
     await this.usersService.incrementPostsCount(authorId);
 
-    /*
-     * Return the canonical Post with the same
-     * safe author data used by list/details.
-     */
     return this.findOnePost(savedPost._id.toString());
   }
 
@@ -190,24 +171,12 @@ export class PostsService {
     page: number;
     limit: number;
   }): Promise<PaginatedPostsResult> {
-    /*
-     * Every normal feed query must ignore
-     * soft-deleted posts.
-     */
     const activePostFilter = {
       deletedAt: {
         $exists: false,
       },
     };
 
-    /*
-     * Two database operations are necessary:
-     *
-     * 1. count matching posts
-     * 2. fetch requested page
-     *
-     * Run them together.
-     */
     const [total, posts] = await Promise.all([
       this.postModel.countDocuments(activePostFilter).exec(),
 
@@ -259,10 +228,6 @@ export class PostsService {
   */
 
   async updatePost(postId: string, dto: UpdatePostDto): Promise<PostDocument> {
-    /*
-     * Deleted posts cannot be edited through
-     * the normal PATCH endpoint.
-     */
     const post = await this.findActivePostByIdOrThrow(postId);
 
     if (dto.title !== undefined) {
@@ -280,27 +245,200 @@ export class PostsService {
 
   /*
   |--------------------------------------------------------------------------
-  | OLD DELETE LOGIC — temporary
+  | Soft Delete Post
   |--------------------------------------------------------------------------
   |
-  | SD4 replaces this with soft deletion.
+  | DELETE /posts/:id
   |
-  | Do not test DELETE /posts/:id yet.
+  | Does NOT physically remove the document.
+  |
+  | Instead:
+  |
+  | - deletedAt = current time
+  | - deletedBy = user/admin who performed deletion
+  | - author's postsCount decreases by 1
   |--------------------------------------------------------------------------
   */
 
-  async removePost(postId: string): Promise<DeletePostResult> {
+  /*
+|--------------------------------------------------------------------------
+| Restore Soft-Deleted Post
+|--------------------------------------------------------------------------
+|
+| A post may only be restored within 5 days
+| of deletedAt.
+|
+| Restore:
+| - clears deletedAt
+| - clears deletedBy
+| - increments the original author's postsCount
+|--------------------------------------------------------------------------
+*/
+
+  async restorePost(postId: string): Promise<PostDocument> {
+    /*
+     * Only a soft-deleted Post can be restored.
+     */
+    const post = await this.findDeletedPostByIdOrThrow(postId);
+
+    /*
+     * findDeletedPostByIdOrThrow() guarantees
+     * deletedAt exists, but keep this safety check
+     * for TypeScript/runtime clarity.
+     */
+    if (!post.deletedAt) {
+      throw new BadRequestException('Post is not currently deleted');
+    }
+
+    /*
+     * Restore window = 5 days.
+     */
+    const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
+
+    const deletionAge = Date.now() - post.deletedAt.getTime();
+
+    /*
+     * Even if the scheduled cleanup job has not
+     * physically removed the Post yet, restoring
+     * after 5 days is forbidden.
+     */
+    if (deletionAge > FIVE_DAYS_MS) {
+      throw new BadRequestException(
+        'Post can no longer be restored because the 5-day restore period has expired',
+      );
+    }
+
+    const authorId = post.authorId.toString();
+
+    /*
+     * Remove soft-delete information.
+     */
+    post.deletedAt = undefined;
+    post.deletedBy = undefined;
+
+    await post.save();
+
+    /*
+     * The Post is visible again,
+     * so restore the author's visible postsCount.
+     */
+    await this.usersService.incrementPostsCount(authorId);
+
+    /*
+     * Return the restored Post using the normal
+     * active-post response with safe author data.
+     */
+    return this.findOnePost(postId);
+  }
+
+  /*
+|--------------------------------------------------------------------------
+| Permanently Delete Soft-Deleted Post
+|--------------------------------------------------------------------------
+|
+| This endpoint is irreversible.
+|
+| Approved rule:
+| - the post MUST already be soft-deleted
+| - active posts cannot be permanently deleted directly
+| - postsCount does NOT change here because it was already
+|   decremented during soft delete
+|--------------------------------------------------------------------------
+*/
+
+  async permanentlyDeletePost(postId: string): Promise<DeletePostResult> {
+    /*
+     * Only a soft-deleted Post may be permanently removed.
+     */
+    const post = await this.findDeletedPostByIdOrThrow(postId);
+
+    /*
+     * Physically remove the document from MongoDB.
+     */
+    await post.deleteOne();
+
+    /*
+     * Do NOT decrement postsCount here.
+     *
+     * It was already decremented when the post
+     * was soft-deleted.
+     */
+    return {
+      id: postId,
+      message: 'Post permanently deleted successfully',
+    };
+  }
+
+  /*
+|--------------------------------------------------------------------------
+| Purge Expired Soft-Deleted Posts
+|--------------------------------------------------------------------------
+|
+| Permanently deletes posts whose deletedAt
+| is older than 5 days.
+|
+| This method is called by the scheduled cleanup task.
+|--------------------------------------------------------------------------
+*/
+
+  async purgeExpiredDeletedPosts(): Promise<number> {
+    const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
+
+    /*
+     * Anything deleted before this cutoff
+     * has passed the 5-day restore window.
+     */
+    const cutoffDate = new Date(Date.now() - FIVE_DAYS_MS);
+
+    const result = await this.postModel
+      .deleteMany({
+        deletedAt: {
+          $lte: cutoffDate,
+        },
+      })
+      .exec();
+
+    /*
+     * Return how many Posts were physically removed.
+     *
+     * Useful for logs / scheduled task feedback.
+     */
+    return result.deletedCount;
+  }
+
+  async removePost(
+    postId: string,
+    deletedByUserId: string,
+  ): Promise<DeletePostResult> {
+    /*
+     * Only ACTIVE posts can be soft-deleted.
+     *
+     * Trying to delete the same post again will
+     * therefore return 404 and will not decrement
+     * postsCount twice.
+     */
     const post = await this.findActivePostByIdOrThrow(postId);
 
     const authorId = post.authorId.toString();
 
-    await post.deleteOne();
+    /*
+     * Keep the Post in MongoDB but mark it deleted.
+     */
+    post.deletedAt = new Date();
 
+    post.deletedBy = new Types.ObjectId(deletedByUserId);
+
+    await post.save();
+
+    /*
+     * The post is now hidden from the user's
+     * visible/public posts, so decrease postsCount.
+     */
     await this.usersService.decrementPostsCount(authorId);
 
     return {
       id: postId,
-      message: 'Post deleted successfully',
+      message: 'Post soft-deleted successfully',
     };
   }
 }

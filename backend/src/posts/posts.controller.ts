@@ -41,12 +41,6 @@ export class PostsController {
   |--------------------------------------------------------------------------
   | Create Post
   |--------------------------------------------------------------------------
-  |
-  | Authentication required.
-  |
-  | authorId comes from the authenticated JWT user,
-  | NOT from the request body.
-  |--------------------------------------------------------------------------
   */
 
   @Post()
@@ -83,8 +77,8 @@ export class PostsController {
   |
   | Public endpoint.
   |
-  | Example:
-  | GET /posts?page=1&limit=10
+  | Soft-deleted Posts are automatically excluded
+  | by PostsService.
   |--------------------------------------------------------------------------
   */
 
@@ -92,7 +86,7 @@ export class PostsController {
   @ApiOperation({
     summary: 'Get paginated posts',
     description:
-      'Returns posts ordered from newest to oldest with pagination metadata and safe public author information.',
+      'Returns active posts ordered from newest to oldest with pagination metadata and safe public author information.',
   })
   @ApiQuery({
     name: 'page',
@@ -114,10 +108,6 @@ export class PostsController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
   ) {
-    /*
-     * Follow the same pagination style already used
-     * by UsersController.
-     */
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
 
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
@@ -134,6 +124,8 @@ export class PostsController {
   |--------------------------------------------------------------------------
   |
   | Public endpoint.
+  |
+  | Soft-deleted Posts return 404.
   |--------------------------------------------------------------------------
   */
 
@@ -141,7 +133,7 @@ export class PostsController {
   @ApiOperation({
     summary: 'Get a post by ID',
     description:
-      'Returns one post with safe public author information. Invalid or missing post IDs return 404.',
+      'Returns one active post with safe public author information. Soft-deleted, invalid, or missing posts return 404.',
   })
   @ApiParam({
     name: 'id',
@@ -165,11 +157,9 @@ export class PostsController {
   | Update Post
   |--------------------------------------------------------------------------
   |
-  | Only:
-  | - original author
-  | - admin
+  | Author or admin only.
   |
-  | can update the post.
+  | Soft-deleted Posts cannot be updated.
   |--------------------------------------------------------------------------
   */
 
@@ -179,7 +169,7 @@ export class PostsController {
   @ApiOperation({
     summary: 'Update a post',
     description:
-      'Allows the original post author or an administrator to update the post title or body.',
+      'Allows the original post author or an administrator to update the title or body of an active post.',
   })
   @ApiParam({
     name: 'id',
@@ -212,24 +202,25 @@ export class PostsController {
 
   /*
   |--------------------------------------------------------------------------
-  | Delete Post
+  | Restore Soft-Deleted Post
   |--------------------------------------------------------------------------
   |
-  | Only:
-  | - original author
-  | - admin
+  | POST /posts/:id/restore
   |
-  | can delete.
+  | Author or admin only.
+  |
+  | Restore is allowed only within 5 days
+  | of deletedAt.
   |--------------------------------------------------------------------------
   */
 
-  @Delete(':id')
+  @Post(':id/restore')
   @UseGuards(JwtAuthGuard, PostOwnerOrAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Delete a post',
+    summary: 'Restore a soft-deleted post',
     description:
-      'Hard deletes a post. Only the original author or an administrator may delete it.',
+      'Allows the original author or an administrator to restore a soft-deleted post within 5 days of deletion.',
   })
   @ApiParam({
     name: 'id',
@@ -237,8 +228,13 @@ export class PostsController {
     example: '66e138fc29094e137127e4e0',
   })
   @ApiResponse({
-    status: 200,
-    description: 'Post deleted successfully',
+    status: 201,
+    description: 'Post restored successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Post is not soft-deleted or the 5-day restore period has expired',
   })
   @ApiResponse({
     status: 401,
@@ -252,7 +248,106 @@ export class PostsController {
     status: 404,
     description: 'Post not found',
   })
-  async deletePost(@Param('id') id: string) {
-    return this.postsService.removePost(id);
+  async restorePost(@Param('id') id: string) {
+    return this.postsService.restorePost(id);
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Permanently Delete Soft-Deleted Post
+  |--------------------------------------------------------------------------
+  |
+  | DELETE /posts/:id/permanent
+  |
+  | Author or admin only.
+  |
+  | The Post MUST already be soft-deleted.
+  |--------------------------------------------------------------------------
+  */
+
+  @Delete(':id/permanent')
+  @UseGuards(JwtAuthGuard, PostOwnerOrAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Permanently delete a soft-deleted post',
+    description:
+      'Permanently removes an already soft-deleted post. Active posts must be soft-deleted first.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB ObjectId of the post',
+    example: '66e138fc29094e137127e4e0',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Post permanently deleted successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Post must be soft-deleted first',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized: Missing or invalid Bearer token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden: User does not own the post and is not an admin',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Post not found',
+  })
+  async permanentlyDeletePost(@Param('id') id: string) {
+    return this.postsService.permanentlyDeletePost(id);
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Soft Delete Post
+  |--------------------------------------------------------------------------
+  |
+  | DELETE /posts/:id
+  |
+  | Author or admin only.
+  |
+  | This does NOT physically remove the document.
+  |--------------------------------------------------------------------------
+  */
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, PostOwnerOrAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Soft-delete a post',
+    description:
+      'Soft-deletes an active post by setting deletedAt and deletedBy. The post may be restored within 5 days.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB ObjectId of the post',
+    example: '66e138fc29094e137127e4e0',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Post soft-deleted successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized: Missing or invalid Bearer token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden: User does not own the post and is not an admin',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Post not found or post is already soft-deleted',
+  })
+  async deletePost(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.postsService.removePost(id, user.userId);
   }
 }
