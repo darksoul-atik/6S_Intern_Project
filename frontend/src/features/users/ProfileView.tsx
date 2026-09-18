@@ -635,7 +635,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
               {/* Derived Public Stats - Matching Glass Icons */}
               <div className="grid grid-cols-3 gap-2.5 sm:gap-3.5 w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
                 {/* Skills */}
-                <div className="group flex flex-col items-center justify-center min-w-[92px] sm:min-w-[108px] px-3.5 py-3 rounded-2xl bg-white/70 hover:bg-white/90 border border-white/90 hover:border-indigo-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
+                <div className="group flex flex-col items-center justify-center min-w-23 sm:min-w-27 px-3.5 py-3 rounded-2xl bg-white/70 hover:bg-white/90 border border-white/90 hover:border-indigo-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
                   <div className="h-10 w-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-600 flex items-center justify-center backdrop-blur-md shadow-2xs transition-transform group-hover:scale-110">
                     <FiAward className="h-5 w-5 text-indigo-600" />
                   </div>
@@ -650,7 +650,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                 </div>
 
                 {/* Experience */}
-                <div className="group flex flex-col items-center justify-center min-w-[92px] sm:min-w-[108px] px-3.5 py-3 rounded-2xl bg-white/70 hover:bg-white/90 border border-white/90 hover:border-emerald-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
+                <div className="group flex flex-col items-center justify-center min-w-23 sm:min-w-27 px-3.5 py-3 rounded-2xl bg-white/70 hover:bg-white/90 border border-white/90 hover:border-emerald-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
                   <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 flex items-center justify-center backdrop-blur-md shadow-2xs transition-transform group-hover:scale-110">
                     <FiBriefcase className="h-5 w-5 text-emerald-600" />
                   </div>
@@ -665,7 +665,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                 </div>
 
                 {/* Projects */}
-                <div className="group flex flex-col items-center justify-center min-w-[92px] sm:min-w-[108px] px-3.5 py-3 rounded-2xl bg-white/70 hover:bg-white/90 border border-white/90 hover:border-indigo-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
+                <div className="group flex flex-col items-center justify-center min-w-23 sm:min-w-27 px-3.5 py-3 rounded-2xl bg-white/70 hover:bg-white/90 border border-white/90 hover:border-indigo-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.03)] hover:shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5">
                   <div className="h-10 w-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-600 flex items-center justify-center backdrop-blur-md shadow-2xs transition-transform group-hover:scale-110">
                     <FiFolder className="h-5 w-5 text-indigo-600" />
                   </div>
