@@ -53,6 +53,7 @@ import { profileFormSchema, type ProfileFormValues } from "./profile.schemas";
 
 import { ProfileSkeleton } from "./ProfileSkeleton";
 import { ExperienceModal } from "./ExperienceModal";
+import { DeleteProjectModal } from "./DeleteProjectModal";
 import { PortfolioProjectFields } from "./PortfolioProjectFields";
 
 /*
@@ -257,18 +258,29 @@ export function ProfileEditForm() {
     });
   };
 
-  const handleRemoveProject = (index: number, projectId?: string) => {
-    const projectTitle = getValues(`portfolioProjects.${index}.title`)?.trim();
+  const [projectToDelete, setProjectToDelete] = useState<{
+    index: number;
+    projectId?: string;
+    title: string;
+  } | null>(null);
 
+  const handlePromptDeleteProject = (index: number, projectId?: string) => {
+    const projectTitle = getValues(`portfolioProjects.${index}.title`)?.trim();
     const projectLabel = projectTitle || `Project ${index + 1}`;
 
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${projectLabel}"?`,
-    );
+    setProjectToDelete({
+      index,
+      projectId,
+      title: projectLabel,
+    });
+  };
 
-    if (!confirmed) {
+  const handleConfirmDeleteProject = () => {
+    if (!projectToDelete) {
       return;
     }
+
+    const { index, projectId } = projectToDelete;
 
     /*
      * Existing project.
@@ -289,6 +301,7 @@ export function ProfileEditForm() {
      * Remove from current RHF UI.
      */
     removeProject(index);
+    setProjectToDelete(null);
   };
 
   /*
@@ -1265,7 +1278,9 @@ export function ProfileEditForm() {
                     control={control}
                     setValue={setValue}
                     errors={errors}
-                    onRemove={() => handleRemoveProject(index, field.projectId)}
+                    onRemove={() =>
+                      handlePromptDeleteProject(index, field.projectId)
+                    }
                   />
                 ))}
               </div>
@@ -1568,6 +1583,13 @@ export function ProfileEditForm() {
         editingExp={editingExp}
         onSave={handleSaveExpModal}
         isLoading={expLoading}
+      />
+
+      <DeleteProjectModal
+        isOpen={Boolean(projectToDelete)}
+        onClose={() => setProjectToDelete(null)}
+        onConfirm={handleConfirmDeleteProject}
+        projectTitle={projectToDelete?.title || ""}
       />
     </div>
   );
