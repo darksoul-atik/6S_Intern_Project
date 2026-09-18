@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Schema as MongooseSchema, type HydratedDocument, type Types } from 'mongoose';
+import type { HydratedDocument, Types } from 'mongoose';
+
 import { User } from '../../users/schemas/user.schema.js';
 
 export type PostDocument = HydratedDocument<Post>;
@@ -8,23 +9,24 @@ export type PostDocument = HydratedDocument<Post>;
 |--------------------------------------------------------------------------
 | Reaction Counts
 |--------------------------------------------------------------------------
-|
-| Day 7:
-| Both counters start at 0.
-|
-| Day 11:
-| The reaction system will update these values.
-|--------------------------------------------------------------------------
 */
 
 @Schema({
   _id: false,
 })
 export class ReactionCounts {
-  @Prop({ type: Number, default: 0 })
+  @Prop({
+    type: Number,
+    default: 0,
+    min: 0,
+  })
   like!: number;
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({
+    type: Number,
+    default: 0,
+    min: 0,
+  })
   dislike!: number;
 }
 
@@ -33,14 +35,15 @@ export const ReactionCountsSchema =
 
 /*
 |--------------------------------------------------------------------------
-| Post document
+| Post Schema
 |--------------------------------------------------------------------------
 */
 
 @Schema({
   timestamps: true,
+
   toJSON: {
-    transform: (_doc: unknown, ret: Record<string, unknown>) => {
+    transform: (_doc, ret: Record<string, unknown>) => {
       if (ret._id) {
         ret.id = ret._id.toString();
       }
@@ -51,18 +54,18 @@ export const ReactionCountsSchema =
 })
 export class Post {
   /*
-   * User who created the post.
-   *
-   * This is assigned by the backend from the authenticated user.
-   * The client will never be allowed to choose authorId.
+   * Original author of the post.
    */
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
+    type: 'ObjectId',
     ref: User.name,
     required: true,
   })
   authorId!: Types.ObjectId;
 
+  /*
+   * Post title.
+   */
   @Prop({
     required: true,
     trim: true,
@@ -71,6 +74,9 @@ export class Post {
   })
   title!: string;
 
+  /*
+   * Main post content.
+   */
   @Prop({
     required: true,
     trim: true,
@@ -80,8 +86,8 @@ export class Post {
   body!: string;
 
   /*
-   * Day 9 will maintain this value when comments
-   * are created/deleted.
+   * Day 9 will update this when comments
+   * are created or deleted.
    */
   @Prop({
     type: Number,
@@ -91,7 +97,7 @@ export class Post {
   commentCount!: number;
 
   /*
-   * Day 11 will maintain these values.
+   * Day 11 will update these counters.
    */
   @Prop({
     type: ReactionCountsSchema,
@@ -102,7 +108,45 @@ export class Post {
   })
   reactionCounts!: ReactionCounts;
 
+  /*
+   * Soft-delete timestamp.
+   *
+   * If this field does not exist,
+   * the post is active.
+   *
+   * If this field exists,
+   * the post is considered deleted.
+   */
+  @Prop({
+    type: Date,
+    default: undefined,
+  })
+  deletedAt?: Date;
+
+  /*
+   * User who performed the deletion.
+   *
+   * This can be:
+   * - the original author
+   * - an admin
+   */
+  @Prop({
+    type: 'ObjectId',
+    ref: User.name,
+    default: undefined,
+  })
+  deletedBy?: Types.ObjectId;
+
+  /*
+   * Automatically created by:
+   * timestamps: true
+   */
   createdAt?: Date;
+
+  /*
+   * Automatically created by:
+   * timestamps: true
+   */
   updatedAt?: Date;
 }
 
@@ -110,20 +154,35 @@ export const PostSchema = SchemaFactory.createForClass(Post);
 
 /*
 |--------------------------------------------------------------------------
-| Feed index
+| Main Feed Index
 |--------------------------------------------------------------------------
 |
-| Main Day 7 list:
+| Used for:
 |
 | GET /posts
-| newest first
 |
-| _id is the secondary sort field so posts with the same createdAt
-| still have deterministic ordering.
+| newest-first ordering
 |--------------------------------------------------------------------------
 */
 
 PostSchema.index({
   createdAt: -1,
   _id: -1,
+});
+
+/*
+|--------------------------------------------------------------------------
+| Soft-delete Cleanup Index
+|--------------------------------------------------------------------------
+|
+| Used by the scheduled cleanup job.
+|
+| The job will query posts where:
+|
+| deletedAt <= fiveDaysAgo
+|--------------------------------------------------------------------------
+*/
+
+PostSchema.index({
+  deletedAt: 1,
 });
