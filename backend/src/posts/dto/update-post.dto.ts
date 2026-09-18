@@ -1,7 +1,14 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class UpdatePostDto {
+  @ApiPropertyOptional({
+    example: 'Updated Architecture Breakdown: Microservices in Practice',
+    description: 'Updated title of the post',
+    minLength: 1,
+    maxLength: 200,
+  })
   @IsOptional()
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString({
@@ -15,6 +22,12 @@ export class UpdatePostDto {
   })
   title?: string;
 
+  @ApiPropertyOptional({
+    example: 'Updated body content incorporating community feedback and performance benchmarks...',
+    description: 'Updated markdown or plain-text body content of the post',
+    minLength: 1,
+    maxLength: 20000,
+  })
   @IsOptional()
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString({

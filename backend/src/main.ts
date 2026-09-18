@@ -44,6 +44,9 @@ async function createApp(): Promise<INestApplication> {
     .addBearerAuth()
     .addTag('Health', 'Health and system diagnostic endpoints')
     .addTag('Auth', 'Authentication and authorization endpoints')
+    .addTag('profile', 'Developer profile and portfolio project management')
+    .addTag('users', 'User profiles, portfolios, skills, and admin user directory')
+    .addTag('posts', 'Posts feed, pagination, soft-delete lifecycle, 5-day restore, and moderation')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

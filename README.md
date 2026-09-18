@@ -21,8 +21,8 @@ DevPulse is a high-performance, engineering-first developer community platform e
 | Day | Milestone | Focus Areas | Status |
 |:---:|---|---|:---:|
 | **Day 5** | **Developer Profile API** | Headline, bio, skills, portfolioProjects Mongoose models, nested validation, conditional date rules, ownership rules (`GET /profile/me`, `PATCH /profile/me`, `/profile/me/projects`). | ✅ **Completed** |
-| **Day 6** | **Complex Developer Profile Form** | Dynamic forms with nested arrays, `useFieldArray` for portfolio projects, optimistic updates, delete confirmation dialog. | ⏳ *Upcoming* |
-| **Day 7** | **Posts API with Ownership & Pagination** | Post schema, authorId, CRUD endpoints, pagination metadata, author sanitization, query indexing. | ⏳ *Upcoming* |
+| **Day 6** | **Complex Developer Profile Form** | Dynamic forms with nested arrays, `useFieldArray` for portfolio projects, theme-matching `DeleteProjectModal`, optimistic updates, delete confirmation dialog. | ✅ **Completed** |
+| **Day 7** | **Posts API with Ownership & Pagination** | Post schema, authorId, CRUD endpoints, pagination metadata, author sanitization, query indexing, soft-delete lifecycle (5-day restore, permanent delete), automated hourly cron purge. | ✅ **Completed** |
 | **Day 8** | **Feed & Reusable Post Interface** | `PostCard`, feed components, `useInfiniteQuery`, Intersection Observer infinite scroll, query cache invalidation. | ⏳ *Upcoming* |
 
 ### Phase 3: Comments, Reactions, and Reliable UI (Days 9–12)
@@ -545,6 +545,108 @@ curl -X PATCH http://localhost:5000/users/<OTHER_USER_ID>/projects/<PROJECT_ID> 
   -H "Authorization: Bearer <USER_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{"title":"Tampered Title"}'
+```
+
+---
+
+## 🎨 Day 6 — Complex Developer Profile Form & Portfolio Management
+
+### 1. Dynamic Nested Forms & Portfolio Subdocuments
+* **Multi-Layer Profile Editing**:
+  * Extracted and refactored profile management into dedicated feature components (`ProfileEditForm.tsx`, `ProjectModal.tsx`, `DeleteProjectModal.tsx`).
+  * Dynamic array management for technology tags (`technologies: string[]`) and project URLs (`urls: string[]`) with validation and deduplication.
+  * Date range logic handling ongoing projects (`isCurrent === true`) and chronological validation (`startDate <= endDate`).
+* **Branded Confirmation Modal (`DeleteProjectModal.tsx`)**:
+  * Replaced native browser `window.confirm()` with a custom glassmorphic modal matching the platform's color palette, frosted background, and typography.
+  * Accessible focus trapping, keyboard ESC cancellation, and animated transitions.
+* **Optimistic UI Updates & Responsive Design**:
+  * Instant visual feedback with TanStack Query optimistic mutations and automatic cache invalidation (`['profile']`, `['users', id]`).
+  * Standardized responsive layout using Tailwind utility classes (`min-w-23 sm:min-w-27`).
+
+---
+
+## 📝 Day 7 — Posts API with Ownership, Pagination, Soft-Delete & Background Cleanup
+
+### 1. Post Schema & Feed Indexing ([`post.schema.ts`](file:///c:/Users/hp/Downloads/6senseHQ/backend/src/posts/schemas/post.schema.ts))
+* **Mongoose Schema Structure**:
+  * `authorId`: ObjectId referencing `User` (`required: true`).
+  * `title`: String with automatic whitespace trimming (1–200 characters, `required: true`).
+  * `body`: String with automatic whitespace trimming (1–20,000 characters, `required: true`).
+  * `commentCount`: Number starting at 0 (`min: 0`).
+  * `reactionCounts`: Nested subdocument `{ like: 0, dislike: 0 }`.
+  * `deletedAt`: Date timestamp for soft deletion (`default: undefined`).
+  * `deletedBy`: ObjectId referencing `User` who performed deletion (`default: undefined`).
+  * `timestamps: true` producing `createdAt` and `updatedAt`.
+  * `toJSON.transform`: Maps `_id` to `id` while preserving clean serialization.
+* **Compound & Optimization Indexes**:
+  * Primary Feed Index: `{ createdAt: -1, _id: -1 }` matches newest-first chronological sorting with deterministic secondary tie-breaking.
+  * Soft-Delete Cleanup Index: `{ deletedAt: 1 }` enables high-performance query execution for the hourly purge job.
+
+### 2. Posts REST Endpoints Reference
+
+| Method | Endpoint | Access / Auth | Description |
+|---|---|---|---|
+| `POST` | `/posts` | Bearer JWT (Auth) | Create new post. `authorId` is strictly assigned from JWT claims. Increments user's `postsCount`. |
+| `GET` | `/posts` | **Public** | Fetch paginated feed (newest first). Filters out soft-deleted posts. Returns pagination metadata. |
+| `GET` | `/posts/:id` | **Public** | Fetch single post with safe public author info (`name`, `headline`, `avatarUrl`). Returns 404 for missing/deleted posts. |
+| `PATCH` | `/posts/:id` | Owner or Admin | Update post `title` or `body`. Restricted strictly to active posts. |
+| `DELETE` | `/posts/:id` | Owner or Admin | Soft-delete post. Sets `deletedAt` and `deletedBy`. Decrements original author's `postsCount`. |
+| `POST` | `/posts/:id/restore` | Owner or Admin | Restore soft-deleted post within 5 days. Re-increments original author's `postsCount`. |
+| `DELETE` | `/posts/:id/permanent`| Owner or Admin | Permanently delete an already soft-deleted post from MongoDB. |
+
+### 3. Ownership & Authorization (`PostOwnerOrAdminGuard`)
+* Enforces that only the original post author (`post.authorId.toString() === user.userId`) or a user with `role: 'admin'` can mutate a post.
+* Pre-validates 24-character hexadecimal ObjectIds (`validatePostId`), returning clean HTTP 404s instead of Mongoose `CastError` 500s.
+* Uses `findAnyPostByIdOrThrow` internally so ownership checks succeed for both active and soft-deleted posts during restore and permanent deletion.
+
+### 4. Background Scheduled Purge (`PostCleanupTask`)
+* Integrated via `@nestjs/schedule` with `ScheduleModule.forRoot()`.
+* Cron Schedule: `@Cron(CronExpression.EVERY_HOUR)` runs `purgeExpiredPosts()` every hour.
+* Policy: Permanently purges documents where `deletedAt <= 5 days ago` (`5 * 24 * 60 * 60 * 1000`).
+* Error Handling: Defensive try/catch logging errors without crashing the backend process.
+
+### 5. Day 7 API Verification Commands (cURL)
+
+```bash
+# 1. Create Post (Requires Bearer Token)
+curl -X POST http://localhost:5000/posts \
+  -H "Authorization: Bearer <USER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Scaling NestJS and MongoDB at Production",
+    "body": "A deep dive into compound indexing, soft deletion patterns, and NestJS schedule tasks."
+  }'
+
+# 2. Get Paginated Feed (Public)
+curl "http://localhost:5000/posts?page=1&limit=10"
+
+# 3. Get Single Post by ID (Public)
+curl http://localhost:5000/posts/<POST_ID>
+
+# 4. Update Post (Author or Admin Only)
+curl -X PATCH http://localhost:5000/posts/<POST_ID> \
+  -H "Authorization: Bearer <USER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Updated: Scaling NestJS and MongoDB at Production"
+  }'
+
+# 5. Soft Delete Post (Author or Admin Only)
+curl -X DELETE http://localhost:5000/posts/<POST_ID> \
+  -H "Authorization: Bearer <USER_TOKEN>"
+
+# 6. Verify Soft-Deleted Post Excluded from Feed
+curl "http://localhost:5000/posts?page=1&limit=10"
+
+# 7. Restore Soft-Deleted Post (Within 5-day window)
+curl -X POST http://localhost:5000/posts/<POST_ID>/restore \
+  -H "Authorization: Bearer <USER_TOKEN>"
+
+# 8. Permanently Delete Post (Must be soft-deleted first)
+curl -X DELETE http://localhost:5000/posts/<POST_ID> \
+  -H "Authorization: Bearer <USER_TOKEN>"
+curl -X DELETE http://localhost:5000/posts/<POST_ID>/permanent \
+  -H "Authorization: Bearer <USER_TOKEN>"
 ```
 
 ---

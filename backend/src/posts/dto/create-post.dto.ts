@@ -1,7 +1,14 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreatePostDto {
+  @ApiProperty({
+    example: 'Architecting Scalable Microservices with NestJS and MongoDB',
+    description: 'Post title',
+    minLength: 1,
+    maxLength: 200,
+  })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString({
     message: 'title must be a string',
@@ -14,6 +21,12 @@ export class CreatePostDto {
   })
   title!: string;
 
+  @ApiProperty({
+    example: 'In this article, we examine high-concurrency indexing strategies and MongoDB replica set design...',
+    description: 'Main body content of the post (markdown or plain text)',
+    minLength: 1,
+    maxLength: 20000,
+  })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString({
     message: 'body must be a string',

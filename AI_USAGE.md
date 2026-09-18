@@ -52,6 +52,27 @@
 - **Type Colocation**: Mandated that TypeScript interfaces live directly in each feature's `.api.ts` file (e.g. `UserProfile`, `Experience` in `users.api.ts`; `AdminUser` in `admin.api.ts`; `AuthUser` in `auth.api.ts`) rather than fragmented in a disconnected global `types/` folder.
 - **Shared Cross-Cutting Deduplication**: Consolidated copy-pasted canvas image compression into `lib/image.ts` and date/name formatting routines into `lib/formatters.ts`.
 
+### Day 5: Developer Profile API
+- **Domain Modeling & Nested Subdocument Validation**: Guided the implementation of the developer profile API with `headline`, `bio`, `skills`, and `portfolioProjects` Mongoose schemas. Enforced conditional date logic (`startDate <= endDate`, unless `isCurrent === true`), custom URL validation, and duplicate prevention.
+- **Strict Ownership & Resource Protection**: Directed the creation of `ProfileOwnerOrAdminGuard` to protect `/profile/me` and `/profile/me/projects` mutations, while allowing public access to sanitized profiles via `GET /users/:id` without leaking sensitive fields (`email`, `passwordHash`, `role`).
+
+### Day 6: Complex Developer Profile Form & Portfolio Management
+- **Hierarchical Form & Subdocument Array Management**: Guided the implementation of dynamic nested forms for developer profiles, managing complex subdocument arrays (skills, work experiences, and portfolio projects) with dedicated modal dialogs and seamless validation.
+- **Theme-Consistent Modal Architecture vs. Browser Popups**: Explicitly mandated replacing native browser confirmation dialogs (`window.confirm`) with a branded, glassmorphic `DeleteProjectModal` component matching the platform's color scheme, frosted glass backdrop, and typography.
+- **Optimistic UI Updates & Instant Feedback**: Directed the integration of TanStack Query optimistic mutations for project creation, update, and deletion, ensuring immediate UI reactivity with automatic rollback on server errors.
+- **Component Colocation & Feature Slicing**: Directed keeping modal state, handlers, and types cleanly colocated within `frontend/src/features/users/` (`ProjectModal.tsx`, `DeleteProjectModal.tsx`, `ProfileView.tsx`).
+
+### Day 7: Posts API with Ownership, Pagination, Soft Delete & Background Cleanup
+- **Domain Modeling & Compound Indexing**: Directed the creation of the `Post` schema with `authorId` ref to `User`, `title`, `body`, `commentCount`, `reactionCounts`, `deletedAt`, `deletedBy`, and timestamps. Enforced a compound index on `{ createdAt: -1, _id: -1 }` for high-throughput, deterministic feed sorting, and `{ deletedAt: 1 }` for background cleanup.
+- **RESTful Endpoints & Strict Authorization**:
+  - `POST /posts`: Enforced author derivation strictly from JWT claims (`@CurrentUser()`).
+  - `GET /posts`: Required pagination query sanitization (`page`, `limit` clamped 1–100) and metadata (`total`, `page`, `limit`, `totalPages`) with safe public author projection (`name`, `headline`, `avatarUrl`) while strictly excluding sensitive user fields (`email`, `role`, `passwordHash`).
+  - `GET /posts/:id`: Single post lookup with 24-character hexadecimal ObjectId pre-validation to avoid Mongoose CastError 500s and return clean 404s.
+  - `PATCH /posts/:id`: Updates restricted strictly to active posts and guarded by `PostOwnerOrAdminGuard`.
+  - `DELETE /posts/:id`: Soft-delete marking `deletedAt` and `deletedBy` with user profile `postsCount` decrement.
+  - `POST /posts/:id/restore`: Re-enables soft-deleted posts within a 5-day restore window, incrementing the original author's `postsCount`.
+  - `DELETE /posts/:id/permanent`: Irreversible physical document deletion restricted strictly to already soft-deleted posts.
+- **Automated Hourly Cron Cleanup**: Prompted the integration of `@nestjs/schedule` and `PostCleanupTask` with `@Cron(CronExpression.EVERY_HOUR)` to automatically purge posts soft-deleted older than 5 days.
 
 ---
 
@@ -95,6 +116,22 @@
 - **Rejected Disconnected Global Types Directory**: Reviewed type organization and rejected keeping a separate top-level `types/` folder. Colocated types directly inside their corresponding feature's `.api.ts` file (`auth.api.ts`, `users.api.ts`, `admin.api.ts`), ensuring domain changes and their associated contracts remain cohesive.
 - **Rejected Retaining Stale Empty Legacy Directories**: Following the extraction of queries, hooks, and types into feature directories, audited the repository and cleanly removed obsolete files and empty directories (`frontend/src/hooks`, `frontend/src/types`) rather than leaving confusing dead artifacts.
 
+### Day 5
+- **Rejected Monolithic Controller Overloading**: Rejected stuffing all profile operations into `UsersController`. Separated concerns cleanly by creating `ProfileController` for `/profile/me` and `/profile/me/projects` while keeping `/users` focused on public lookup and admin management.
+- **Rejected Loose Date Checking**: Rejected trusting client date inputs without cross-field validation. Enforced conditional date logic ensuring `startDate` precedes `endDate` unless `isCurrent` is explicitly `true`.
+- **Rejected Leaking Private Claims in Public Profile Projections**: Strictly audited `GET /users/:id` to ensure user emails, password hashes, and administrative roles are never exposed to public consumers.
+
+### Day 6
+- **Rejected Native Browser Confirmation Popups**: Explicitly rejected using native `window.confirm()` or browser alerts when deleting portfolio projects. Enforced a custom React modal component (`DeleteProjectModal.tsx`) matching the application's glassmorphic design system and color palette.
+- **Rejected Arbitrary Tailwind Class Names**: Audited profile statistic elements and rejected non-standard Tailwind arbitrary values (`min-w-[92px] sm:min-w-[108px]`), refactoring them into clean standard utility classes (`min-w-23 sm:min-w-27`).
+- **Rejected Hard Page Reloads on Subdocument Mutations**: Rejected full profile refetches or page refreshes when modifying portfolio projects, enforcing surgical query cache invalidations (`['profile']`, `['users', id]`).
+
+### Day 7
+- **Rejected Placing Backend NestJS Schemas in Frontend**: Detected and intervened when a Mongoose schema file was initially authored inside the frontend folder (`frontend/src/posts/schemas/post.schemas.ts`). Relocated the file to its proper domain boundary at `backend/src/posts/schemas/post.schema.ts` and pruned the extraneous frontend folder.
+- **Rejected Immediate Hard Deletion Without Recovery Window**: Upgraded the simple hard-delete requirement to an enterprise-grade soft-delete lifecycle featuring `deletedAt`, `deletedBy`, a 5-day restore period (`/posts/:id/restore`), and a separate permanent delete endpoint (`/posts/:id/permanent`).
+- **Rejected Double-Decrementing User Post Counters**: Audited the interaction between soft-delete and permanent-delete. Prevented a double-decrement bug by ensuring `User.postsCount` is decremented during soft deletion and incremented upon restore, but left unchanged during permanent deletion.
+- **Rejected Serial Database Calls on Paginated Feeds**: Reviewed feed retrieval in `PostsService.findAllPosts` and rejected sequential `await countDocuments()` followed by `await find()`. Refactored into concurrent execution using `Promise.all([countQuery, findQuery])` to minimize latency.
+- **Rejected Leaking Private Author Claims in Public Feeds**: Enforced strict `.populate({ path: 'authorId', select: 'name headline avatarUrl' })` across both feed and single-post endpoints, ensuring `email`, `role`, and `passwordHash` are never leaked over public endpoints.
 
 ---
 
@@ -151,3 +188,16 @@
 - **Dedicated `ProfileController` Route Mapping**: Introduced `ProfileController` at `/profile` alongside existing `/users` controller to provide strict REST compliance with Day 5 specification (`GET /profile/me`, `PATCH /profile/me`, `POST/PATCH/DELETE /profile/me/projects`).
 - **Public Profile Privacy Enforcement**: Audited `GET /users/:id` to enforce strict projection whitelisting (`name headline bio avatarUrl skills experiences portfolioProjects`), guaranteeing zero leakage of private claims (`email`, `passwordHash`, `role`, `isDeleted`).
 - **Automated Test Coverage Expansion (67/67 Passing)**: Expanded test suite from 48 to 67 unit and validation tests across 11 test suites, verifying custom date constraints, URL validation, duplicate array filtering, project CRUD, and permission guards.
+
+### Day 6 — Complex Developer Profile Form & Portfolio Management
+- **Modal Theme & Focus Trap Cohesion**: Identified unstyled delete confirmation flows that broke UI immersion. Engineered `DeleteProjectModal` with specular borders, backdrop blur, responsive sizing, and keyboard escape handling.
+- **Tailwind v4 Width Compatibility**: Caught arbitrary pixel width classes in profile stat badges that triggered linter warnings. Migrated to standardized Tailwind scale values (`min-w-23 sm:min-w-27`) while preserving exact responsive badge dimensions.
+
+### Day 7 — Posts API with Ownership, Pagination, Soft Delete & Background Cleanup
+- **Frontend Mongoose Import Error**: Caught and resolved `@nestjs/mongoose` and `mongoose` module resolution errors caused by misplaced backend files inside `frontend/src/posts`. Relocated schemas and DTOs to `backend/src/posts/`, verified clean NestJS build and Next.js compilation.
+- **Malformed MongoDB ObjectId 500 Internal Server Error**: Identified that querying non-hexadecimal post IDs caused Mongoose `CastError` throwing unhandled 500 errors. Implemented `validatePostId` checking `/^[0-9a-fA-F]{24}$/` to reliably convert malformed IDs into standard `404 NotFoundException`.
+- **Soft-Deleted Post Leakage in Main Feed**: Caught that `findAllPosts` initially queried all documents regardless of deletion state. Added `{ deletedAt: { $exists: false } }` filter to both `countDocuments` and `find` queries, and created a compound index `{ createdAt: -1, _id: -1 }` to guarantee high performance.
+- **Restore Window Expiration Enforcement**: Guaranteed that even if the scheduled cleanup cron has not yet purged an expired post, attempting to call `/posts/:id/restore` on a post deleted longer than 5 days (`5 * 24 * 60 * 60 * 1000`) throws a `400 BadRequestException`.
+- **Cron Task Error Handling**: Wrapped `PostCleanupTask.purgeExpiredPosts()` in a defensive try/catch with `Logger.error`, ensuring transient database connectivity glitches during background sweeps do not crash the NestJS server instance.
+- **Swagger / OpenAPI Documentation Parity**: Audited the Swagger UI at `/docs` and observed missing request body schemas for `POST /posts` and `PATCH /posts/:id`. Added `@ApiProperty` and `@ApiPropertyOptional` to `CreatePostDto` and `UpdatePostDto`, added the `posts` and `profile` tags to `DocumentBuilder` in `main.ts`, and verified interactive documentation.
+
