@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 
@@ -33,14 +37,34 @@ export class PostsService {
 
   /*
   |--------------------------------------------------------------------------
-  | Find Post or Throw 404
+  | Validate Post ID
   |--------------------------------------------------------------------------
   */
 
-  async findPostByIdOrThrow(postId: string): Promise<PostDocument> {
+  private validatePostId(postId: string): void {
     if (!/^[0-9a-fA-F]{24}$/.test(postId)) {
       throw new NotFoundException(`Post with ID '${postId}' not found`);
     }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Find ANY Post
+  |--------------------------------------------------------------------------
+  |
+  | Can find:
+  |
+  | - active posts
+  | - soft-deleted posts
+  |
+  | This is useful for authorization because the
+  | owner/admin guard must also work on restore and
+  | permanent-delete routes.
+  |--------------------------------------------------------------------------
+  */
+
+  async findAnyPostByIdOrThrow(postId: string): Promise<PostDocument> {
+    this.validatePostId(postId);
 
     const post = await this.postModel.findById(postId).exec();
 
@@ -49,6 +73,73 @@ export class PostsService {
     }
 
     return post;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Find ACTIVE Post
+  |--------------------------------------------------------------------------
+  |
+  | Used by normal application operations:
+  |
+  | GET /posts/:id
+  | PATCH /posts/:id
+  | DELETE /posts/:id
+  |
+  | A soft-deleted post behaves like it does not
+  | exist to normal application queries.
+  |--------------------------------------------------------------------------
+  */
+
+  async findActivePostByIdOrThrow(postId: string): Promise<PostDocument> {
+    const post = await this.findAnyPostByIdOrThrow(postId);
+
+    if (post.deletedAt) {
+      throw new NotFoundException(`Post with ID '${postId}' not found`);
+    }
+
+    return post;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Find SOFT-DELETED Post
+  |--------------------------------------------------------------------------
+  |
+  | Used by:
+  |
+  | POST /posts/:id/restore
+  | DELETE /posts/:id/permanent
+  |--------------------------------------------------------------------------
+  */
+
+  async findDeletedPostByIdOrThrow(postId: string): Promise<PostDocument> {
+    const post = await this.findAnyPostByIdOrThrow(postId);
+
+    if (!post.deletedAt) {
+      throw new BadRequestException('Post must be soft-deleted first');
+    }
+
+    return post;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Temporary Compatibility Method
+  |--------------------------------------------------------------------------
+  |
+  | Existing Day 7 code still calls this method.
+  |
+  | Until the remaining soft-delete migration steps
+  | are completed, treat this as an ACTIVE-post lookup.
+  |
+  | We can remove this compatibility method after
+  | SD3/SD4/SD8 are finished.
+  |--------------------------------------------------------------------------
+  */
+
+  async findPostByIdOrThrow(postId: string): Promise<PostDocument> {
+    return this.findActivePostByIdOrThrow(postId);
   }
 
   /*
@@ -82,6 +173,10 @@ export class PostsService {
   /*
   |--------------------------------------------------------------------------
   | List Posts
+  |--------------------------------------------------------------------------
+  |
+  | SD3 will update this query so deleted posts
+  | are excluded from the feed.
   |--------------------------------------------------------------------------
   */
 
@@ -155,34 +250,25 @@ export class PostsService {
 
   /*
   |--------------------------------------------------------------------------
-  | Delete Post
+  | Existing Delete Logic
+  |--------------------------------------------------------------------------
+  |
+  | IMPORTANT:
+  |
+  | This is still the OLD hard-delete implementation.
+  |
+  | SD4 will replace this with soft-delete behavior.
+  | Do not test DELETE /posts/:id yet.
   |--------------------------------------------------------------------------
   */
 
   async removePost(postId: string): Promise<DeletePostResult> {
-    /*
-     * Find the actual post first.
-     *
-     * We need its authorId before deleting it because
-     * User.postsCount belongs to the original author.
-     */
     const post = await this.findPostByIdOrThrow(postId);
 
     const authorId = post.authorId.toString();
 
-    /*
-     * Day 7 decision:
-     *
-     * Posts are hard deleted.
-     */
     await post.deleteOne();
 
-    /*
-     * Decrease the ORIGINAL AUTHOR'S post count.
-     *
-     * This is important when an admin deletes
-     * another user's post.
-     */
     await this.usersService.decrementPostsCount(authorId);
 
     return {
