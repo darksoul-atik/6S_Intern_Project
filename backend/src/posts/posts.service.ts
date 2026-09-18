@@ -5,6 +5,8 @@ import type { Model } from 'mongoose';
 import { Post, type PostDocument } from './schemas/post.schema.js';
 
 import { CreatePostDto } from './dto/create-post.dto.js';
+import { UpdatePostDto } from './dto/update-post.dto.js';
+
 import { UsersService } from '../users/users.service.js';
 
 export interface PaginatedPostsResult {
@@ -13,6 +15,11 @@ export interface PaginatedPostsResult {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export interface DeletePostResult {
+  id: string;
+  message: string;
 }
 
 @Injectable()
@@ -114,24 +121,73 @@ export class PostsService {
   */
 
   async findOnePost(postId: string): Promise<PostDocument> {
-    /*
-     * Reuse our existing ID validation + not-found logic.
-     */
     const post = await this.findPostByIdOrThrow(postId);
 
-    /*
-     * Populate only safe/public author fields.
-     *
-     * Do NOT expose:
-     * email
-     * role
-     * passwordHash
-     */
     await post.populate({
       path: 'authorId',
       select: 'name headline avatarUrl',
     });
 
     return post;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Update Post
+  |--------------------------------------------------------------------------
+  */
+
+  async updatePost(postId: string, dto: UpdatePostDto): Promise<PostDocument> {
+    const post = await this.findPostByIdOrThrow(postId);
+
+    if (dto.title !== undefined) {
+      post.title = dto.title;
+    }
+
+    if (dto.body !== undefined) {
+      post.body = dto.body;
+    }
+
+    await post.save();
+
+    return this.findOnePost(postId);
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Delete Post
+  |--------------------------------------------------------------------------
+  */
+
+  async removePost(postId: string): Promise<DeletePostResult> {
+    /*
+     * Find the actual post first.
+     *
+     * We need its authorId before deleting it because
+     * User.postsCount belongs to the original author.
+     */
+    const post = await this.findPostByIdOrThrow(postId);
+
+    const authorId = post.authorId.toString();
+
+    /*
+     * Day 7 decision:
+     *
+     * Posts are hard deleted.
+     */
+    await post.deleteOne();
+
+    /*
+     * Decrease the ORIGINAL AUTHOR'S post count.
+     *
+     * This is important when an admin deletes
+     * another user's post.
+     */
+    await this.usersService.decrementPostsCount(authorId);
+
+    return {
+      id: postId,
+      message: 'Post deleted successfully',
+    };
   }
 }
