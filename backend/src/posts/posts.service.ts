@@ -52,14 +52,11 @@ export class PostsService {
   | Find ANY Post
   |--------------------------------------------------------------------------
   |
-  | Can find:
+  | Can find both:
+  | - active
+  | - soft-deleted
   |
-  | - active posts
-  | - soft-deleted posts
-  |
-  | This is useful for authorization because the
-  | owner/admin guard must also work on restore and
-  | permanent-delete routes.
+  | Used mainly for ownership / lifecycle operations.
   |--------------------------------------------------------------------------
   */
 
@@ -80,21 +77,24 @@ export class PostsService {
   | Find ACTIVE Post
   |--------------------------------------------------------------------------
   |
-  | Used by normal application operations:
-  |
-  | GET /posts/:id
-  | PATCH /posts/:id
-  | DELETE /posts/:id
-  |
-  | A soft-deleted post behaves like it does not
-  | exist to normal application queries.
+  | Soft-deleted posts are excluded directly
+  | from the MongoDB query.
   |--------------------------------------------------------------------------
   */
 
   async findActivePostByIdOrThrow(postId: string): Promise<PostDocument> {
-    const post = await this.findAnyPostByIdOrThrow(postId);
+    this.validatePostId(postId);
 
-    if (post.deletedAt) {
+    const post = await this.postModel
+      .findOne({
+        _id: postId,
+        deletedAt: {
+          $exists: false,
+        },
+      })
+      .exec();
+
+    if (!post) {
       throw new NotFoundException(`Post with ID '${postId}' not found`);
     }
 
@@ -105,19 +105,32 @@ export class PostsService {
   |--------------------------------------------------------------------------
   | Find SOFT-DELETED Post
   |--------------------------------------------------------------------------
-  |
-  | Used by:
-  |
-  | POST /posts/:id/restore
-  | DELETE /posts/:id/permanent
-  |--------------------------------------------------------------------------
   */
 
   async findDeletedPostByIdOrThrow(postId: string): Promise<PostDocument> {
-    const post = await this.findAnyPostByIdOrThrow(postId);
+    this.validatePostId(postId);
 
-    if (!post.deletedAt) {
-      throw new BadRequestException('Post must be soft-deleted first');
+    const post = await this.postModel
+      .findOne({
+        _id: postId,
+        deletedAt: {
+          $exists: true,
+        },
+      })
+      .exec();
+
+    if (!post) {
+      /*
+       * If the Post exists but is active, give the
+       * lifecycle-specific error.
+       */
+      const existingPost = await this.postModel.findById(postId).exec();
+
+      if (existingPost) {
+        throw new BadRequestException('Post must be soft-deleted first');
+      }
+
+      throw new NotFoundException(`Post with ID '${postId}' not found`);
     }
 
     return post;
@@ -126,15 +139,6 @@ export class PostsService {
   /*
   |--------------------------------------------------------------------------
   | Temporary Compatibility Method
-  |--------------------------------------------------------------------------
-  |
-  | Existing Day 7 code still calls this method.
-  |
-  | Until the remaining soft-delete migration steps
-  | are completed, treat this as an ACTIVE-post lookup.
-  |
-  | We can remove this compatibility method after
-  | SD3/SD4/SD8 are finished.
   |--------------------------------------------------------------------------
   */
 
@@ -156,7 +160,9 @@ export class PostsService {
       authorId,
       title: dto.title,
       body: dto.body,
+
       commentCount: 0,
+
       reactionCounts: {
         like: 0,
         dislike: 0,
@@ -167,16 +173,16 @@ export class PostsService {
 
     await this.usersService.incrementPostsCount(authorId);
 
-    return savedPost;
+    /*
+     * Return the canonical Post with the same
+     * safe author data used by list/details.
+     */
+    return this.findOnePost(savedPost._id.toString());
   }
 
   /*
   |--------------------------------------------------------------------------
-  | List Posts
-  |--------------------------------------------------------------------------
-  |
-  | SD3 will update this query so deleted posts
-  | are excluded from the feed.
+  | List ACTIVE Posts
   |--------------------------------------------------------------------------
   */
 
@@ -184,21 +190,41 @@ export class PostsService {
     page: number;
     limit: number;
   }): Promise<PaginatedPostsResult> {
-    const total = await this.postModel.countDocuments().exec();
+    /*
+     * Every normal feed query must ignore
+     * soft-deleted posts.
+     */
+    const activePostFilter = {
+      deletedAt: {
+        $exists: false,
+      },
+    };
 
-    const posts = await this.postModel
-      .find()
-      .sort({
-        createdAt: -1,
-        _id: -1,
-      })
-      .skip((query.page - 1) * query.limit)
-      .limit(query.limit)
-      .populate({
-        path: 'authorId',
-        select: 'name headline avatarUrl',
-      })
-      .exec();
+    /*
+     * Two database operations are necessary:
+     *
+     * 1. count matching posts
+     * 2. fetch requested page
+     *
+     * Run them together.
+     */
+    const [total, posts] = await Promise.all([
+      this.postModel.countDocuments(activePostFilter).exec(),
+
+      this.postModel
+        .find(activePostFilter)
+        .sort({
+          createdAt: -1,
+          _id: -1,
+        })
+        .skip((query.page - 1) * query.limit)
+        .limit(query.limit)
+        .populate({
+          path: 'authorId',
+          select: 'name headline avatarUrl',
+        })
+        .exec(),
+    ]);
 
     return {
       posts,
@@ -211,12 +237,12 @@ export class PostsService {
 
   /*
   |--------------------------------------------------------------------------
-  | Get One Post
+  | Get One ACTIVE Post
   |--------------------------------------------------------------------------
   */
 
   async findOnePost(postId: string): Promise<PostDocument> {
-    const post = await this.findPostByIdOrThrow(postId);
+    const post = await this.findActivePostByIdOrThrow(postId);
 
     await post.populate({
       path: 'authorId',
@@ -228,12 +254,16 @@ export class PostsService {
 
   /*
   |--------------------------------------------------------------------------
-  | Update Post
+  | Update ACTIVE Post
   |--------------------------------------------------------------------------
   */
 
   async updatePost(postId: string, dto: UpdatePostDto): Promise<PostDocument> {
-    const post = await this.findPostByIdOrThrow(postId);
+    /*
+     * Deleted posts cannot be edited through
+     * the normal PATCH endpoint.
+     */
+    const post = await this.findActivePostByIdOrThrow(postId);
 
     if (dto.title !== undefined) {
       post.title = dto.title;
@@ -250,20 +280,17 @@ export class PostsService {
 
   /*
   |--------------------------------------------------------------------------
-  | Existing Delete Logic
+  | OLD DELETE LOGIC — temporary
   |--------------------------------------------------------------------------
   |
-  | IMPORTANT:
+  | SD4 replaces this with soft deletion.
   |
-  | This is still the OLD hard-delete implementation.
-  |
-  | SD4 will replace this with soft-delete behavior.
   | Do not test DELETE /posts/:id yet.
   |--------------------------------------------------------------------------
   */
 
   async removePost(postId: string): Promise<DeletePostResult> {
-    const post = await this.findPostByIdOrThrow(postId);
+    const post = await this.findActivePostByIdOrThrow(postId);
 
     const authorId = post.authorId.toString();
 
