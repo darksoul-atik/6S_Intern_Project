@@ -1,33 +1,49 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 /**
- * Validates JWT structure and verifies that exp has not expired at the Edge
- * without requiring heavy external crypto dependencies.
+ * Validates JWT structure and checks whether exp has expired.
+ *
+ * This is only used for frontend route/session handling.
+ * The NestJS backend remains responsible for real JWT
+ * authentication and authorization.
  */
 function isTokenValid(token?: string): boolean {
   if (!token) return false;
-  const parts = token.split('.');
-  if (parts.length !== 3) return false;
+
+  const parts = token.split(".");
+
+  if (parts.length !== 3) {
+    return false;
+  }
 
   try {
-    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+
     const jsonPayload = decodeURIComponent(
       atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join(''),
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
     );
-    const payload = JSON.parse(jsonPayload);
-    if (!payload || typeof payload !== 'object') return false;
 
-    // Check expiration claim if present (exp is in seconds)
-    if (typeof payload.exp === 'number') {
+    const payload = JSON.parse(jsonPayload);
+
+    if (!payload || typeof payload !== "object") {
+      return false;
+    }
+
+    /*
+     * JWT exp is stored in seconds.
+     */
+    if (typeof payload.exp === "number") {
       const currentTimeInSeconds = Math.floor(Date.now() / 1000);
+
       if (payload.exp <= currentTimeInSeconds) {
-        return false; // Token expired
+        return false;
       }
     }
+
     return true;
   } catch {
     return false;
@@ -35,68 +51,193 @@ function isTokenValid(token?: string): boolean {
 }
 
 /**
+ * Checks whether the current Posts route
+ * requires authentication.
+ *
+ * Public:
+ *
+ * /posts
+ * /posts/:id
+ *
+ * Protected:
+ *
+ * /posts/new
+ * /posts/:id/edit
+ */
+function isProtectedPostPath(pathname: string): boolean {
+  /*
+   * Create Post
+   */
+  if (pathname === "/posts/new") {
+    return true;
+  }
+
+  /*
+   * Edit Post
+   *
+   * Examples:
+   *
+   * /posts/123/edit
+   * /posts/68d123abc/edit
+   */
+  return /^\/posts\/[^/]+\/edit\/?$/.test(pathname);
+}
+
+/**
  * DevPulse Protected Route & Auth Middleware
- * Intercepts incoming requests at the Edge:
- * - Redirects unauthenticated or expired-session visitors accessing protected routes (/dashboard, /profile, /admin)
- *   to /login?redirect=<target_route> and clears stale cookies.
- * - Redirects authenticated users accessing auth routes (/login, /signup) to /dashboard.
- * - Automatically evicts invalid or expired cookies on auth pages so users can sign in fresh.
+ *
+ * Protected:
+ *
+ * /dashboard
+ * /profile
+ * /admin
+ * /posts/new
+ * /posts/:id/edit
+ *
+ * Public:
+ *
+ * /posts
+ * /posts/:id
+ *
+ * Authenticated users visiting /login or /signup
+ * are redirected to /dashboard.
  */
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('devpulse_token')?.value;
+  const token = request.cookies.get("devpulse_token")?.value;
+
   const { pathname, search } = request.nextUrl;
 
-  const isProtectedPath =
-    pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/profile') ||
-    pathname.startsWith('/admin');
+  /*
+  |--------------------------------------------------------------------------
+  | Protected routes
+  |--------------------------------------------------------------------------
+  */
 
-  const isAuthPath = pathname === '/login' || pathname === '/signup';
+  const isProtectedPath =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/admin") ||
+    isProtectedPostPath(pathname);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Authentication routes
+  |--------------------------------------------------------------------------
+  */
+
+  const isAuthPath = pathname === "/login" || pathname === "/signup";
+
   const hasValidToken = isTokenValid(token);
 
-  // If user has a token but it is invalid or expired
+  /*
+  |--------------------------------------------------------------------------
+  | Invalid / expired token
+  |--------------------------------------------------------------------------
+  */
+
   if (token && !hasValidToken) {
-    // If attempting to visit a protected route with an expired token
+    /*
+     * Expired token while trying to access
+     * a protected page.
+     */
     if (isProtectedPath) {
-      const loginUrl = new URL('/login', request.url);
+      const loginUrl = new URL("/login", request.url);
+
       const targetPath = search ? `${pathname}${search}` : pathname;
-      loginUrl.searchParams.set('redirect', targetPath);
+
+      loginUrl.searchParams.set("redirect", targetPath);
 
       const response = NextResponse.redirect(loginUrl);
-      response.cookies.delete('devpulse_token');
+
+      /*
+       * Remove the stale cookie.
+       */
+      response.cookies.delete("devpulse_token");
+
       return response;
     }
 
-    // If attempting to visit login or signup with a stale token, clear it and allow page view
+    /*
+     * User visits login/signup with an
+     * expired cookie.
+     *
+     * Clear the cookie and allow them
+     * to sign in again.
+     */
     if (isAuthPath) {
       const response = NextResponse.next();
-      response.cookies.delete('devpulse_token');
+
+      response.cookies.delete("devpulse_token");
+
       return response;
     }
   }
 
-  // If visiting a protected route without any token
+  /*
+  |--------------------------------------------------------------------------
+  | No valid session + protected route
+  |--------------------------------------------------------------------------
+  */
+
   if (isProtectedPath && !hasValidToken) {
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL("/login", request.url);
+
+    /*
+     * Preserve where the user was trying
+     * to go.
+     *
+     * Example:
+     *
+     * /posts/new
+     *
+     * becomes:
+     *
+     * /login?redirect=/posts/new
+     */
     const targetPath = search ? `${pathname}${search}` : pathname;
-    loginUrl.searchParams.set('redirect', targetPath);
+
+    loginUrl.searchParams.set("redirect", targetPath);
+
     return NextResponse.redirect(loginUrl);
   }
 
-  // If visiting login/signup while already having an active, valid session
+  /*
+  |--------------------------------------------------------------------------
+  | Already logged in + login/signup
+  |--------------------------------------------------------------------------
+  */
+
   if (isAuthPath && hasValidToken) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  /*
+   * Everything else continues normally.
+   */
   return NextResponse.next();
 }
 
+/*
+|--------------------------------------------------------------------------
+| Middleware matcher
+|--------------------------------------------------------------------------
+|
+| Public post pages are included so the middleware can distinguish
+| public routes from protected create/edit routes.
+|
+| It immediately allows public /posts and /posts/:id through.
+|--------------------------------------------------------------------------
+*/
+
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/profile/:path*',
-    '/admin/:path*',
-    '/login',
-    '/signup',
+    "/dashboard/:path*",
+    "/profile/:path*",
+    "/admin/:path*",
+
+    "/posts/:path*",
+
+    "/login",
+    "/signup",
   ],
 };

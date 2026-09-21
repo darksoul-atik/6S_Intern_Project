@@ -1,6 +1,13 @@
-import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+import {
+  type InfiniteData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { apiClient } from "@/lib/api";
+import { profileKeys } from "@/features/users/users.api";
 
 /*
 |--------------------------------------------------------------------------
@@ -14,8 +21,8 @@ export interface PostAuthor {
   headline?: string | null;
 
   /*
-   * GET /posts does NOT include avatarUrl.
-   * GET /posts/:id may include avatarUrl.
+   * Current backend includes avatarUrl
+   * when available.
    */
   avatarUrl?: string | null;
 }
@@ -45,8 +52,8 @@ export interface Post {
   updatedAt: string;
 
   /*
-   * Normal Day 8 post reads only return active posts,
-   * so these fields are normally absent.
+   * Normal public post queries return
+   * active posts only.
    */
   deletedAt?: string;
   deletedBy?: string;
@@ -55,17 +62,6 @@ export interface Post {
 /*
 |--------------------------------------------------------------------------
 | Pagination response
-|--------------------------------------------------------------------------
-|
-| Backend:
-|
-| {
-|   posts: [],
-|   total: 20,
-|   page: 1,
-|   limit: 10,
-|   totalPages: 2
-| }
 |--------------------------------------------------------------------------
 */
 
@@ -160,7 +156,7 @@ export async function fetchPostById(id: string): Promise<Post> {
 
 /*
 |--------------------------------------------------------------------------
-| Infinite feed hook
+| Infinite feed
 |--------------------------------------------------------------------------
 */
 
@@ -168,38 +164,10 @@ export function useInfinitePosts(limit: number = 10) {
   return useInfiniteQuery({
     queryKey: postKeys.feed(limit),
 
-    /*
-     * Backend pagination starts from page 1.
-     */
     initialPageParam: 1,
 
-    /*
-     * pageParam will be:
-     *
-     * 1
-     * 2
-     * 3
-     * ...
-     */
     queryFn: ({ pageParam }) => fetchPostsPage(pageParam, limit),
 
-    /*
-     * Example:
-     *
-     * current page = 1
-     * totalPages = 3
-     *
-     * next page = 2
-     *
-     * When:
-     *
-     * page === totalPages
-     *
-     * return undefined.
-     *
-     * TanStack Query then knows there
-     * are no more pages.
-     */
     getNextPageParam: (lastPage) => {
       if (lastPage.page >= lastPage.totalPages) {
         return undefined;
@@ -214,7 +182,7 @@ export function useInfinitePosts(limit: number = 10) {
 
 /*
 |--------------------------------------------------------------------------
-| Single post hook
+| Single post
 |--------------------------------------------------------------------------
 */
 
@@ -235,13 +203,14 @@ export function usePost(
 
 /*
 |--------------------------------------------------------------------------
-| Create post
+| Create post request
 |--------------------------------------------------------------------------
 */
 
 export async function createPost(payload: CreatePostPayload): Promise<Post> {
   const res = await apiClient<Post>("/api/posts", {
     method: "POST",
+
     body: JSON.stringify(payload),
   });
 
@@ -254,7 +223,7 @@ export async function createPost(payload: CreatePostPayload): Promise<Post> {
 
 /*
 |--------------------------------------------------------------------------
-| Update post
+| Update post request
 |--------------------------------------------------------------------------
 */
 
@@ -264,6 +233,7 @@ export async function updatePost(
 ): Promise<Post> {
   const res = await apiClient<Post>(`/api/posts/${id}`, {
     method: "PATCH",
+
     body: JSON.stringify(payload),
   });
 
@@ -276,16 +246,14 @@ export async function updatePost(
 
 /*
 |--------------------------------------------------------------------------
-| Soft-delete post
+| Soft-delete request
 |--------------------------------------------------------------------------
 |
 | IMPORTANT:
 |
 | DELETE /posts/:id
 |
-| This is the normal soft-delete route.
-|
-| We are NOT using:
+| NOT:
 |
 | DELETE /posts/:id/permanent
 |--------------------------------------------------------------------------
@@ -305,31 +273,201 @@ export async function softDeletePost(id: string): Promise<DeletePostResult> {
 
 /*
 |--------------------------------------------------------------------------
-| Mutation hooks
+| Create mutation
 |--------------------------------------------------------------------------
 |
-| These only perform the requests for now.
+| After create:
 |
-| Cache invalidation/update will be added later
-| in Task 10.
+| 1. Put the returned post into its detail cache.
+| 2. Invalidate feed caches.
+| 3. Invalidate profile caches because postsCount changed.
 |--------------------------------------------------------------------------
 */
 
 export function useCreatePostMutation() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: createPost,
+
+    onSuccess: async (newPost) => {
+      /*
+       * We already have the new Post returned
+       * by the backend.
+       *
+       * Store it immediately so the detail
+       * page has useful cache data.
+       */
+      queryClient.setQueryData(postKeys.detail(newPost.id), newPost);
+
+      /*
+       * The new post belongs in the feed.
+       *
+       * Instead of manually trying to insert
+       * it into page 1 and recalculate all
+       * pagination metadata, refetch the feed.
+       */
+      await queryClient.invalidateQueries({
+        queryKey: postKeys.feeds(),
+      });
+
+      /*
+       * Backend increments User.postsCount
+       * when a post is created.
+       */
+      await queryClient.invalidateQueries({
+        queryKey: profileKeys.all,
+      });
+    },
   });
 }
 
+/*
+|--------------------------------------------------------------------------
+| Update mutation
+|--------------------------------------------------------------------------
+|
+| After edit:
+|
+| 1. Update detail cache immediately.
+| 2. Update any currently cached feed card immediately.
+| 3. Invalidate feed to reconcile with backend.
+|--------------------------------------------------------------------------
+*/
+
 export function useUpdatePostMutation() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdatePostPayload }) =>
       updatePost(id, data),
+
+    onSuccess: async (updatedPost) => {
+      /*
+       * Replace stale detail data.
+       */
+      queryClient.setQueryData(postKeys.detail(updatedPost.id), updatedPost);
+
+      /*
+       * Update the same post inside every
+       * cached infinite feed immediately.
+       */
+      queryClient.setQueriesData<InfiniteData<PaginatedPostsResponse>>(
+        {
+          queryKey: postKeys.feeds(),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          return {
+            ...oldData,
+
+            pages: oldData.pages.map((page) => ({
+              ...page,
+
+              posts: page.posts.map((post) =>
+                post.id === updatedPost.id ? updatedPost : post,
+              ),
+            })),
+          };
+        },
+      );
+
+      /*
+       * Revalidate against the backend.
+       */
+      await queryClient.invalidateQueries({
+        queryKey: postKeys.feeds(),
+      });
+    },
   });
 }
 
+/*
+|--------------------------------------------------------------------------
+| Soft-delete mutation
+|--------------------------------------------------------------------------
+|
+| After delete:
+|
+| 1. Remove deleted Post from feed immediately.
+| 2. Remove its detail cache.
+| 3. Refetch feed.
+| 4. Refresh profile caches because postsCount changed.
+|--------------------------------------------------------------------------
+*/
+
 export function useSoftDeletePostMutation() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: softDeletePost,
+
+    onSuccess: async (result) => {
+      /*
+       * Remove the deleted post immediately
+       * from all cached feed pages.
+       *
+       * This means the card disappears without
+       * waiting for a full page reload.
+       */
+      queryClient.setQueriesData<InfiniteData<PaginatedPostsResponse>>(
+        {
+          queryKey: postKeys.feeds(),
+        },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          return {
+            ...oldData,
+
+            pages: oldData.pages.map((page) => ({
+              ...page,
+
+              posts: page.posts.filter((post) => post.id !== result.id),
+            })),
+          };
+        },
+      );
+
+      /*
+       * A soft-deleted post is no longer
+       * accessible through normal GET /posts/:id.
+       *
+       * Remove its detail cache completely.
+       */
+      queryClient.removeQueries({
+        queryKey: postKeys.detail(result.id),
+
+        exact: true,
+      });
+
+      /*
+       * Refetch the feed so pagination,
+       * total, totalPages, etc. are brought
+       * back in sync with the backend.
+       */
+      await queryClient.invalidateQueries({
+        queryKey: postKeys.feeds(),
+      });
+
+      /*
+       * Backend decrements the author's
+       * postsCount during soft delete.
+       *
+       * Invalidate all profile caches so this
+       * remains correct for:
+       *
+       * - own post deletion
+       * - admin deleting another user's post
+       */
+      await queryClient.invalidateQueries({
+        queryKey: profileKeys.all,
+      });
+    },
   });
 }
