@@ -23,7 +23,7 @@ DevPulse is a high-performance, engineering-first developer community platform e
 | **Day 5** | **Developer Profile API** | Headline, bio, skills, portfolioProjects Mongoose models, nested validation, conditional date rules, ownership rules (`GET /profile/me`, `PATCH /profile/me`, `/profile/me/projects`). | ✅ **Completed** |
 | **Day 6** | **Complex Developer Profile Form** | Dynamic forms with nested arrays, `useFieldArray` for portfolio projects, theme-matching `DeleteProjectModal`, optimistic updates, delete confirmation dialog. | ✅ **Completed** |
 | **Day 7** | **Posts API with Ownership & Pagination** | Post schema, authorId, CRUD endpoints, pagination metadata, author sanitization, query indexing, soft-delete lifecycle (5-day restore, permanent delete), automated hourly cron purge. | ✅ **Completed** |
-| **Day 8** | **Feed & Reusable Post Interface** | `PostCard`, feed components, `useInfiniteQuery`, Intersection Observer infinite scroll, query cache invalidation. | ⏳ *Upcoming* |
+| **Day 8** | **Feed & Reusable Post Interface** | `PostCard`, feed components, `useInfiniteQuery`, Intersection Observer infinite scroll, query cache invalidation. | ✅ **Completed** |
 
 ### Phase 3: Comments, Reactions, and Reliable UI (Days 9–12)
 | Day | Focus Areas | Status |
