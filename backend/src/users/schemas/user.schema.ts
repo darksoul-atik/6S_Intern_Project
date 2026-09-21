@@ -17,7 +17,9 @@ export type UserRole = 'admin' | 'user';
     transform: (_doc, ret: Record<string, unknown>) => {
       if (ret._id) {
         ret.id = ret._id.toString();
+        delete ret._id;
       }
+      delete ret.__v;
 
       return ret;
     },
@@ -59,7 +61,9 @@ export const ExperienceSchema = SchemaFactory.createForClass(Experience);
     transform: (_doc, ret: Record<string, unknown>) => {
       if (ret._id) {
         ret.id = ret._id.toString();
+        delete ret._id;
       }
+      delete ret.__v;
 
       return ret;
     },
@@ -108,9 +112,11 @@ export const PortfolioProjectSchema =
     transform: (_doc, ret: Record<string, unknown>) => {
       if (ret._id) {
         ret.id = ret._id.toString();
+        delete ret._id;
       }
 
       delete ret.passwordHash;
+      delete ret.__v;
 
       return ret;
     },
