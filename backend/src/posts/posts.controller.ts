@@ -84,15 +84,17 @@ export class PostsController {
 
   @Get()
   @ApiOperation({
-    summary: 'Get paginated posts',
+    summary: 'Get paginated posts (cursor-based)',
     description:
-      'Returns active posts ordered from newest to oldest with pagination metadata and safe public author information.',
+      'Returns active posts ordered from newest to oldest using cursor-based pagination with safe public author information.',
   })
   @ApiQuery({
-    name: 'page',
+    name: 'cursor',
     required: false,
-    example: 1,
-    description: 'Page number. Minimum value is 1.',
+    example:
+      'eyJjcmVhdGVkQXQiOiIyMDI2LTA5LTE4VDEwOjAyOjMyLjI5M1oiLCJpZCI6IjZhYWQwYzM4ZmQ5NWYwZjFiMjA5MmFjMSJ9',
+    description:
+      'Opaque base64url cursor for pagination. Omit for the first page.',
   })
   @ApiQuery({
     name: 'limit',
@@ -105,15 +107,13 @@ export class PostsController {
     description: 'Paginated posts retrieved successfully',
   })
   async getAllPosts(
-    @Query('page') page: string = '1',
+    @Query('cursor') cursor?: string,
     @Query('limit') limit: string = '10',
   ) {
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
 
     return this.postsService.findAllPosts({
-      page: pageNum,
+      cursor: cursor?.trim() || undefined,
       limit: limitNum,
     });
   }

@@ -15,10 +15,9 @@ import { UsersService } from '../users/users.service.js';
 
 export interface PaginatedPostsResult {
   posts: PostDocument[];
-  total: number;
-  page: number;
+  nextCursor: string | null;
+  hasMore: boolean;
   limit: number;
-  totalPages: number;
 }
 
 export interface DeletePostResult {
@@ -163,44 +162,99 @@ export class PostsService {
 
   /*
   |--------------------------------------------------------------------------
-  | List ACTIVE Posts
+  | Cursor Pagination Helpers
+  |--------------------------------------------------------------------------
+  */
+
+  private encodeCursor(post: PostDocument): string {
+    const payload = {
+      createdAt: (post.createdAt ? new Date(post.createdAt) : new Date()).toISOString(),
+      id: post._id.toString(),
+    };
+
+    return Buffer.from(JSON.stringify(payload)).toString('base64url');
+  }
+
+  private decodeCursor(cursor: string): { createdAt: string; id: string } {
+    try {
+      const json = Buffer.from(cursor, 'base64url').toString('utf8');
+      const parsed = JSON.parse(json);
+
+      if (
+        typeof parsed?.createdAt === 'string' &&
+        !isNaN(Date.parse(parsed.createdAt)) &&
+        typeof parsed?.id === 'string' &&
+        /^[0-9a-fA-F]{24}$/.test(parsed.id)
+      ) {
+        return parsed;
+      }
+
+      throw new BadRequestException('Invalid pagination cursor');
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      throw new BadRequestException('Invalid pagination cursor');
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | List ACTIVE Posts (Cursor-Based)
+  |--------------------------------------------------------------------------
+  |
+  | Order: newest to oldest (createdAt: -1, _id: -1).
+  | Uses stable cursor compound index to prevent pagination drift.
   |--------------------------------------------------------------------------
   */
 
   async findAllPosts(query: {
-    page: number;
+    cursor?: string;
     limit: number;
   }): Promise<PaginatedPostsResult> {
-    const activePostFilter = {
+    const filter: Record<string, unknown> = {
       deletedAt: {
         $exists: false,
       },
     };
 
-    const [total, posts] = await Promise.all([
-      this.postModel.countDocuments(activePostFilter).exec(),
+    if (query.cursor) {
+      const { createdAt, id } = this.decodeCursor(query.cursor);
+      const cursorDate = new Date(createdAt);
+      const cursorId = new Types.ObjectId(id);
 
-      this.postModel
-        .find(activePostFilter)
-        .sort({
-          createdAt: -1,
-          _id: -1,
-        })
-        .skip((query.page - 1) * query.limit)
-        .limit(query.limit)
-        .populate({
-          path: 'authorId',
-          select: 'name headline',
-        })
-        .exec(),
-    ]);
+      filter.$or = [
+        { createdAt: { $lt: cursorDate } },
+        { createdAt: cursorDate, _id: { $lt: cursorId } },
+      ];
+    }
+
+    const items = await this.postModel
+      .find(filter)
+      .sort({
+        createdAt: -1,
+        _id: -1,
+      })
+      .limit(query.limit + 1)
+      .populate({
+        path: 'authorId',
+        select: 'name headline',
+      })
+      .exec();
+
+    const hasMore = items.length > query.limit;
+    const posts = hasMore ? items.slice(0, query.limit) : items;
+    const nextCursor =
+      hasMore && posts.length > 0
+        ? this.encodeCursor(posts[posts.length - 1])
+        : null;
 
     return {
       posts,
-      total,
-      page: query.page,
+      nextCursor,
+      hasMore,
       limit: query.limit,
-      totalPages: Math.ceil(total / query.limit) || 1,
     };
   }
 
