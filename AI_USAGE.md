@@ -74,6 +74,22 @@
   - `DELETE /posts/:id/permanent`: Irreversible physical document deletion restricted strictly to already soft-deleted posts.
 - **Automated Hourly Cron Cleanup**: Prompted the integration of `@nestjs/schedule` and `PostCleanupTask` with `@Cron(CronExpression.EVERY_HOUR)` to automatically purge posts soft-deleted older than 5 days.
 
+### Day 8: Community Feed, Infinite Scroll & Mandated Frontend Architecture Refactor
+- **Feed UI Architecture & Reusable Component Decomposition**: Directed the construction of modular post components (`PostCard.tsx`, `PostFeed.tsx`, `PostDetails.tsx`, `DeletePostModal.tsx`, `PostForm.tsx`) with high-contrast typography, formatted timestamps, reaction counters, and glassmorphic styling.
+- **Infinite Pagination with TanStack Query & Intersection Observer**: Guided the implementation of `useInfinitePosts` with `useInfiniteQuery` and browser `IntersectionObserver` configured with `rootMargin: '300px 0px'` for smooth, pre-emptive page prefetching without layout jitter.
+- **7-Step Mandated Frontend Architecture Refactoring**:
+  - Step 1: Set up core technical infrastructure (`lib/axios/`, `lib/tanstack/`, providers).
+  - Step 2: Migrated `auth` feature into domain directory with separate `services/api/auth.ts`, `queries/`, `mutations/`, `components/`, and `schemas/`.
+  - Step 3: Migrated `users` & `profile` features into domain directory with separate API services and queries/mutations.
+  - Step 4: Migrated `posts` feature into domain directory with dedicated infinite query hooks, mutations, and components.
+  - Step 5: Migrated `admin` moderation directory into domain directory with separate services layer.
+  - Step 6: Cleaned up legacy import paths and validated global compilation.
+  - Step 7: Documented architecture, design principles, and BFF exception in `ARCHITECTURE.md`.
+- **Feed Visual Polish & Interaction Upgrades**:
+  - Replaced title purple text hover with an interactive card container background hover elevation (`hover:bg-slate-50/80 hover:border-slate-300 hover:shadow-md hover:-translate-y-0.5`).
+  - Styled dark theme "Read Post" action button (`bg-[#090d16] hover:bg-[#121827] text-white`) with vibrant purple arrow icon (`text-indigo-400 group-hover:text-purple-300`).
+  - Completely eliminated white-on-white text blending on light feed cards.
+
 ---
 
 ## What I Reviewed or Rejected
@@ -132,6 +148,13 @@
 - **Rejected Double-Decrementing User Post Counters**: Audited the interaction between soft-delete and permanent-delete. Prevented a double-decrement bug by ensuring `User.postsCount` is decremented during soft deletion and incremented upon restore, but left unchanged during permanent deletion.
 - **Rejected Serial Database Calls on Paginated Feeds**: Reviewed feed retrieval in `PostsService.findAllPosts` and rejected sequential `await countDocuments()` followed by `await find()`. Refactored into concurrent execution using `Promise.all([countQuery, findQuery])` to minimize latency.
 - **Rejected Leaking Private Author Claims in Public Feeds**: Enforced strict `.populate({ path: 'authorId', select: 'name headline avatarUrl' })` across both feed and single-post endpoints, ensuring `email`, `role`, and `passwordHash` are never leaked over public endpoints.
+
+### Day 8
+- **Rejected Purple Title Text Hover**: Strongly rejected turning the post title purple on hover, as changing text color distracted from readability. Instead, directed applying a smooth, interactive background elevation and slate tint to the card container itself (`hover:bg-slate-50/80 hover:border-slate-300 hover:-translate-y-0.5`).
+- **Rejected Translucent White Text On Light Cards**: Audited post cards and caught unstyled text inheriting the global dark layout color (`text-white`) on white cards. Enforced explicit `text-slate-900` titles and `text-slate-700` body copy to guarantee WCAG AAA contrast.
+- **Rejected Manual Post Creation for Infinite Pagination Testing**: Rather than forcing the user to manually click and type 10+ posts in the UI to trigger page 2, authored an isolated background seed script executing outside git tracking that safely created 7 realistic engineering posts in 2 seconds.
+- **Rejected Direct Browser Axios Calls to NestJS Backend**: Strictly guarded against the frontend architecture refactor switching relative `/api/*` calls to direct `http://localhost:5000/*` URLs, which would have broken `httpOnly` cookie transmission across Next.js BFF route handlers.
+- **Rejected Native Browser Confirmation for Post Deletion**: Rejected `window.confirm` when deleting posts from the feed or details view, enforcing the branded glassmorphic `DeletePostModal`.
 
 ---
 
@@ -200,4 +223,12 @@
 - **Restore Window Expiration Enforcement**: Guaranteed that even if the scheduled cleanup cron has not yet purged an expired post, attempting to call `/posts/:id/restore` on a post deleted longer than 5 days (`5 * 24 * 60 * 60 * 1000`) throws a `400 BadRequestException`.
 - **Cron Task Error Handling**: Wrapped `PostCleanupTask.purgeExpiredPosts()` in a defensive try/catch with `Logger.error`, ensuring transient database connectivity glitches during background sweeps do not crash the NestJS server instance.
 - **Swagger / OpenAPI Documentation Parity**: Audited the Swagger UI at `/docs` and observed missing request body schemas for `POST /posts` and `PATCH /posts/:id`. Added `@ApiProperty` and `@ApiPropertyOptional` to `CreatePostDto` and `UpdatePostDto`, added the `posts` and `profile` tags to `DocumentBuilder` in `main.ts`, and verified interactive documentation.
+
+### Day 8
+- **Playwright Driver External CDN 404 in Browser Subagent**: During automated visual testing, the browser subagent failed to initialize because Playwright's external CDN (`playwright.azureedge.net/builds/driver/playwright-1.57.0-win32_x64.zip`) returned an HTTP 404. Adhered to safety protocols, halted headless browser loops, and successfully verified all UI and API flows via headless Microsoft Edge PDF generation and local test runners.
+- **TanStack Deduplication Across Infinite Query Pages**: Addressed an edge case where newly created posts could shift page offsets and cause duplicate keys in the feed list. Implemented a Map-based deduplication routine in `post-feed.tsx` that guarantees uniquely rendered cards.
+- **Edge Route Protection for Posts Subtrees**: Configured Next.js Edge `src/middleware.ts` to protect creation and editing routes (`/posts/new`, `/posts/*/edit`) while ensuring public read access to `/posts` and `/posts/:id`.
+- **Feed Cache Eviction on Soft-Delete**: Fixed an issue where deleting a post from the detail view left stale cache entries in the feed. Wired `useSoftDeletePostMutation` to invalidate `postKeys.feed()` and redirect cleanly to `/posts`.
+- **Comprehensive API Specification Export**: Generated a standalone 11-page high-resolution PDF document ([`DevPulse_API_Endpoints_Day8.pdf`](file:///c:/Users/hp/Downloads/6senseHQ/DevPulse_API_Endpoints_Day8.pdf)) detailing all 32 endpoints with exact methods, URLs, testing payloads, and expected responses for manual Hoppscotch testing.
+
 

@@ -651,7 +651,110 @@ curl -X DELETE http://localhost:5000/posts/<POST_ID>/permanent \
 
 ---
 
-## 🔐 Environment Variables
+## 📰 Day 8 — Community Feed & Reusable Post Interface
+
+### 1. Feed UI Architecture & Reusable Components
+* **`PostCard` (`frontend/src/features/posts/components/post-card.tsx`)**:
+  * Clean frosted glass design with responsive padding and specular borders (`border-slate-200/80 bg-white`).
+  * **Background Hover Shift**: Replaced title text color shifts with a tactile, smooth card container background transition (`hover:bg-slate-50/80 hover:border-slate-300 hover:shadow-md hover:-translate-y-0.5`).
+  * **Dark Theme Action Button**: Black "Read Post" button (`bg-[#090d16] hover:bg-[#121827] text-white`) with vibrant purple arrow icon (`text-indigo-400 group-hover:text-purple-300`).
+  * **Author Metadata & High-Contrast Typography**: Explicit `text-slate-900` title, `text-slate-700` preview body, and localized timestamps (`formatDateTime`).
+  * **Glass Reaction Counters**: Frosted slate badges for comments (`FiMessageCircle`), likes (`FiThumbsUp`), and dislikes (`FiThumbsDown`).
+* **`PostFeed` (`frontend/src/features/posts/components/post-feed.tsx`)**:
+  * Infinite pagination container powered by TanStack Query's `useInfinitePosts(limit = 10)` hook.
+  * Browser `IntersectionObserver` with `rootMargin: '300px 0px'` targeting a sentinel element (`loadMoreRef`) to prefetch upcoming pages before reaching the bottom.
+  * Loading skeleton with shimmering cards and animated badges.
+  * End-of-feed notice when `hasNextPage === false` ("You're all caught up!").
+* **`PostDetails` (`frontend/src/features/posts/components/post-details.tsx`)**:
+  * Full single-post presentation view with author profile link, reaction counters, and conditional owner/admin Edit & Delete controls.
+* **`DeletePostModal` (`frontend/src/features/posts/components/delete-post-modal.tsx`)**:
+  * Custom theme-matching modal dialog for confirming soft-deletions with automatic feed cache invalidation.
+
+### 2. Frontend Architecture Refactor (Mandated Structure)
+* **Modular Feature Slices (`frontend/src/features/*`)**: Decomposed monolithic page files into discrete feature directories (`auth`, `posts`, `users`, `admin`), each containing dedicated `components/`, `queries/`, `mutations/`, `schemas/`, `types/`, and `utils/`.
+* **Dedicated API Services Layer (`frontend/src/services/api/*`)**: Clean, pure Axios API client functions with zero React or hook dependencies.
+* **Separation of Queries and Mutations**: Strict technical separation between read hooks (`queries/*.ts`) and write hooks (`mutations/*.ts`) with central query key serialization (`src/lib/tanstack/query-keys.ts`).
+* **BFF Cookie Preservation**: Maintained same-origin relative `/api/*` endpoints ensuring Next.js Route Handlers securely forward `httpOnly` JWT cookies server-side to NestJS.
+
+---
+
+## 🔄 End-to-End System Working Flow (As of Day 8)
+
+The complete end-to-end integration across frontend, Next.js BFF, NestJS core, and MongoDB comprises five interconnected operational flows:
+
+### 1. Authentication & Route Guarding Flow
+```
+User (Signup / Login)
+       │
+       ▼
+React Hook Form + Zod validation (mode: 'onTouched')
+       │
+       ▼
+Next.js BFF Route Handlers (app/api/auth/login)
+       │
+       ├── NestJS POST /auth/login -> verifies bcrypt hash -> returns signed JWT
+       │
+       ▼
+Next.js sets httpOnly, Secure, SameSite=Lax cookie ('devpulse_token')
+       │
+       ▼
+Edge Middleware (src/middleware.ts):
+       ├── Intercepts /dashboard, /profile, /posts/new, /posts/*/edit, /admin/*
+       ├── Decodes JWT claims & validates expiration
+       └── Redirects unauthenticated visitors to /login?redirect=<path>
+```
+
+### 2. Developer Profile & Portfolio Management Flow
+```
+1. Public Profile Discovery (GET /users/:id):
+   └── Unauthenticated peer discovery; sensitive fields (email, passwordHash, role) projected out.
+
+2. Authenticated Profile Management (GET /profile/me, PATCH /users/me):
+   ├── Basic Info: Headline, bio, social links (GitHub, LinkedIn, Website).
+   ├── Skills Management: POST /users/me/skills, DELETE /users/me/skills/:skill.
+   ├── Work Experience: POST /users/me/experiences, PATCH /experiences/:id, DELETE.
+   ├── Portfolio Projects: POST /profile/me/projects, PATCH /projects/:id, DELETE.
+   └── Avatar Media: POST /users/:id/avatar (canvas compressed image), GET /users/:id/avatar.
+```
+
+### 3. Community Feed & Posts Lifecycle Flow
+```
+1. Create Post (POST /posts):
+   ├── Validated title (3–120 chars) and body (10–10,000 chars).
+   ├── Author ID automatically bound from JWT claims (@CurrentUser()).
+   ├── Saved to MongoDB; atomically increments author's user.postsCount by 1.
+   └── Feed query cache invalidated (postKeys.feed()).
+
+2. Feed Infinite Pagination (GET /posts?page=X&limit=10&status=active):
+   ├── Indexed sort by { createdAt: -1, _id: -1 } for high throughput.
+   ├── Populated author summary (name, headline, avatarUrl).
+   ├── Client-side IntersectionObserver prefetches next page at 300px margin.
+   └── Unique post ID deduplication prevents duplicate cards.
+
+3. Soft-Delete & 5-Day Grace Period (DELETE /posts/:id):
+   ├── Sets deletedAt = now and deletedBy = userId.
+   ├── Decrements author's postsCount by 1.
+   ├── Immediately hidden from active feed queries.
+   ├── Recoverable within 5 days via POST /posts/:id/restore.
+   └── Background Cron (PostCleanupTask): Hourly sweep purges posts deleted > 5 days.
+```
+
+### 4. Admin User Directory & Moderation Flow
+```
+1. Access Verification:
+   └── GET /auth/admin-check validates @Roles('admin') via RolesGuard.
+
+2. Directory Management (/admin/users):
+   ├── Paginated directory with search (name, email, headline) and status filters.
+   ├── KPI metrics: Total Users, Active Accounts, Deleted Accounts, Admins.
+   ├── Edit User Modal: Modify user name, headline, bio, or promote to 'admin'.
+   └── Soft-Delete User: Revokes login capabilities and displays admin deletion notice.
+```
+
+### 5. API Testing & Documentation
+- **Interactive OpenAPI Documentation**: `http://localhost:5000/docs`
+- **Complete Endpoint Specification (PDF)**: [`DevPulse_API_Endpoints_Day8.pdf`](file:///c:/Users/hp/Downloads/6senseHQ/DevPulse_API_Endpoints_Day8.pdf) detailing all 32 endpoints with methods, testing bodies, and expected outputs.
+
 
 ### Backend (`backend/.env`)
 
@@ -826,3 +929,24 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
   - **Navigation Hamburger Toggle**: Cleanly positioned at right edge with ample padding.
   - **Mobile Menu Drawer**: Tap hamburger button to reveal full user name (no `Name.....` truncation), role badge, email, nav links, and full-width sign-out button.
   - **Landing Page Hero**: "Continue as [Full Name]" button naturally wraps text across lines using `break-words`.
+
+### 4. Day 8 Community Feed & Infinite Scroll Verification Flow
+1. **Navigate to `/posts` (Community Feed)**:
+   - Initial feed loads page 1 with 10 cards using `useInfiniteQuery`.
+   - Verify post card layout: author initials avatar, name, headline, formatted timestamp, post title, post preview, and glass reaction pills.
+   - Hover over post cards to verify smooth background hover transition (`hover:bg-slate-50/80`) and dark theme "Read Post" button.
+2. **Infinite Pagination & Prefetching**:
+   - Open browser DevTools (F12) -> **Network** tab (filter by `posts`).
+   - Scroll down to within 300px of the feed bottom.
+   - Verify that the `IntersectionObserver` triggers `GET /api/posts?page=2&limit=10` seamlessly.
+   - Observe the loading skeleton and subsequent page cards appending cleanly with deduplication.
+   - When all pages are loaded, verify `"You're all caught up! You've reached the end of the feed."` displays.
+3. **Create Post Flow (`/posts/new`)**:
+   - Click **"Create Post"** in the top navigation bar.
+   - Enter title and body. Verify character counters and submit.
+   - Verify automatic feed cache invalidation and redirect to the newly created post details page (`/posts/[id]`).
+4. **Soft-Delete & Cache Invalidation**:
+   - On your own post, click **"Delete"** to open `DeletePostModal`.
+   - Confirm deletion. Verify the post vanishes immediately from the feed and author's `postsCount` decrements.
+   - Verify soft-deleted posts are excluded from the main feed and recoverable within 5 days.
+
