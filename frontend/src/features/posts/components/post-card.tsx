@@ -50,7 +50,7 @@ export function PostCard({
     Boolean(user) && (user?.role === "admin" || user?.id === post.authorId.id);
 
   return (
-    <article className="group/card overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 text-slate-900 shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl transition-all duration-300 hover:shadow-[0_16px_40px_rgba(0,0,0,0.1)] hover:border-slate-300">
+    <article className="group/card overflow-hidden rounded-3xl border border-slate-200/80 bg-white hover:bg-slate-50/80 text-slate-900 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl transition-all duration-200 hover:shadow-[0_16px_40px_rgba(0,0,0,0.08)] hover:border-slate-300 hover:-translate-y-0.5">
       <div className="p-6 sm:p-7">
         {/* --------------------------------
             Author
@@ -129,8 +129,8 @@ export function PostCard({
             Post content
         -------------------------------- */}
         <div className="mt-5">
-          <Link href={`/posts/${post.id}`} className="group block">
-            <h2 className="font-manrope text-lg sm:text-xl font-bold tracking-tight text-slate-900 transition-colors group-hover:text-indigo-600">
+          <Link href={`/posts/${post.id}`} className="block">
+            <h2 className="font-manrope text-lg sm:text-xl font-bold tracking-tight text-slate-900">
               {post.title}
             </h2>
           </Link>
@@ -177,10 +177,10 @@ export function PostCard({
           {/* Read Post Button */}
           <Link
             href={`/posts/${post.id}`}
-            className="group/read inline-flex items-center space-x-1.5 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-800 hover:text-indigo-600 px-3.5 py-2 text-xs font-semibold font-manrope shadow-xs hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer"
+            className="group/read inline-flex items-center space-x-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-800 hover:text-slate-950 px-3.5 py-2 text-xs font-semibold font-manrope shadow-xs hover:shadow-md hover:border-slate-300 transition-all cursor-pointer"
           >
             <span>Read Post</span>
-            <FiArrowRight className="h-3.5 w-3.5 text-indigo-600 transition-transform group-hover/read:translate-x-0.5" />
+            <FiArrowRight className="h-3.5 w-3.5 text-slate-600 transition-transform group-hover/read:translate-x-0.5" />
           </Link>
         </div>
       </div>
