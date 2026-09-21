@@ -12,6 +12,12 @@ import { CreatePostDto } from './dto/create-post.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
 
 import { UsersService } from '../users/users.service.js';
+import {
+  POPULATE_POST_LIST_AUTHOR,
+  POPULATE_POST_DETAIL_AUTHOR,
+} from './posts.constants.js';
+
+export * from './posts.constants.js';
 
 export interface PaginatedPostsResult {
   posts: PostDocument[];
@@ -237,10 +243,7 @@ export class PostsService {
         _id: -1,
       })
       .limit(query.limit + 1)
-      .populate({
-        path: 'authorId',
-        select: 'name headline',
-      })
+      .populate(POPULATE_POST_LIST_AUTHOR)
       .exec();
 
     const hasMore = items.length > query.limit;
@@ -267,10 +270,7 @@ export class PostsService {
   async findOnePost(postId: string): Promise<PostDocument> {
     const post = await this.findActivePostByIdOrThrow(postId);
 
-    await post.populate({
-      path: 'authorId',
-      select: 'name headline avatarUrl',
-    });
+    await post.populate(POPULATE_POST_DETAIL_AUTHOR);
 
     return post;
   }
