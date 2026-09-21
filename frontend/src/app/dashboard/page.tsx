@@ -11,11 +11,11 @@ import {
   FiActivity,
 } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
-import { ApiError } from '@/lib/api';
+import { ApiError } from '@/types/api';
 import {
   useVerifyMeMutation,
   useVerifyAdminMutation,
-} from '@/features/auth/auth.api';
+} from '@/features/auth/mutations/auth-mutations';
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();

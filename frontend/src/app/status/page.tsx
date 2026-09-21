@@ -15,18 +15,8 @@ import {
   FiClock,
   FiShield,
 } from 'react-icons/fi';
-import { apiClient, ApiError } from '@/lib/api';
-
-interface HealthData {
-  status: string;
-  timestamp?: string;
-  db?: 'connected' | 'disconnected';
-  database?: {
-    status: string;
-    connectionState: number;
-    host?: string;
-  };
-}
+import { getHealthStatus, type HealthData } from '@/services/api/health';
+import { ApiError } from '@/types/api';
 
 export default function StatusPage() {
   const {
@@ -41,11 +31,18 @@ export default function StatusPage() {
     queryKey: ['health'],
     queryFn: async () => {
       try {
-        const res = await apiClient<HealthData>('/health');
-        return res.data;
-      } catch (err) {
-        if (err instanceof ApiError && err.statusCode === 503 && err.data) {
-          return err.data as HealthData;
+        return await getHealthStatus();
+      } catch (err: unknown) {
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          'response' in err &&
+          (err as { response?: { status?: number; data?: unknown } }).response?.status === 503
+        ) {
+          const resData = (err as { response?: { data?: unknown } }).response?.data;
+          if (resData && typeof resData === 'object') {
+            return resData as HealthData;
+          }
         }
         throw err;
       }
