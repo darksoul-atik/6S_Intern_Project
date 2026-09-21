@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
+
 import Link from "next/link";
+
+import { useRouter } from "next/navigation";
+
 import {
   FiAlertCircle,
   FiArrowLeft,
@@ -14,20 +18,15 @@ import {
 } from "react-icons/fi";
 
 import { useAuth } from "@/context/AuthContext";
+
 import { formatDate, getInitials } from "@/lib/formatters";
 
-import { type Post, usePost } from "./posts.api";
+import { DeletePostModal } from "./DeletePostModal";
+
+import { usePost, useSoftDeletePostMutation } from "./posts.api";
 
 interface PostDetailsProps {
   postId: string;
-
-  /*
-   * Task 9 will connect this to the
-   * custom delete confirmation modal.
-   */
-  onDelete?: (post: Post) => void;
-
-  isDeleting?: boolean;
 }
 
 function resolveAvatarUrl(avatarUrl?: string | null): string | null {
@@ -79,16 +78,83 @@ function PostDetailsSkeleton() {
   );
 }
 
-export function PostDetails({
-  postId,
-  onDelete,
-  isDeleting = false,
-}: PostDetailsProps) {
+export function PostDetails({ postId }: PostDetailsProps) {
+  const router = useRouter();
+
   const { user } = useAuth();
 
   const { data: post, isPending, isError, error, refetch } = usePost(postId);
 
+  /*
+  |--------------------------------------------------------------------------
+  | Delete
+  |--------------------------------------------------------------------------
+  */
+
+  const deleteMutation = useSoftDeletePostMutation();
+
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Avatar fallback
+  |--------------------------------------------------------------------------
+  */
+
   const [failedAvatarSrc, setFailedAvatarSrc] = useState<string | null>(null);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Delete handlers
+  |--------------------------------------------------------------------------
+  */
+
+  const handleOpenDelete = () => {
+    setDeleteError(null);
+
+    setIsDeleteOpen(true);
+  };
+
+  const handleCloseDelete = () => {
+    if (deleteMutation.isPending) {
+      return;
+    }
+
+    setDeleteError(null);
+
+    setIsDeleteOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!post) {
+      return;
+    }
+
+    if (deleteMutation.isPending) {
+      return;
+    }
+
+    setDeleteError(null);
+
+    try {
+      await deleteMutation.mutateAsync(post.id);
+
+      setIsDeleteOpen(false);
+
+      /*
+       * The post is now soft-deleted,
+       * so its normal detail route will
+       * no longer be available.
+       */
+      router.push("/posts");
+    } catch (error) {
+      setDeleteError(
+        error instanceof Error ? error.message : "Failed to delete post.",
+      );
+    }
+  };
 
   /*
   |--------------------------------------------------------------------------
@@ -165,116 +231,124 @@ export function PostDetails({
   |--------------------------------------------------------------------------
   | Permission
   |--------------------------------------------------------------------------
-  |
-  | Author can manage own post.
-  | Admin can manage any post.
-  |--------------------------------------------------------------------------
   */
 
   const canManagePost =
     Boolean(user) && (user?.role === "admin" || user?.id === post.authorId.id);
 
   return (
-    <article className="rounded-3xl border border-white/10 bg-white/4 shadow-xl backdrop-blur-xl">
-      <div className="p-6 sm:p-8">
-        {/* Top row */}
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          {/* Author */}
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-indigo-400/20 bg-linear-to-br from-indigo-500/20 to-purple-500/20 text-sm font-bold text-indigo-200">
-              {showAvatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={avatarSrc ?? undefined}
-                  alt={`${post.authorId.name}'s avatar`}
-                  className="h-full w-full object-cover"
-                  onError={() => setFailedAvatarSrc(avatarSrc)}
-                />
-              ) : (
-                <span>{getInitials(post.authorId.name)}</span>
-              )}
-            </div>
+    <>
+      <article className="rounded-3xl border border-white/10 bg-white/4 shadow-xl backdrop-blur-xl">
+        <div className="p-6 sm:p-8">
+          {/* Top */}
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            {/* Author */}
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-indigo-400/20 bg-linear-to-br from-indigo-500/20 to-purple-500/20 text-sm font-bold text-indigo-200">
+                {showAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarSrc ?? undefined}
+                    alt={`${post.authorId.name}'s avatar`}
+                    className="h-full w-full object-cover"
+                    onError={() => setFailedAvatarSrc(avatarSrc)}
+                  />
+                ) : (
+                  <span>{getInitials(post.authorId.name)}</span>
+                )}
+              </div>
 
-            <div className="min-w-0">
-              <p className="truncate font-manrope text-sm font-bold text-white">
-                {post.authorId.name}
-              </p>
-
-              {post.authorId.headline && (
-                <p className="truncate text-xs text-zinc-400">
-                  {post.authorId.headline}
+              <div className="min-w-0">
+                <p className="truncate font-manrope text-sm font-bold text-white">
+                  {post.authorId.name}
                 </p>
-              )}
 
-              <p className="mt-1 text-xs text-zinc-500">
-                {formatDate(post.createdAt)}
-              </p>
+                {post.authorId.headline && (
+                  <p className="truncate text-xs text-zinc-400">
+                    {post.authorId.headline}
+                  </p>
+                )}
+
+                <p className="mt-1 text-xs text-zinc-500">
+                  {formatDate(post.createdAt)}
+                </p>
+              </div>
             </div>
-          </div>
 
-          {/* Owner / Admin actions */}
-          {canManagePost && (
-            <div className="flex items-center gap-2">
-              <Link
-                href={`/posts/${post.id}/edit`}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/4 px-3.5 py-2 text-sm font-semibold text-zinc-300 transition-colors hover:border-indigo-400/30 hover:bg-indigo-500/10 hover:text-indigo-300"
-              >
-                <FiEdit2 className="h-4 w-4" />
-                Edit
-              </Link>
+            {/* Actions */}
+            {canManagePost && (
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/posts/${post.id}/edit`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/4 px-3.5 py-2 text-sm font-semibold text-zinc-300 transition-colors hover:border-indigo-400/30 hover:bg-indigo-500/10 hover:text-indigo-300"
+                >
+                  <FiEdit2 className="h-4 w-4" />
+                  Edit
+                </Link>
 
-              {onDelete && (
                 <button
                   type="button"
-                  onClick={() => onDelete(post)}
-                  disabled={isDeleting}
+                  onClick={handleOpenDelete}
+                  disabled={deleteMutation.isPending}
                   className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/4 px-3.5 py-2 text-sm font-semibold text-zinc-300 transition-colors hover:border-rose-400/30 hover:bg-rose-500/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <FiTrash2 className="h-4 w-4" />
                   Delete
                 </button>
-              )}
+              </div>
+            )}
+          </div>
+
+          {/* Title */}
+          <h1 className="mt-8 font-manrope text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            {post.title}
+          </h1>
+
+          {/* Body */}
+          <div className="mt-6 whitespace-pre-wrap wrap-break-word text-[15px] leading-8 text-zinc-300">
+            {post.body}
+          </div>
+
+          {/* Counters */}
+          <div className="mt-8 flex flex-wrap items-center gap-5 border-t border-white/10 pt-5 text-sm text-zinc-400">
+            <div className="flex items-center gap-2">
+              <FiMessageCircle className="h-4 w-4" />
+
+              <span>{post.commentCount}</span>
+
+              <span className="text-zinc-500">comments</span>
             </div>
-          )}
-        </div>
 
-        {/* Title */}
-        <h1 className="mt-8 font-manrope text-3xl font-bold tracking-tight text-white sm:text-4xl">
-          {post.title}
-        </h1>
+            <div className="flex items-center gap-2">
+              <FiThumbsUp className="h-4 w-4" />
 
-        {/* Full body */}
-        <div className="mt-6 whitespace-pre-wrap wrap-break-word text-[15px] leading-8 text-zinc-300">
-          {post.body}
-        </div>
+              <span>{post.reactionCounts.like}</span>
 
-        {/* Counters */}
-        <div className="mt-8 flex flex-wrap items-center gap-5 border-t border-white/10 pt-5 text-sm text-zinc-400">
-          <div className="flex items-center gap-2">
-            <FiMessageCircle className="h-4 w-4" />
+              <span className="text-zinc-500">likes</span>
+            </div>
 
-            <span>{post.commentCount}</span>
+            <div className="flex items-center gap-2">
+              <FiThumbsDown className="h-4 w-4" />
 
-            <span className="text-zinc-500">comments</span>
-          </div>
+              <span>{post.reactionCounts.dislike}</span>
 
-          <div className="flex items-center gap-2">
-            <FiThumbsUp className="h-4 w-4" />
-
-            <span>{post.reactionCounts.like}</span>
-
-            <span className="text-zinc-500">likes</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <FiThumbsDown className="h-4 w-4" />
-
-            <span>{post.reactionCounts.dislike}</span>
-
-            <span className="text-zinc-500">dislikes</span>
+              <span className="text-zinc-500">dislikes</span>
+            </div>
           </div>
         </div>
-      </div>
-    </article>
+      </article>
+
+      {/* Delete confirmation */}
+      <DeletePostModal
+        isOpen={isDeleteOpen}
+        postTitle={post.title}
+        isDeleting={deleteMutation.isPending}
+        error={deleteError}
+        onClose={handleCloseDelete}
+        onConfirm={() => {
+          void handleConfirmDelete();
+        }}
+      />
+    </>
   );
 }
