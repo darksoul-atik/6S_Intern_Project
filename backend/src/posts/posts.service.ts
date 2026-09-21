@@ -190,7 +190,7 @@ export class PostsService {
         .limit(query.limit)
         .populate({
           path: 'authorId',
-          select: 'name headline avatarUrl',
+          select: 'name headline',
         })
         .exec(),
     ]);
