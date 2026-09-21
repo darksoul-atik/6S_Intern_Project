@@ -9,7 +9,9 @@ import {
   Param,
   Query,
   UseGuards,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -218,6 +220,29 @@ export class UsersController {
         includeDeleted === '1' ||
         includeDeleted === undefined,
     });
+  }
+
+  @Get(':id/avatar')
+  @ApiOperation({
+    summary: 'Get user avatar image (GridFS stream)',
+    description:
+      'Streams the binary avatar image directly from MongoDB GridFS with client-side caching headers.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB ObjectId of the user',
+    example: '66e138fc29094e137127e4e0',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Avatar image streamed successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Avatar not found',
+  })
+  async getAvatar(@Param('id') id: string, @Res() res: Response) {
+    return this.usersService.streamAvatar(id, res);
   }
 
   @Get(':id')

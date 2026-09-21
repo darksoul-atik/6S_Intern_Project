@@ -70,8 +70,9 @@ export class UpdateProfileDto {
   @IsString({
     message: 'avatarUrl must be a string',
   })
-  @Matches(/^(https?:\/\/|data:image\/)/, {
-    message: 'avatarUrl must be a valid HTTP/HTTPS URL or Base64 data URI',
+  @Matches(/^(https?:\/\/|data:image\/|\/users\/[0-9a-fA-F]{24}\/avatar)/, {
+    message:
+      'avatarUrl must be a valid HTTP/HTTPS URL, Base64 data URI, or avatar path',
   })
   avatarUrl?: string | null;
 }

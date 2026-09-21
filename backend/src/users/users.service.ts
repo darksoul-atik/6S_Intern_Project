@@ -3,9 +3,11 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  Optional,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import type { Model } from 'mongoose';
+import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import type { Connection, Model } from 'mongoose';
+import { GridFSBucket } from 'mongodb';
 
 import { User, UserDocument } from './schemas/user.schema.js';
 import { UpdatePortfolioProjectDto } from './dto/update-portfolio-project.dto.js';
@@ -28,10 +30,81 @@ export interface PaginatedUsersResult {
 
 @Injectable()
 export class UsersService {
+  private gridFsBucket?: GridFSBucket;
+
   constructor(
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
+
+    @Optional()
+    @InjectConnection()
+    private readonly connection?: Connection,
   ) {}
+
+  private getGridFsBucket(): GridFSBucket {
+    if (!this.gridFsBucket && this.connection?.db) {
+      this.gridFsBucket = new GridFSBucket(this.connection.db, {
+        bucketName: 'avatars',
+      });
+    }
+
+    if (!this.gridFsBucket) {
+      throw new BadRequestException(
+        'Database connection not ready for avatar storage',
+      );
+    }
+
+    return this.gridFsBucket;
+  }
+
+  async saveBase64Avatar(userId: string, dataUri: string): Promise<string> {
+    const bucket = this.getGridFsBucket();
+    const matches = dataUri.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+
+    if (!matches || matches.length !== 3) {
+      throw new BadRequestException('Invalid base64 image data');
+    }
+
+    const contentType = matches[1];
+    const buffer = Buffer.from(matches[2], 'base64');
+
+    try {
+      const existingFiles = await bucket.find({ filename: userId }).toArray();
+      for (const f of existingFiles) {
+        await bucket.delete(f._id);
+      }
+    } catch {
+      // Ignore if no existing file
+    }
+
+    const uploadStream = bucket.openUploadStream(userId, {
+      metadata: { contentType, userId },
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      uploadStream.end(buffer, () => resolve());
+      uploadStream.on('error', reject);
+    });
+
+    return `/users/${userId}/avatar`;
+  }
+
+  async streamAvatar(userId: string, res: any): Promise<void> {
+    const bucket = this.getGridFsBucket();
+    const files = await bucket.find({ filename: userId }).toArray();
+
+    if (!files || files.length === 0) {
+      throw new NotFoundException(`Avatar for user '${userId}' not found`);
+    }
+
+    const file = files[0];
+    const contentType = (file.metadata?.contentType as string) || 'image/jpeg';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+
+    const downloadStream = bucket.openDownloadStreamByName(userId);
+    downloadStream.pipe(res);
+  }
 
   // ---------------------------------------------------------------------------
   // Basic user lookup
@@ -197,7 +270,17 @@ export class UsersService {
     }
 
     if (updateProfileDto.avatarUrl !== undefined) {
-      user.avatarUrl = updateProfileDto.avatarUrl ?? undefined;
+      if (
+        updateProfileDto.avatarUrl &&
+        updateProfileDto.avatarUrl.startsWith('data:image/')
+      ) {
+        user.avatarUrl = await this.saveBase64Avatar(
+          userId,
+          updateProfileDto.avatarUrl,
+        );
+      } else {
+        user.avatarUrl = updateProfileDto.avatarUrl ?? undefined;
+      }
     }
 
     await user.save();
@@ -734,7 +817,14 @@ export class UsersService {
     }
 
     if (dto.avatarUrl !== undefined) {
-      user.avatarUrl = dto.avatarUrl || undefined;
+      if (dto.avatarUrl && dto.avatarUrl.startsWith('data:image/')) {
+        user.avatarUrl = await this.saveBase64Avatar(
+          targetUserId,
+          dto.avatarUrl,
+        );
+      } else {
+        user.avatarUrl = dto.avatarUrl || undefined;
+      }
     }
 
     if (dto.isDeleted !== undefined) {
