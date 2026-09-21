@@ -45,7 +45,7 @@ DevPulse is a high-performance, engineering-first developer community platform e
 ## 🛠️ Tech Stack Summary
 
 - **Backend**: [NestJS](https://nestjs.com/) (Node.js, TypeScript), [Mongoose](https://mongoosejs.com/) (MongoDB ODM), `@nestjs/config`, `@nestjs/swagger`, `passport-jwt`, `bcryptjs`, `class-validator`, `vitest`
-- **Frontend**: [Next.js 16](https://nextjs.org/) (React 19, TypeScript, App Router), [Axios](https://axios-http.com/), [TanStack Query v5](https://tanstack.com/query), [React Hook Form](https://react-hook-form.com/), [Zod](https://zod.dev/), [Tailwind CSS](https://tailwindcss.com/), [Framer Motion](https://www.framer.com/motion/), [React Icons](https://react-icons.github.io/react-icons/icons/fi/), Google Inter & Manrope Fonts
+- **Frontend**: [Next.js 16](https://nextjs.org/) (React 19, TypeScript, App Router), [Axios](https://axios-http.com/), [TanStack Query v5](https://tanstack.com/query), [React Hook Form](https://react-hook-form.com/), [Zod](https://zod.dev/), [Tailwind CSS](https://tailwindcss.com/), [Framer Motion](https://www.framer.com/motion/), [React Icons](https://react-icons.github.io/react-icons/icons/fi/), Google Inter & Manrope Fonts. Architecture follows the mandated feature-driven modular structure documented in [frontend/ARCHITECTURE.md](frontend/ARCHITECTURE.md).
 - **Database**: MongoDB (Atlas cloud cluster or local MongoDB)
 - **API Documentation**: OpenAPI 3.0 / Swagger UI at `http://localhost:5000/docs`
 - **Package Manager**: npm
