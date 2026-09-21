@@ -33,7 +33,7 @@ function PostFeedSkeleton() {
       }).map((_, index) => (
         <div
           key={index}
-          className="animate-pulse rounded-3xl border border-white/80 bg-white/75 p-6 sm:p-7 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl"
+          className="animate-pulse rounded-3xl border border-slate-200/80 bg-white/95 p-6 sm:p-7 shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl"
         >
           <div className="flex items-center gap-3.5">
             <div className="h-11 w-11 rounded-2xl bg-slate-200/80" />
@@ -258,7 +258,7 @@ export function PostFeed() {
     return (
       <div
         role="alert"
-        className="rounded-3xl border border-rose-200/80 bg-white/80 p-8 sm:p-10 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl"
+        className="rounded-3xl border border-rose-200 bg-white/95 p-8 sm:p-10 text-center shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl text-slate-900"
       >
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-700">
           <FiAlertCircle className="h-6 w-6" />
@@ -268,7 +268,7 @@ export function PostFeed() {
           Could not load the feed
         </h2>
 
-        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600 font-sans">
+        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-700 font-sans">
           {message}
         </p>
 
@@ -279,7 +279,7 @@ export function PostFeed() {
           }}
           className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] px-4 py-2 text-xs font-semibold font-manrope text-white shadow-md hover:shadow-lg transition-all"
         >
-          <FiRefreshCw className="h-3.5 w-3.5" />
+          <FiRefreshCw className="h-3.5 w-3.5 text-indigo-400" />
           <span>Try again</span>
         </button>
       </div>
@@ -294,7 +294,7 @@ export function PostFeed() {
 
   if (posts.length === 0) {
     return (
-      <div className="rounded-3xl border border-white/80 bg-white/75 px-6 py-12 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl">
+      <div className="rounded-3xl border border-slate-200/80 bg-white/95 px-6 py-12 text-center shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl text-slate-900">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600">
           <FiInbox className="h-6 w-6" />
         </div>
@@ -303,7 +303,7 @@ export function PostFeed() {
           No posts yet
         </h2>
 
-        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600 font-sans">
+        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-700 font-sans">
           The DevPulse feed is empty right now. Be the first developer to share an update, architecture insight, or question!
         </p>
       </div>
@@ -333,7 +333,7 @@ export function PostFeed() {
         {isFetchingNextPage && (
           <div
             aria-live="polite"
-            className="flex items-center justify-center gap-2 py-5 text-xs font-semibold font-manrope text-slate-500"
+            className="flex items-center justify-center gap-2 py-5 text-xs font-semibold font-manrope text-slate-700"
           >
             <FiRefreshCw className="h-3.5 w-3.5 animate-spin text-indigo-600" />
             <span>Loading more posts...</span>
@@ -343,7 +343,7 @@ export function PostFeed() {
         {isFetchNextPageError && (
           <div
             role="alert"
-            className="rounded-2xl border border-rose-200/80 bg-white/90 px-5 py-4 text-center shadow-xs backdrop-blur-md"
+            className="rounded-2xl border border-rose-200 bg-white/95 px-5 py-4 text-center shadow-xs backdrop-blur-md text-slate-900"
           >
             <div className="flex items-center justify-center gap-2 text-xs font-semibold font-manrope text-rose-600">
               <FiAlertCircle className="h-4 w-4" />
@@ -366,7 +366,7 @@ export function PostFeed() {
         {/* End */}
         {!hasNextPage && !isFetchingNextPage && !isFetchNextPageError && (
           <div
-            className="flex items-center justify-center gap-2 py-6 text-xs font-medium font-manrope text-slate-400"
+            className="flex items-center justify-center gap-2 py-6 text-xs font-semibold font-manrope text-slate-600"
             aria-label="End of feed"
           >
             <FiCheckCircle className="h-4 w-4 text-emerald-600" />

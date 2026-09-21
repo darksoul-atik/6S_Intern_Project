@@ -50,7 +50,7 @@ export function PostCard({
     Boolean(user) && (user?.role === "admin" || user?.id === post.authorId.id);
 
   return (
-    <article className="overflow-hidden rounded-3xl border border-white/80 bg-white/75 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all duration-300 hover:shadow-[0_16px_40px_rgba(0,0,0,0.08)] hover:border-white">
+    <article className="group/card overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 text-slate-900 shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl transition-all duration-300 hover:shadow-[0_16px_40px_rgba(0,0,0,0.1)] hover:border-slate-300">
       <div className="p-6 sm:p-7">
         {/* --------------------------------
             Author
@@ -81,13 +81,13 @@ export function PostCard({
               </p>
 
               {post.authorId.headline && (
-                <p className="truncate text-xs text-slate-500 font-sans">
+                <p className="truncate text-xs font-medium text-slate-600 font-sans">
                   {post.authorId.headline}
                 </p>
               )}
 
               {/* Timestamp with Date and Time */}
-              <p className="mt-0.5 text-[11px] text-slate-400 font-sans">
+              <p className="mt-0.5 text-xs font-medium text-slate-500 font-sans">
                 {formatDateTime(post.createdAt)}
               </p>
             </div>
@@ -102,7 +102,7 @@ export function PostCard({
               <Link
                 href={`/posts/${post.id}/edit`}
                 aria-label={`Edit ${post.title}`}
-                className="inline-flex items-center space-x-1 rounded-xl border border-slate-200/80 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 px-3 py-1.5 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all cursor-pointer"
+                className="inline-flex items-center space-x-1 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 px-3 py-1.5 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all cursor-pointer"
               >
                 <FiEdit2 className="h-3.5 w-3.5 text-slate-500" />
                 <span>Edit</span>
@@ -115,9 +115,9 @@ export function PostCard({
                   onClick={() => onDelete(post)}
                   disabled={isDeleting}
                   aria-label={`Delete ${post.title}`}
-                  className="inline-flex items-center space-x-1 rounded-xl border border-rose-200/70 bg-rose-50/60 hover:bg-rose-100/80 text-rose-600 hover:text-rose-700 px-3 py-1.5 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center space-x-1 rounded-xl border border-rose-200 bg-rose-50/80 hover:bg-rose-100 text-rose-700 hover:text-rose-800 px-3 py-1.5 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <FiTrash2 className="h-3.5 w-3.5 text-rose-500" />
+                  <FiTrash2 className="h-3.5 w-3.5 text-rose-600" />
                   <span>Delete</span>
                 </button>
               )}
@@ -135,7 +135,7 @@ export function PostCard({
             </h2>
           </Link>
 
-          <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm leading-6 text-slate-600 font-sans">
+          <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm leading-6 text-slate-700 font-sans">
             {post.body}
           </p>
         </div>
@@ -148,39 +148,39 @@ export function PostCard({
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {/* Comments */}
             <div
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/70 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-600 shadow-2xs backdrop-blur-md"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
               title="Comments"
             >
-              <FiMessageCircle className="h-3.5 w-3.5 text-slate-500" />
-              <span>{post.commentCount}</span>
+              <FiMessageCircle className="h-3.5 w-3.5 text-slate-600" />
+              <span className="font-bold text-slate-900">{post.commentCount}</span>
             </div>
 
             {/* Likes */}
             <div
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/70 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-600 shadow-2xs backdrop-blur-md"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
               title="Likes"
             >
               <FiThumbsUp className="h-3.5 w-3.5 text-indigo-600" />
-              <span>{post.reactionCounts.like}</span>
+              <span className="font-bold text-slate-900">{post.reactionCounts.like}</span>
             </div>
 
             {/* Dislikes */}
             <div
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/70 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-600 shadow-2xs backdrop-blur-md"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
               title="Dislikes"
             >
               <FiThumbsDown className="h-3.5 w-3.5 text-rose-500" />
-              <span>{post.reactionCounts.dislike}</span>
+              <span className="font-bold text-slate-900">{post.reactionCounts.dislike}</span>
             </div>
           </div>
 
           {/* Read Post Button */}
           <Link
             href={`/posts/${post.id}`}
-            className="inline-flex items-center space-x-1.5 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-3.5 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
+            className="group/read inline-flex items-center space-x-1.5 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-800 hover:text-indigo-600 px-3.5 py-2 text-xs font-semibold font-manrope shadow-xs hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer"
           >
             <span>Read Post</span>
-            <FiArrowRight className="h-3.5 w-3.5 text-indigo-400" />
+            <FiArrowRight className="h-3.5 w-3.5 text-indigo-600 transition-transform group-hover/read:translate-x-0.5" />
           </Link>
         </div>
       </div>

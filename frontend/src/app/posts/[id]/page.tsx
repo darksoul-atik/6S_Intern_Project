@@ -35,7 +35,7 @@ export default async function PostPage({ params }: PostPageProps) {
         <div className="mx-auto w-full max-w-3xl space-y-6">
           <Link
             href="/posts"
-            className="inline-flex items-center space-x-1.5 sm:space-x-2 text-xs font-semibold font-manrope text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-slate-200/70 rounded-xl px-3 sm:px-3.5 py-2 backdrop-blur-md shadow-xs transition-all"
+            className="inline-flex items-center space-x-1.5 sm:space-x-2 text-xs font-semibold font-manrope text-slate-700 hover:text-slate-900 bg-white/90 hover:bg-white border border-slate-200 rounded-xl px-3 sm:px-3.5 py-2 backdrop-blur-md shadow-xs transition-all"
           >
             <FiArrowLeft className="h-3.5 w-3.5" />
             <span>Back to feed</span>

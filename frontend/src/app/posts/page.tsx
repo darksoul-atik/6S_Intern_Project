@@ -7,18 +7,18 @@ export default function PostsPage() {
     <div className="min-h-screen bg-[#f8fafc] relative font-sans text-slate-900 overflow-x-hidden selection:bg-indigo-500 selection:text-white">
       {/* Background Dot Texture */}
       <div
-        className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:24px_24px] opacity-60 pointer-events-none"
+        className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] bg-size-[24px_24px] opacity-60 pointer-events-none"
         aria-hidden="true"
       />
 
       {/* Radiant Glow Orbs */}
       <div
-        className="absolute top-12 left-1/4 -translate-x-1/2 w-[550px] h-[500px] rounded-full bg-gradient-to-tr from-indigo-300/30 via-emerald-200/20 to-transparent blur-[120px] pointer-events-none"
+        className="absolute top-12 left-1/4 -translate-x-1/2 w-137.5 h-125 rounded-full bg-linear-to-tr from-indigo-300/30 via-emerald-200/20 to-transparent blur-[120px] pointer-events-none"
         aria-hidden="true"
       />
 
       <div
-        className="absolute top-28 right-1/4 translate-x-1/3 w-[600px] h-[520px] rounded-full bg-gradient-to-bl from-emerald-300/25 via-indigo-200/20 to-transparent blur-[130px] pointer-events-none"
+        className="absolute top-28 right-1/4 translate-x-1/3 w-150 h-130 rounded-full bg-linear-to-bl from-emerald-300/25 via-indigo-200/20 to-transparent blur-[130px] pointer-events-none"
         aria-hidden="true"
       />
 
@@ -28,7 +28,7 @@ export default function PostsPage() {
           <div className="flex items-center justify-between gap-3">
             <Link
               href="/dashboard"
-              className="inline-flex items-center space-x-1.5 sm:space-x-2 text-xs font-semibold font-manrope text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-slate-200/70 rounded-xl px-3 sm:px-3.5 py-2 backdrop-blur-md shadow-xs transition-all"
+              className="inline-flex items-center space-x-1.5 sm:space-x-2 text-xs font-semibold font-manrope text-slate-700 hover:text-slate-900 bg-white/90 hover:bg-white border border-slate-200 rounded-xl px-3 sm:px-3.5 py-2 backdrop-blur-md shadow-xs transition-all"
             >
               <FiArrowLeft className="h-3.5 w-3.5" />
               <span>Dashboard</span>
@@ -55,7 +55,8 @@ export default function PostsPage() {
             </h1>
 
             <p className="mt-1.5 text-xs sm:text-sm text-slate-600 font-sans">
-              Discover engineering insights, architecture patterns, and discussions from DevPulse developers.
+              Discover engineering insights, architecture patterns, and
+              discussions from DevPulse developers.
             </p>
           </div>
 
@@ -65,4 +66,3 @@ export default function PostsPage() {
     </div>
   );
 }
-

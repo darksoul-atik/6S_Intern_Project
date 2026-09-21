@@ -198,7 +198,7 @@ export function PostForm({
 
           <span
             className={`text-xs font-sans ${
-              titleValue.length > 200 ? "text-rose-600 font-semibold" : "text-slate-400"
+              titleValue.length > 200 ? "text-rose-600 font-semibold" : "text-slate-500 font-medium"
             }`}
           >
             {titleValue.length}/200
@@ -242,7 +242,7 @@ export function PostForm({
 
           <span
             className={`text-xs font-sans ${
-              bodyValue.length > 20_000 ? "text-rose-600 font-semibold" : "text-slate-400"
+              bodyValue.length > 20_000 ? "text-rose-600 font-semibold" : "text-slate-500 font-medium"
             }`}
           >
             {bodyValue.length.toLocaleString()}/20,000

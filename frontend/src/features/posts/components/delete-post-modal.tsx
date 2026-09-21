@@ -98,7 +98,7 @@ export function DeletePostModal({
             onMouseDown={(event) => {
               event.stopPropagation();
             }}
-            className="w-full max-w-md rounded-3xl border border-white/90 bg-white/95 p-6 sm:p-7 shadow-2xl backdrop-blur-2xl"
+            className="w-full max-w-md rounded-3xl border border-slate-200/90 bg-white/98 p-6 sm:p-7 shadow-2xl backdrop-blur-2xl text-slate-900"
           >
             {/* Top */}
             <div className="flex items-start justify-between gap-4">
@@ -111,7 +111,7 @@ export function DeletePostModal({
                 onClick={onClose}
                 disabled={isDeleting}
                 aria-label="Close delete confirmation"
-                className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <FiX className="h-5 w-5" />
               </button>
@@ -134,7 +134,7 @@ export function DeletePostModal({
               </p>
 
               <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-manrope">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 font-manrope">
                   Post Title
                 </p>
 
@@ -143,7 +143,7 @@ export function DeletePostModal({
                 </p>
               </div>
 
-              <p className="mt-4 text-xs leading-5 text-slate-400 font-sans">
+              <p className="mt-4 text-xs leading-5 text-slate-500 font-sans">
                 This is a soft delete. Restore controls can be accessed by administrators.
               </p>
             </div>

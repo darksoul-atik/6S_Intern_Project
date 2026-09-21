@@ -36,7 +36,7 @@ function PostDetailsSkeleton() {
     <div
       aria-label="Loading post"
       aria-live="polite"
-      className="animate-pulse rounded-3xl border border-white/80 bg-white/75 p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl"
+      className="animate-pulse rounded-3xl border border-slate-200/80 bg-white/95 text-slate-900 p-6 sm:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl"
     >
       <div className="flex items-center gap-3.5">
         <div className="h-12 w-12 rounded-2xl bg-slate-200/80" />
@@ -197,7 +197,7 @@ export function PostDetails({ postId }: PostDetailsProps) {
 
   return (
     <>
-      <article className="rounded-3xl border border-white/80 bg-white/75 p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl">
+      <article className="rounded-3xl border border-slate-200/80 bg-white/95 text-slate-900 p-6 sm:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl">
         {/* Top Section */}
         <div className="flex flex-wrap items-start justify-between gap-4 pb-6 border-b border-slate-100">
           {/* Author */}
@@ -224,13 +224,13 @@ export function PostDetails({ postId }: PostDetailsProps) {
               </p>
 
               {post.authorId.headline && (
-                <p className="truncate text-xs text-slate-500 font-sans">
+                <p className="truncate text-xs font-medium text-slate-600 font-sans">
                   {post.authorId.headline}
                 </p>
               )}
 
               {/* Date and Time */}
-              <p className="mt-0.5 text-xs text-slate-400 font-sans">
+              <p className="mt-0.5 text-xs font-medium text-slate-500 font-sans">
                 {formatDateTime(post.createdAt)}
               </p>
             </div>
@@ -241,7 +241,7 @@ export function PostDetails({ postId }: PostDetailsProps) {
             <div className="flex items-center gap-2">
               <Link
                 href={`/posts/${post.id}/edit`}
-                className="inline-flex items-center space-x-1.5 rounded-xl border border-slate-200/80 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 px-3.5 py-2 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all cursor-pointer"
+                className="inline-flex items-center space-x-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 px-3.5 py-2 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all cursor-pointer"
               >
                 <FiEdit2 className="h-3.5 w-3.5 text-slate-500" />
                 <span>Edit</span>
@@ -251,9 +251,9 @@ export function PostDetails({ postId }: PostDetailsProps) {
                 type="button"
                 onClick={handleOpenDelete}
                 disabled={deleteMutation.isPending}
-                className="inline-flex items-center space-x-1.5 rounded-xl border border-rose-200/70 bg-rose-50/60 hover:bg-rose-100/80 text-rose-600 hover:text-rose-700 px-3.5 py-2 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center space-x-1.5 rounded-xl border border-rose-200 bg-rose-50/80 hover:bg-rose-100 text-rose-700 hover:text-rose-800 px-3.5 py-2 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <FiTrash2 className="h-3.5 w-3.5 text-rose-500" />
+                <FiTrash2 className="h-3.5 w-3.5 text-rose-600" />
                 <span>Delete</span>
               </button>
             </div>
@@ -266,34 +266,34 @@ export function PostDetails({ postId }: PostDetailsProps) {
         </h1>
 
         {/* Body */}
-        <div className="mt-6 whitespace-pre-wrap wrap-break-word text-[15px] sm:text-base leading-8 text-slate-700 font-sans">
+        <div className="mt-6 whitespace-pre-wrap wrap-break-word text-[15px] sm:text-base leading-8 text-slate-800 font-sans">
           {post.body}
         </div>
 
         {/* Frosted Glass Counters */}
         <div className="mt-8 flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-5">
           <div
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/70 px-3 py-1.5 text-xs font-semibold font-manrope text-slate-600 shadow-2xs backdrop-blur-md"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
             title="Comments"
           >
-            <FiMessageCircle className="h-3.5 w-3.5 text-slate-500" />
-            <span>{post.commentCount} comments</span>
+            <FiMessageCircle className="h-3.5 w-3.5 text-slate-600" />
+            <span className="font-bold text-slate-900">{post.commentCount} comments</span>
           </div>
 
           <div
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/70 px-3 py-1.5 text-xs font-semibold font-manrope text-slate-600 shadow-2xs backdrop-blur-md"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
             title="Likes"
           >
             <FiThumbsUp className="h-3.5 w-3.5 text-indigo-600" />
-            <span>{post.reactionCounts.like} likes</span>
+            <span className="font-bold text-slate-900">{post.reactionCounts.like} likes</span>
           </div>
 
           <div
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/70 px-3 py-1.5 text-xs font-semibold font-manrope text-slate-600 shadow-2xs backdrop-blur-md"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
             title="Dislikes"
           >
             <FiThumbsDown className="h-3.5 w-3.5 text-rose-500" />
-            <span>{post.reactionCounts.dislike} dislikes</span>
+            <span className="font-bold text-slate-900">{post.reactionCounts.dislike} dislikes</span>
           </div>
         </div>
       </article>

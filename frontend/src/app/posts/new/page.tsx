@@ -41,18 +41,18 @@ export default function CreatePostPage() {
     <div className="min-h-screen bg-[#f8fafc] relative font-sans text-slate-900 overflow-x-hidden selection:bg-indigo-500 selection:text-white">
       {/* Background Dot Texture */}
       <div
-        className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:24px_24px] opacity-60 pointer-events-none"
+        className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] bg-size-[24px_24px] opacity-60 pointer-events-none"
         aria-hidden="true"
       />
 
       {/* Radiant Glow Orbs */}
       <div
-        className="absolute top-12 left-1/4 -translate-x-1/2 w-[550px] h-[500px] rounded-full bg-gradient-to-tr from-indigo-300/30 via-emerald-200/20 to-transparent blur-[120px] pointer-events-none"
+        className="absolute top-12 left-1/4 -translate-x-1/2 w-137.5 h-125 rounded-full bg-linear-to-tr from-indigo-300/30 via-emerald-200/20 to-transparent blur-[120px] pointer-events-none"
         aria-hidden="true"
       />
 
       <div
-        className="absolute top-28 right-1/4 translate-x-1/3 w-[600px] h-[520px] rounded-full bg-gradient-to-bl from-emerald-300/25 via-indigo-200/20 to-transparent blur-[130px] pointer-events-none"
+        className="absolute top-28 right-1/4 translate-x-1/3 w-150 h-130 rounded-full bg-linear-to-bl from-emerald-300/25 via-indigo-200/20 to-transparent blur-[130px] pointer-events-none"
         aria-hidden="true"
       />
 
@@ -86,7 +86,8 @@ export default function CreatePostPage() {
             </div>
 
             <p className="mt-2 text-xs sm:text-sm text-slate-600 font-sans">
-              Share something you learned, built, discovered, or want to discuss with the DevPulse community.
+              Share something you learned, built, discovered, or want to discuss
+              with the DevPulse community.
             </p>
           </div>
 
