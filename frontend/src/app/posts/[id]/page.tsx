@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FiArrowLeft } from "react-icons/fi";
 
-import { PostDetails } from "@/features/posts/PostDetails";
+import { PostDetails } from "@/features/posts/components/post-details";
 
 interface PostPageProps {
   params: Promise<{

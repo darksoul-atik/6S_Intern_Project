@@ -13,11 +13,10 @@ import {
   FiRefreshCw,
 } from "react-icons/fi";
 
-import { PostForm } from "@/features/posts/PostForm";
-
-import type { PostFormValues } from "@/features/posts/post.schemas";
-
-import { usePost, useUpdatePostMutation } from "@/features/posts/posts.api";
+import { PostForm } from "@/features/posts/components/post-form";
+import type { PostFormValues } from "@/features/posts/schemas/post-schema";
+import { usePost } from "@/features/posts/queries/post-queries";
+import { useUpdatePostMutation } from "@/features/posts/mutations/post-mutations";
 
 /*
 |--------------------------------------------------------------------------

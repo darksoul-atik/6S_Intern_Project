@@ -5,11 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiArrowLeft, FiEdit3 } from "react-icons/fi";
 
-import { PostForm } from "@/features/posts/PostForm";
-
-import type { PostFormValues } from "@/features/posts/post.schemas";
-
-import { useCreatePostMutation } from "@/features/posts/posts.api";
+import { PostForm } from "@/features/posts/components/post-form";
+import type { PostFormValues } from "@/features/posts/schemas/post-schema";
+import { useCreatePostMutation } from "@/features/posts/mutations/post-mutations";
 
 export default function CreatePostPage() {
   const router = useRouter();
