@@ -1,5 +1,5 @@
-import axios, { type AxiosError, type AxiosInstance } from 'axios';
-import { ApiError, type ApiResponse } from '@/types/api';
+import axios, { type AxiosInstance } from 'axios';
+import { ApiError } from '@/types/api';
 
 export function setupInterceptors(instance: AxiosInstance): void {
   instance.interceptors.response.use(

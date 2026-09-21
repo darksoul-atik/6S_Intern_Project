@@ -26,7 +26,7 @@ import {
 } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 import { ApiError } from "@/types/api";
-import { getInitials, formatDate } from "@/lib/utils/formatters";
+import { getInitials, formatDate, resolveAvatarUrl } from "@/lib/utils/formatters";
 import {
   Pagination,
   PaginationContent,
@@ -446,9 +446,9 @@ export function AdminUsersTable() {
                           {/* User Column */}
                           <td className="py-4 px-5">
                             <div className="flex items-center space-x-3.5">
-                              {targetUser.avatarUrl ? (
+                              {resolveAvatarUrl(targetUser.avatarUrl) ? (
                                 <img
-                                  src={targetUser.avatarUrl}
+                                  src={resolveAvatarUrl(targetUser.avatarUrl)!}
                                   alt={targetUser.name}
                                   className="h-10 w-10 rounded-xl object-cover ring-1 ring-slate-200"
                                 />
@@ -627,9 +627,9 @@ export function AdminUsersTable() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center space-x-3">
-                          {targetUser.avatarUrl ? (
+                          {resolveAvatarUrl(targetUser.avatarUrl) ? (
                             <img
-                              src={targetUser.avatarUrl}
+                              src={resolveAvatarUrl(targetUser.avatarUrl)!}
                               alt={targetUser.name}
                               className="h-11 w-11 rounded-xl object-cover ring-1 ring-slate-200"
                             />

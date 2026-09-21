@@ -13,7 +13,6 @@ import {
   FiRefreshCw,
   FiArrowLeft,
   FiClock,
-  FiShield,
 } from 'react-icons/fi';
 import { getHealthStatus, type HealthData } from '@/services/api/health';
 import { ApiError } from '@/types/api';
@@ -62,7 +61,6 @@ export default function StatusPage() {
     !isError &&
     Boolean(health) &&
     (health?.status === 'degraded' || !isDbConnected);
-  const isUnavailable = !isLoading && (isError || !health);
   const isApiReachable = !isLoading && !isError && Boolean(health);
 
   const dbConnectionState =
@@ -360,7 +358,7 @@ export default function StatusPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
             <div className="p-3 bg-white/[0.02] rounded-xl border border-white/5">
               <span className="text-zinc-400 block text-[11px]">Query Key</span>
-              <strong className="text-indigo-300 font-mono">['health']</strong>
+              <strong className="text-indigo-300 font-mono">[&apos;health&apos;]</strong>
             </div>
             <div className="p-3 bg-white/[0.02] rounded-xl border border-white/5">
               <span className="text-zinc-400 block text-[11px]">Stale Time</span>

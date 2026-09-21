@@ -4,7 +4,6 @@ import type { AuthUser } from '@/features/auth/types/auth';
 import type { UserProfile } from '../types/user';
 import { getUserProfile } from '@/services/api/users';
 import { getCurrentUser } from '@/services/api/auth';
-import { queryKeys } from '@/lib/tanstack/query-keys';
 
 /*
 |--------------------------------------------------------------------------

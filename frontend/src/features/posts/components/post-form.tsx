@@ -173,15 +173,13 @@ export function PostForm({
       {/* --------------------------------
           Server Error
       -------------------------------- */}
-
       {serverError && (
         <div
           role="alert"
           aria-live="assertive"
-          className="flex items-start gap-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200"
+          className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50/90 p-4 text-xs font-medium text-rose-800 backdrop-blur-md"
         >
-          <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
-
+          <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
           <p>{serverError}</p>
         </div>
       )}
@@ -189,19 +187,18 @@ export function PostForm({
       {/* --------------------------------
           Title
       -------------------------------- */}
-
       <div>
         <div className="mb-2 flex items-center justify-between gap-4">
           <label
             htmlFor="post-title"
-            className="text-xs font-semibold uppercase tracking-wider text-zinc-300"
+            className="text-xs font-bold uppercase tracking-wider text-slate-700 font-manrope"
           >
             Title
           </label>
 
           <span
-            className={`text-xs ${
-              titleValue.length > 200 ? "text-rose-400" : "text-zinc-500"
+            className={`text-xs font-sans ${
+              titleValue.length > 200 ? "text-rose-600 font-semibold" : "text-slate-400"
             }`}
           >
             {titleValue.length}/200
@@ -217,15 +214,15 @@ export function PostForm({
           aria-invalid={Boolean(errors.title)}
           aria-describedby={errors.title ? "post-title-error" : undefined}
           {...register("title")}
-          className={`w-full rounded-2xl border bg-white/4 px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-zinc-600 focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+          className={`w-full rounded-2xl border bg-white/80 px-4 py-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 shadow-2xs backdrop-blur-md disabled:cursor-not-allowed disabled:opacity-50 ${
             errors.title
-              ? "border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/20"
-              : "border-white/10 focus:border-indigo-500 focus:ring-indigo-500/20"
+              ? "border-rose-300 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10"
+              : "border-slate-200/80 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
           }`}
         />
 
         {errors.title && (
-          <p id="post-title-error" className="mt-1.5 text-xs text-rose-400">
+          <p id="post-title-error" className="mt-1.5 text-xs text-rose-600 font-medium">
             {errors.title.message}
           </p>
         )}
@@ -234,43 +231,42 @@ export function PostForm({
       {/* --------------------------------
           Body
       -------------------------------- */}
-
       <div>
         <div className="mb-2 flex items-center justify-between gap-4">
           <label
             htmlFor="post-body"
-            className="text-xs font-semibold uppercase tracking-wider text-zinc-300"
+            className="text-xs font-bold uppercase tracking-wider text-slate-700 font-manrope"
           >
-            Post
+            Post Content
           </label>
 
           <span
-            className={`text-xs ${
-              bodyValue.length > 20_000 ? "text-rose-400" : "text-zinc-500"
+            className={`text-xs font-sans ${
+              bodyValue.length > 20_000 ? "text-rose-600 font-semibold" : "text-slate-400"
             }`}
           >
-            {bodyValue.length.toLocaleString()}
-            /20,000
+            {bodyValue.length.toLocaleString()}/20,000
           </span>
         </div>
 
         <textarea
           id="post-body"
-          rows={14}
+          rows={12}
           maxLength={20_000}
           placeholder="Share your knowledge, experience, question, or idea..."
           disabled={isBusy}
           aria-invalid={Boolean(errors.body)}
           aria-describedby={errors.body ? "post-body-error" : undefined}
           {...register("body")}
-          className={`w-full resize-y rounded-2xl border bg-white/4 px-4 py-3 text-sm leading-7 text-white outline-none transition-all placeholder:text-zinc-600 focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+          className={`w-full resize-y rounded-2xl border bg-white/80 px-4 py-3 text-sm leading-7 text-slate-900 outline-none transition-all placeholder:text-slate-400 shadow-2xs backdrop-blur-md disabled:cursor-not-allowed disabled:opacity-50 ${
             errors.body
-              ? "border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/20"
-              : "border-white/10 focus:border-indigo-500 focus:ring-indigo-500/20"
+              ? "border-rose-300 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10"
+              : "border-slate-200/80 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
           }`}
         />
+
         {errors.body && (
-          <p id="post-body-error" className="mt-1.5 text-xs text-rose-400">
+          <p id="post-body-error" className="mt-1.5 text-xs text-rose-600 font-medium">
             {errors.body.message}
           </p>
         )}
@@ -279,24 +275,21 @@ export function PostForm({
       {/* --------------------------------
           Submit
       -------------------------------- */}
-
-      <div className="flex justify-end border-t border-white/10 pt-5">
+      <div className="flex justify-end border-t border-slate-100 pt-5">
         <button
           type="submit"
           disabled={isBusy}
-          className="inline-flex min-w-36 cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center space-x-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-5 py-2.5 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isBusy ? (
             <>
-              <FiLoader className="h-4 w-4 animate-spin" />
-
-              {pendingLabel}
+              <FiLoader className="h-4 w-4 animate-spin text-indigo-400" />
+              <span>{pendingLabel}</span>
             </>
           ) : (
             <>
-              <FiSave className="h-4 w-4" />
-
-              {submitLabel}
+              <FiSave className="h-4 w-4 text-indigo-400" />
+              <span>{submitLabel}</span>
             </>
           )}
         </button>

@@ -33,7 +33,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/types/api";
 import { compressImage } from "../utils/image-utils";
 
-import { formatExpDate, getInitials } from "@/lib/utils/formatters";
+import { formatExpDate, getInitials, resolveAvatarUrl } from "@/lib/utils/formatters";
 
 import { useDeleteAvatarMutation, useUpdateAvatarMutation } from "../mutations/user-mutations";
 import { useUserProfile } from "../queries/user-queries";
@@ -147,6 +147,8 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
     type: "success" | "error";
     message: string;
   } | null>(null);
+
+  const [failedAvatarSrc, setFailedAvatarSrc] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -528,17 +530,23 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
                 {/* Avatar */}
                 <div className="relative group shrink-0">
                   <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-3xl overflow-hidden shadow-md ring-4 ring-white/90 transition-transform group-hover:scale-[1.02]">
-                    {profile.avatarUrl ? (
-                      <img
-                        src={profile.avatarUrl}
-                        alt={profile.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-linear-to-br from-indigo-600 to-emerald-500 flex items-center justify-center text-white font-bold font-manrope text-2xl sm:text-3xl shadow-inner">
-                        {initials}
-                      </div>
-                    )}
+                    {(() => {
+                      const avatarSrc = resolveAvatarUrl(profile.avatarUrl);
+                      const showAvatar = Boolean(avatarSrc && failedAvatarSrc !== avatarSrc);
+
+                      return showAvatar && avatarSrc ? (
+                        <img
+                          src={avatarSrc}
+                          alt={profile.name}
+                          className="h-full w-full object-cover"
+                          onError={() => setFailedAvatarSrc(avatarSrc)}
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-linear-to-br from-indigo-600 to-emerald-500 flex items-center justify-center text-white font-bold font-manrope text-2xl sm:text-3xl shadow-inner">
+                          {initials}
+                        </div>
+                      );
+                    })()}
 
                     {avatarUploading && (
                       <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white">

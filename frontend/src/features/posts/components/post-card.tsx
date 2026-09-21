@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
+  FiArrowRight,
   FiEdit2,
   FiMessageCircle,
   FiThumbsDown,
@@ -11,68 +12,14 @@ import {
 } from "react-icons/fi";
 
 import { useAuth } from "@/context/AuthContext";
-import { formatDate, getInitials } from "@/lib/utils/formatters";
+import { formatDateTime, getInitials, resolveAvatarUrl } from "@/lib/utils/formatters";
 
 import type { Post } from "../types/post";
 
 interface PostCardProps {
   post: Post;
-
-  /*
-   * Task 9 will connect this to
-   * the custom soft-delete confirmation modal.
-   */
   onDelete?: (post: Post) => void;
-
-  /*
-   * Later this prevents repeated delete clicks
-   * while DELETE /posts/:id is pending.
-   */
   isDeleting?: boolean;
-}
-
-/*
-|--------------------------------------------------------------------------
-| Avatar URL
-|--------------------------------------------------------------------------
-|
-| Backend may return:
-|
-| /users/:userId/avatar
-|
-| or an external URL:
-|
-| https://example.com/avatar.jpg
-|
-| Relative URLs belong to the NestJS backend,
-| not the Next.js frontend.
-|--------------------------------------------------------------------------
-*/
-
-function resolveAvatarUrl(avatarUrl?: string | null): string | null {
-  if (!avatarUrl) {
-    return null;
-  }
-
-  /*
-   * Already an absolute URL.
-   */
-  if (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) {
-    return avatarUrl;
-  }
-
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
-  /*
-   * Example:
-   *
-   * /users/123/avatar
-   *
-   * becomes:
-   *
-   * http://localhost:5000/users/123/avatar
-   */
-  return `${apiBaseUrl.replace(/\/$/, "")}/${avatarUrl.replace(/^\//, "")}`;
 }
 
 export function PostCard({
@@ -89,13 +36,6 @@ export function PostCard({
   */
 
   const avatarSrc = resolveAvatarUrl(post.authorId.avatarUrl);
-
-  /*
-   * Remember which avatar failed.
-   *
-   * If the URL changes later, the new URL
-   * can still be attempted automatically.
-   */
   const [failedAvatarSrc, setFailedAvatarSrc] = useState<string | null>(null);
 
   const showAvatar = Boolean(avatarSrc && failedAvatarSrc !== avatarSrc);
@@ -104,33 +44,22 @@ export function PostCard({
   |--------------------------------------------------------------------------
   | Permission
   |--------------------------------------------------------------------------
-  |
-  | Backend rules:
-  |
-  | Author → edit/delete own post
-  | Admin  → edit/delete any post
-  |--------------------------------------------------------------------------
   */
 
   const canManagePost =
     Boolean(user) && (user?.role === "admin" || user?.id === post.authorId.id);
 
   return (
-    <article className="overflow-hidden rounded-3xl border border-white/10 bg-white/4 shadow-xl backdrop-blur-xl transition-all duration-200 hover:border-white/15 hover:bg-white/5.5">
-      <div className="p-5 sm:p-6">
+    <article className="overflow-hidden rounded-3xl border border-white/80 bg-white/75 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all duration-300 hover:shadow-[0_16px_40px_rgba(0,0,0,0.08)] hover:border-white">
+      <div className="p-6 sm:p-7">
         {/* --------------------------------
             Author
         -------------------------------- */}
-
         <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3.5">
             {/* Avatar / Initials */}
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-indigo-400/20 bg-linear-to-br from-indigo-500/20 to-purple-500/20 text-sm font-bold text-indigo-200 shadow-sm">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 shadow-xs ring-2 ring-white/90">
               {showAvatar ? (
-                /*
-                 * Using normal <img> here keeps the
-                 * backend/GridFS image handling simple.
-                 */
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={avatarSrc ?? undefined}
@@ -139,24 +68,27 @@ export function PostCard({
                   onError={() => setFailedAvatarSrc(avatarSrc)}
                 />
               ) : (
-                <span>{getInitials(post.authorId.name)}</span>
+                <div className="h-full w-full bg-gradient-to-br from-indigo-600 to-emerald-500 flex items-center justify-center text-white font-bold font-manrope text-xs shadow-inner">
+                  {getInitials(post.authorId.name)}
+                </div>
               )}
             </div>
 
             {/* Author information */}
             <div className="min-w-0">
-              <p className="truncate font-manrope text-sm font-bold text-white">
+              <p className="truncate font-manrope text-sm font-bold text-slate-900">
                 {post.authorId.name}
               </p>
 
               {post.authorId.headline && (
-                <p className="truncate text-xs text-zinc-400">
+                <p className="truncate text-xs text-slate-500 font-sans">
                   {post.authorId.headline}
                 </p>
               )}
 
-              <p className="mt-0.5 text-[11px] text-zinc-500">
-                {formatDate(post.createdAt)}
+              {/* Timestamp with Date and Time */}
+              <p className="mt-0.5 text-[11px] text-slate-400 font-sans">
+                {formatDateTime(post.createdAt)}
               </p>
             </div>
           </div>
@@ -164,28 +96,29 @@ export function PostCard({
           {/* --------------------------------
               Owner / Admin controls
           -------------------------------- */}
-
           {canManagePost && (
-            <div className="flex shrink-0 items-center gap-1.5">
-              {/* Edit */}
+            <div className="flex shrink-0 items-center gap-2">
+              {/* Edit Button */}
               <Link
                 href={`/posts/${post.id}/edit`}
                 aria-label={`Edit ${post.title}`}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/4 text-zinc-400 transition-colors hover:border-indigo-400/30 hover:bg-indigo-500/10 hover:text-indigo-300"
+                className="inline-flex items-center space-x-1 rounded-xl border border-slate-200/80 bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 px-3 py-1.5 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all cursor-pointer"
               >
-                <FiEdit2 className="h-4 w-4" />
+                <FiEdit2 className="h-3.5 w-3.5 text-slate-500" />
+                <span>Edit</span>
               </Link>
 
-              {/* Delete */}
+              {/* Delete Button */}
               {onDelete && (
                 <button
                   type="button"
                   onClick={() => onDelete(post)}
                   disabled={isDeleting}
                   aria-label={`Delete ${post.title}`}
-                  className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/4 text-zinc-400 transition-colors hover:border-rose-400/30 hover:bg-rose-500/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center space-x-1 rounded-xl border border-rose-200/70 bg-rose-50/60 hover:bg-rose-100/80 text-rose-600 hover:text-rose-700 px-3 py-1.5 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <FiTrash2 className="h-4 w-4" />
+                  <FiTrash2 className="h-3.5 w-3.5 text-rose-500" />
+                  <span>Delete</span>
                 </button>
               )}
             </div>
@@ -195,15 +128,14 @@ export function PostCard({
         {/* --------------------------------
             Post content
         -------------------------------- */}
-
         <div className="mt-5">
           <Link href={`/posts/${post.id}`} className="group block">
-            <h2 className="font-manrope text-lg font-bold tracking-tight text-zinc-100 transition-colors group-hover:text-indigo-300 sm:text-xl">
+            <h2 className="font-manrope text-lg sm:text-xl font-bold tracking-tight text-slate-900 transition-colors group-hover:text-indigo-600">
               {post.title}
             </h2>
           </Link>
 
-          <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm leading-6 text-zinc-400">
+          <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm leading-6 text-slate-600 font-sans">
             {post.body}
           </p>
         </div>
@@ -211,36 +143,44 @@ export function PostCard({
         {/* --------------------------------
             Counters + Read Post
         -------------------------------- */}
-
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
-          <div className="flex items-center gap-4 text-xs text-zinc-500">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+          {/* Frosted Glass Reaction & Comment Counters */}
+          <div className="flex flex-wrap items-center gap-2 text-xs">
             {/* Comments */}
-            <div className="flex items-center gap-1.5" title="Comments">
-              <FiMessageCircle className="h-4 w-4" />
-
+            <div
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/70 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-600 shadow-2xs backdrop-blur-md"
+              title="Comments"
+            >
+              <FiMessageCircle className="h-3.5 w-3.5 text-slate-500" />
               <span>{post.commentCount}</span>
             </div>
 
             {/* Likes */}
-            <div className="flex items-center gap-1.5" title="Likes">
-              <FiThumbsUp className="h-4 w-4" />
-
+            <div
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/70 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-600 shadow-2xs backdrop-blur-md"
+              title="Likes"
+            >
+              <FiThumbsUp className="h-3.5 w-3.5 text-indigo-600" />
               <span>{post.reactionCounts.like}</span>
             </div>
 
             {/* Dislikes */}
-            <div className="flex items-center gap-1.5" title="Dislikes">
-              <FiThumbsDown className="h-4 w-4" />
-
+            <div
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/70 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-600 shadow-2xs backdrop-blur-md"
+              title="Dislikes"
+            >
+              <FiThumbsDown className="h-3.5 w-3.5 text-rose-500" />
               <span>{post.reactionCounts.dislike}</span>
             </div>
           </div>
 
+          {/* Read Post Button */}
           <Link
             href={`/posts/${post.id}`}
-            className="rounded-lg px-2 py-1 text-xs font-semibold text-indigo-300 transition-colors hover:bg-indigo-500/10 hover:text-indigo-200"
+            className="inline-flex items-center space-x-1.5 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-3.5 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
           >
-            Read post →
+            <span>Read Post</span>
+            <FiArrowRight className="h-3.5 w-3.5 text-indigo-400" />
           </Link>
         </div>
       </div>

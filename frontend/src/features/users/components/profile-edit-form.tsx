@@ -31,7 +31,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/types/api";
 import { compressImage } from "../utils/image-utils";
 
-import { formatExpDate, getInitials } from "@/lib/utils/formatters";
+import { formatExpDate, getInitials, resolveAvatarUrl } from "@/lib/utils/formatters";
 
 import { useUserProfile } from "../queries/user-queries";
 import {
@@ -309,6 +309,7 @@ export function ProfileEditForm() {
   */
 
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [failedAvatarSrc, setFailedAvatarSrc] = useState<string | null>(null);
 
   const [profileSuccess, setProfileSuccess] = useState(false);
 
@@ -1036,17 +1037,23 @@ export function ProfileEditForm() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-4 rounded-2xl bg-white/80 border border-slate-200/80 shadow-2xs">
                 <div className="relative group shrink-0">
                   <div className="relative h-20 w-20 sm:h-22 sm:w-22 rounded-2xl overflow-hidden shadow-md ring-4 ring-white/90 transition-transform group-hover:scale-[1.02]">
-                    {watchedAvatarUrl ? (
-                      <img
-                        src={watchedAvatarUrl}
-                        alt="Avatar preview"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-linear-to-br from-indigo-600 to-emerald-500 flex items-center justify-center text-white font-bold font-manrope text-xl sm:text-2xl shadow-inner">
-                        {getInitials(watchedName || profile.name)}
-                      </div>
-                    )}
+                    {(() => {
+                      const avatarSrc = resolveAvatarUrl(watchedAvatarUrl);
+                      const showAvatar = Boolean(avatarSrc && failedAvatarSrc !== avatarSrc);
+
+                      return showAvatar && avatarSrc ? (
+                        <img
+                          src={avatarSrc}
+                          alt="Avatar preview"
+                          className="h-full w-full object-cover"
+                          onError={() => setFailedAvatarSrc(avatarSrc)}
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-linear-to-br from-indigo-600 to-emerald-500 flex items-center justify-center text-white font-bold font-manrope text-xl sm:text-2xl shadow-inner">
+                          {getInitials(watchedName || profile.name)}
+                        </div>
+                      );
+                    })()}
 
                     {/* Upload spinner overlay */}
                     {avatarUploading && (

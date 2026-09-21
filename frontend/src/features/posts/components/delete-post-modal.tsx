@@ -98,11 +98,11 @@ export function DeletePostModal({
             onMouseDown={(event) => {
               event.stopPropagation();
             }}
-            className="w-full max-w-md rounded-3xl border border-white/10 bg-zinc-950 p-6 shadow-2xl"
+            className="w-full max-w-md rounded-3xl border border-white/90 bg-white/95 p-6 sm:p-7 shadow-2xl backdrop-blur-2xl"
           >
             {/* Top */}
             <div className="flex items-start justify-between gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-rose-500/20 bg-rose-500/10 text-rose-300">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-700">
                 <FiAlertTriangle className="h-6 w-6" />
               </div>
 
@@ -111,7 +111,7 @@ export function DeletePostModal({
                 onClick={onClose}
                 disabled={isDeleting}
                 aria-label="Close delete confirmation"
-                className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl text-zinc-500 transition-colors hover:bg-white/6 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <FiX className="h-5 w-5" />
               </button>
@@ -121,32 +121,30 @@ export function DeletePostModal({
             <div className="mt-5">
               <h2
                 id="delete-post-title"
-                className="font-manrope text-xl font-bold text-white"
+                className="font-manrope text-xl font-bold text-slate-900"
               >
                 Delete this post?
               </h2>
 
               <p
                 id="delete-post-description"
-                className="mt-2 text-sm leading-6 text-zinc-400"
+                className="mt-2 text-sm leading-6 text-slate-600 font-sans"
               >
-                This will remove the post from the normal DevPulse feed and post
-                pages.
+                This will remove the post from the DevPulse community feed.
               </p>
 
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/4 px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                  Post
+              <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-manrope">
+                  Post Title
                 </p>
 
-                <p className="mt-1 wrap-break-word text-sm font-semibold text-zinc-200">
+                <p className="mt-1 wrap-break-word text-sm font-semibold text-slate-800 font-sans">
                   {postTitle}
                 </p>
               </div>
 
-              <p className="mt-4 text-xs leading-5 text-zinc-500">
-                This is a soft delete. Restore and permanent-delete controls are
-                intentionally outside today&apos;s Day 8 scope.
+              <p className="mt-4 text-xs leading-5 text-slate-400 font-sans">
+                This is a soft delete. Restore controls can be accessed by administrators.
               </p>
             </div>
 
@@ -154,7 +152,7 @@ export function DeletePostModal({
             {error && (
               <div
                 role="alert"
-                className="mt-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200"
+                className="mt-4 rounded-2xl border border-rose-200 bg-rose-50/90 px-4 py-3 text-xs font-medium text-rose-800"
               >
                 {error}
               </div>
@@ -166,7 +164,7 @@ export function DeletePostModal({
                 type="button"
                 onClick={onClose}
                 disabled={isDeleting}
-                className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/4 px-4 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs transition-all disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -175,17 +173,17 @@ export function DeletePostModal({
                 type="button"
                 onClick={onConfirm}
                 disabled={isDeleting}
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-500 px-4 py-2.5 text-xs font-semibold font-manrope text-white shadow-md transition-all disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isDeleting ? (
                   <>
                     <FiLoader className="h-4 w-4 animate-spin" />
-                    Deleting...
+                    <span>Deleting...</span>
                   </>
                 ) : (
                   <>
                     <FiTrash2 className="h-4 w-4" />
-                    Delete post
+                    <span>Delete post</span>
                   </>
                 )}
               </button>

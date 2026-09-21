@@ -70,3 +70,45 @@ export function formatDateDisplay(val?: string): string {
   }
   return val;
 }
+
+/**
+ * Resolves avatar URL by prefixing backend host if it is a relative path.
+ */
+export function resolveAvatarUrl(avatarUrl?: string | null): string | null {
+  if (!avatarUrl) return null;
+  if (
+    avatarUrl.startsWith('http://') ||
+    avatarUrl.startsWith('https://') ||
+    avatarUrl.startsWith('data:image/') ||
+    avatarUrl.startsWith('blob:')
+  ) {
+    return avatarUrl;
+  }
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  return `${apiBaseUrl.replace(/\/$/, '')}/${avatarUrl.replace(/^\//, '')}`;
+}
+
+/**
+ * Formats a date string into readable Date and Time (e.g. '21 Sep 2026 • 1:45 PM').
+ */
+export function formatDateTime(dateStr?: string): string {
+  if (!dateStr) return 'N/A';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const datePart = new Intl.DateTimeFormat('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(date);
+    const timePart = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(date);
+    return `${datePart} • ${timePart}`;
+  } catch {
+    return dateStr;
+  }
+}
+
