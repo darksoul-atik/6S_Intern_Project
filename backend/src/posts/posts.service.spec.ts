@@ -146,28 +146,36 @@ describe('PostsService', () => {
   });
 
   describe('findAllPosts', () => {
-    it('should filter out soft-deleted posts and return cursor-paginated results on first page', async () => {
+    it('should filter out soft-deleted posts and return paginated results', async () => {
       const mockPosts = [
         {
           _id: '66e138fc29094e137127e4e0',
           title: 'Post 1',
-          createdAt: new Date('2026-09-18T10:00:00.000Z'),
         },
       ];
+
+      mockPostModel.countDocuments.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(1),
+      });
 
       const mockExec = vi.fn().mockResolvedValue(mockPosts);
       const mockPopulate = vi.fn().mockReturnValue({ exec: mockExec });
       const mockLimit = vi.fn().mockReturnValue({ populate: mockPopulate });
-      const mockSort = vi.fn().mockReturnValue({ limit: mockLimit });
+      const mockSkip = vi.fn().mockReturnValue({ limit: mockLimit });
+      const mockSort = vi.fn().mockReturnValue({ skip: mockSkip });
 
       mockPostModel.find.mockReturnValue({ sort: mockSort });
 
-      const result = await service.findAllPosts({ limit: 10 });
+      const result = await service.findAllPosts({ page: 1, limit: 10 });
 
       expect(result.posts).toEqual(mockPosts);
-      expect(result.hasMore).toBe(false);
-      expect(result.nextCursor).toBeNull();
+      expect(result.total).toBe(1);
+      expect(result.page).toBe(1);
       expect(result.limit).toBe(10);
+      expect(result.totalPages).toBe(1);
+      expect(mockPostModel.countDocuments).toHaveBeenCalledWith({
+        deletedAt: { $exists: false },
+      });
       expect(mockPostModel.find).toHaveBeenCalledWith({
         deletedAt: { $exists: false },
       });
@@ -175,42 +183,8 @@ describe('PostsService', () => {
         createdAt: -1,
         _id: -1,
       });
-      expect(mockLimit).toHaveBeenCalledWith(11);
-    });
-
-    it('should compute nextCursor and hasMore when more items exist', async () => {
-      const mockPosts = [
-        {
-          _id: '66e138fc29094e137127e4e1',
-          title: 'Post 1',
-          createdAt: new Date('2026-09-18T10:00:00.000Z'),
-        },
-        {
-          _id: '66e138fc29094e137127e4e2',
-          title: 'Post 2',
-          createdAt: new Date('2026-09-18T09:00:00.000Z'),
-        },
-      ];
-
-      const mockExec = vi.fn().mockResolvedValue(mockPosts);
-      const mockPopulate = vi.fn().mockReturnValue({ exec: mockExec });
-      const mockLimit = vi.fn().mockReturnValue({ populate: mockPopulate });
-      const mockSort = vi.fn().mockReturnValue({ limit: mockLimit });
-
-      mockPostModel.find.mockReturnValue({ sort: mockSort });
-
-      const result = await service.findAllPosts({ limit: 1 });
-
-      expect(result.posts).toHaveLength(1);
-      expect(result.posts[0]._id).toBe('66e138fc29094e137127e4e1');
-      expect(result.hasMore).toBe(true);
-      expect(result.nextCursor).toBeDefined();
-    });
-
-    it('should throw BadRequestException if cursor is invalid', async () => {
-      await expect(
-        service.findAllPosts({ cursor: 'not-a-valid-cursor', limit: 10 }),
-      ).rejects.toThrow(BadRequestException);
+      expect(mockSkip).toHaveBeenCalledWith(0);
+      expect(mockLimit).toHaveBeenCalledWith(10);
     });
   });
 
