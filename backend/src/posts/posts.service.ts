@@ -466,4 +466,24 @@ export class PostsService {
       throw new NotFoundException(`Post with ID '${postId}' not found`);
     }
   }
+
+  async decrementCommentCount(postId: string, amount = 1): Promise<void> {
+    this.validatePostId(postId);
+
+    const result = await this.postModel
+      .updateOne(
+        {
+          _id: postId,
+          deletedAt: { $exists: false },
+        },
+        {
+          $inc: { commentCount: -amount },
+        },
+      )
+      .exec();
+
+    if (result.matchedCount === 0) {
+      throw new NotFoundException(`Post with ID '${postId}' not found`);
+    }
+  }
 }

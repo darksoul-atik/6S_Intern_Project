@@ -853,4 +853,22 @@ export class UsersService {
       throw new NotFoundException('User profile not found');
     }
   }
+
+  async decrementCommentsCount(userId: string, amount = 1): Promise<void> {
+    const result = await this.userModel
+      .updateOne(
+        {
+          _id: userId,
+          isDeleted: { $ne: true },
+        },
+        {
+          $inc: { commentsCount: -amount },
+        },
+      )
+      .exec();
+
+    if (result.matchedCount === 0) {
+      throw new NotFoundException('User profile not found');
+    }
+  }
 }
