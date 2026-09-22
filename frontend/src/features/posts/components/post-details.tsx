@@ -15,7 +15,11 @@ import {
 } from "react-icons/fi";
 
 import { useAuth } from "@/context/AuthContext";
-import { formatDateTime, getInitials, resolveAvatarUrl } from "@/lib/utils/formatters";
+import {
+  formatDateTime,
+  getInitials,
+  resolveAvatarUrl,
+} from "@/lib/utils/formatters";
 
 import { DeletePostModal } from "./delete-post-modal";
 import { usePost } from "../queries/post-queries";
@@ -212,7 +216,7 @@ export function PostDetails({ postId }: PostDetailsProps) {
                   onError={() => setFailedAvatarSrc(avatarSrc)}
                 />
               ) : (
-                <div className="h-full w-full bg-gradient-to-br from-indigo-600 to-emerald-500 flex items-center justify-center text-white font-bold font-manrope text-sm shadow-inner">
+                <div className="h-full w-full bg-linear-to-br from-indigo-600 to-emerald-500 flex items-center justify-center text-white font-bold font-manrope text-sm shadow-inner">
                   {getInitials(post.authorId.name)}
                 </div>
               )}
@@ -277,7 +281,9 @@ export function PostDetails({ postId }: PostDetailsProps) {
             title="Comments"
           >
             <FiMessageCircle className="h-3.5 w-3.5 text-slate-600" />
-            <span className="font-bold text-slate-900">{post.commentCount} comments</span>
+            <span className="font-bold text-slate-900">
+              {post.commentCount} comments
+            </span>
           </div>
 
           <div
@@ -285,7 +291,9 @@ export function PostDetails({ postId }: PostDetailsProps) {
             title="Likes"
           >
             <FiThumbsUp className="h-3.5 w-3.5 text-indigo-600" />
-            <span className="font-bold text-slate-900">{post.reactionCounts.like} likes</span>
+            <span className="font-bold text-slate-900">
+              {post.reactionCounts.like} likes
+            </span>
           </div>
 
           <div
@@ -293,7 +301,9 @@ export function PostDetails({ postId }: PostDetailsProps) {
             title="Dislikes"
           >
             <FiThumbsDown className="h-3.5 w-3.5 text-rose-500" />
-            <span className="font-bold text-slate-900">{post.reactionCounts.dislike} dislikes</span>
+            <span className="font-bold text-slate-900">
+              {post.reactionCounts.dislike} dislikes
+            </span>
           </div>
         </div>
       </article>

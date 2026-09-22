@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { FiLogIn, FiUserPlus, FiArrowRight, FiLogOut } from 'react-icons/fi';
-import { MeshGradientBackground } from '@/components/MeshGradientBackground';
+import { MeshGradientBackground } from '@/components/ui/mesh-gradient-background';
 import { useAuth } from '@/context/AuthContext';
 
 export default function HomePage() {

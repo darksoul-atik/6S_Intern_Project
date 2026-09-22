@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useRef } from 'react';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import React, { useRef } from "react";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 
 export interface MeshGradientBackgroundProps {
   colors?: string[];
@@ -12,7 +12,7 @@ export interface MeshGradientBackgroundProps {
 }
 
 export const MeshGradientBackground: React.FC<MeshGradientBackgroundProps> = ({
-  colors = ['#4f46e5', '#c026d3', '#f59e0b', '#10b981'],
+  colors = ["#4f46e5", "#c026d3", "#f59e0b", "#10b981"],
   speed = 12,
   blur = 120,
   interactive = true,
@@ -25,8 +25,8 @@ export const MeshGradientBackground: React.FC<MeshGradientBackgroundProps> = ({
   const springX = useSpring(mouseX, { damping: 30, stiffness: 100 });
   const springY = useSpring(mouseY, { damping: 30, stiffness: 100 });
 
-  const cursorLeft = useTransform(springX, [0, 1], ['0%', '100%']);
-  const cursorTop = useTransform(springY, [0, 1], ['0%', '100%']);
+  const cursorLeft = useTransform(springX, [0, 1], ["0%", "100%"]);
+  const cursorTop = useTransform(springY, [0, 1], ["0%", "100%"]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!interactive) return;
@@ -36,10 +36,30 @@ export const MeshGradientBackground: React.FC<MeshGradientBackgroundProps> = ({
   };
 
   const blobs = [
-    { x: '10%', y: '15%', animX: [0, 80, -60, 40, 0], animY: [0, -50, 70, -30, 0] },
-    { x: '85%', y: '20%', animX: [0, -70, 40, -80, 0], animY: [0, 60, -40, 50, 0] },
-    { x: '75%', y: '80%', animX: [0, 50, -70, 30, 0], animY: [0, -70, 40, -50, 0] },
-    { x: '15%', y: '85%', animX: [0, -40, 60, -50, 0], animY: [0, 50, -60, 40, 0] },
+    {
+      x: "10%",
+      y: "15%",
+      animX: [0, 80, -60, 40, 0],
+      animY: [0, -50, 70, -30, 0],
+    },
+    {
+      x: "85%",
+      y: "20%",
+      animX: [0, -70, 40, -80, 0],
+      animY: [0, 60, -40, 50, 0],
+    },
+    {
+      x: "75%",
+      y: "80%",
+      animX: [0, 50, -70, 30, 0],
+      animY: [0, -70, 40, -50, 0],
+    },
+    {
+      x: "15%",
+      y: "85%",
+      animX: [0, -40, 60, -50, 0],
+      animY: [0, 50, -60, 40, 0],
+    },
   ];
 
   return (
@@ -53,11 +73,11 @@ export const MeshGradientBackground: React.FC<MeshGradientBackgroundProps> = ({
         {blobs.map((blob, i) => (
           <motion.div
             key={i}
-            className="absolute w-[600px] h-[600px] rounded-full opacity-60"
+            className="absolute w-150 h-150 rounded-full opacity-60"
             style={{
               left: blob.x,
               top: blob.y,
-              transform: 'translate(-50%, -50%)',
+              transform: "translate(-50%, -50%)",
               background: `radial-gradient(circle, ${colors[i % colors.length]} 0%, transparent 75%)`,
               filter: `blur(${blur}px)`,
             }}
@@ -69,7 +89,7 @@ export const MeshGradientBackground: React.FC<MeshGradientBackgroundProps> = ({
             transition={{
               duration: speed + i * 2,
               repeat: Infinity,
-              ease: 'easeInOut',
+              ease: "easeInOut",
             }}
           />
         ))}
@@ -78,11 +98,11 @@ export const MeshGradientBackground: React.FC<MeshGradientBackgroundProps> = ({
       {/* Interactive Cursor Glow */}
       {interactive && (
         <motion.div
-          className="absolute w-[500px] h-[500px] rounded-full pointer-events-none opacity-40 mix-blend-screen"
+          className="absolute w-125 h-125 rounded-full pointer-events-none opacity-40 mix-blend-screen"
           style={{
             left: cursorLeft,
             top: cursorTop,
-            transform: 'translate(-50%, -50%)',
+            transform: "translate(-50%, -50%)",
             background: `radial-gradient(circle, ${colors[0]} 0%, transparent 70%)`,
             filter: `blur(${blur}px)`,
           }}

@@ -1,19 +1,26 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiLogIn, FiEye, FiEyeOff, FiX, FiAlertTriangle, FiCheck } from 'react-icons/fi';
-import { loginSchema, type LoginInput } from '../schemas/auth-schema';
-import { useLoginMutation } from '../mutations/auth-mutations';
-import { extractAuthErrorMessage } from '../utils/auth-error';
-import { MeshGradientBackground } from '@/components/ui/mesh-gradient-background';
-import { useAuth } from '@/context/AuthContext';
-import { ROUTES } from '@/constants/routes';
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  FiLogIn,
+  FiEye,
+  FiEyeOff,
+  FiX,
+  FiAlertTriangle,
+  FiCheck,
+} from "react-icons/fi";
+import { loginSchema, type LoginInput } from "../schemas/auth-schema";
+import { useLoginMutation } from "../mutations/auth-mutations";
+import { extractAuthErrorMessage } from "../utils/auth-error";
+import { MeshGradientBackground } from "@/components/ui/mesh-gradient-background";
+import { useAuth } from "@/context/AuthContext";
+import { ROUTES } from "@/constants/routes";
 
 export function LoginForm() {
   const router = useRouter();
@@ -27,8 +34,8 @@ export function LoginForm() {
   const [capsLockOn, setCapsLockOn] = useState<boolean>(false);
 
   const infoMessage =
-    searchParams.get('registered') === 'true'
-      ? 'Account created successfully! Please sign in with your new credentials.'
+    searchParams.get("registered") === "true"
+      ? "Account created successfully! Please sign in with your new credentials."
       : null;
 
   const {
@@ -38,10 +45,10 @@ export function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    mode: 'onTouched',
+    mode: "onTouched",
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
   });
 
@@ -57,10 +64,12 @@ export function LoginForm() {
 
       if (response.success && response.data?.user) {
         setAuthUser(response.data.user);
-        const redirectPath = searchParams.get('redirect') || ROUTES.DASHBOARD;
+        const redirectPath = searchParams.get("redirect") || ROUTES.DASHBOARD;
         router.push(redirectPath);
       } else {
-        setErrorMessage(response.message || 'Authentication failed. Please try again.');
+        setErrorMessage(
+          response.message || "Authentication failed. Please try again.",
+        );
       }
     } catch (err: unknown) {
       const extracted = extractAuthErrorMessage(err);
@@ -69,10 +78,10 @@ export function LoginForm() {
 
       extracted.errors.forEach((e) => {
         const lower = e.toLowerCase();
-        if (lower.includes('email')) {
-          setError('email', { type: 'server', message: e });
-        } else if (lower.includes('password')) {
-          setError('password', { type: 'server', message: e });
+        if (lower.includes("email")) {
+          setError("email", { type: "server", message: e });
+        } else if (lower.includes("password")) {
+          setError("password", { type: "server", message: e });
         }
       });
     }
@@ -80,7 +89,7 @@ export function LoginForm() {
 
   return (
     <MeshGradientBackground
-      colors={['#4f46e5', '#7c3aed', '#0284c7', '#059669']}
+      colors={["#4f46e5", "#7c3aed", "#0284c7", "#059669"]}
       speed={14}
       blur={130}
       interactive
@@ -110,14 +119,15 @@ export function LoginForm() {
             </Link>
 
             <h1 className="text-2xl min-[400px]:text-3xl sm:text-4xl md:text-5xl font-bold font-manrope tracking-tight text-white leading-[1.14]">
-              Welcome back to your{' '}
-              <span className="bg-gradient-to-r from-indigo-300 via-purple-300 to-emerald-300 bg-clip-text text-transparent">
+              Welcome back to your{" "}
+              <span className="bg-linear-to-r from-indigo-300 via-purple-300 to-emerald-300 bg-clip-text text-transparent">
                 developer hub.
               </span>
             </h1>
 
             <p className="text-xs min-[400px]:text-sm sm:text-base text-zinc-300 font-sans font-normal leading-relaxed max-w-md mx-auto lg:mx-0">
-              Sign in to manage your engineering sessions, verify system permissions, and engage with the DevPulse architecture community.
+              Sign in to manage your engineering sessions, verify system
+              permissions, and engage with the DevPulse architecture community.
             </p>
           </motion.div>
 
@@ -142,7 +152,7 @@ export function LoginForm() {
                 {infoMessage && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
+                    animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     className="mb-6 overflow-hidden"
                   >
@@ -158,7 +168,7 @@ export function LoginForm() {
                 {errorMessage && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
+                    animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     className="mb-6 overflow-hidden"
                   >
@@ -169,7 +179,9 @@ export function LoginForm() {
                     >
                       <FiAlertTriangle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
                       <div className="flex-1 space-y-1">
-                        <p className="font-semibold font-manrope">{errorMessage}</p>
+                        <p className="font-semibold font-manrope">
+                          {errorMessage}
+                        </p>
                         {fieldErrors.length > 0 && (
                           <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-rose-300">
                             {fieldErrors.map((err, idx) => (
@@ -191,7 +203,11 @@ export function LoginForm() {
                 )}
               </AnimatePresence>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5" noValidate>
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-4 sm:space-y-5"
+                noValidate
+              >
                 <div>
                   <label
                     htmlFor="login-email"
@@ -205,17 +221,22 @@ export function LoginForm() {
                     autoComplete="email"
                     disabled={isPending}
                     aria-invalid={!!errors.email}
-                    aria-describedby={errors.email ? 'login-email-error' : undefined}
+                    aria-describedby={
+                      errors.email ? "login-email-error" : undefined
+                    }
                     placeholder="alex.chen@example.com"
-                    {...register('email')}
+                    {...register("email")}
                     className={`w-full rounded-2xl border bg-white/5 px-4 py-3 text-sm text-white placeholder-zinc-500 backdrop-blur-md transition-all focus:outline-none focus:ring-2 ${
                       errors.email
-                        ? 'border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/20'
-                        : 'border-white/10 focus:border-indigo-500 focus:ring-indigo-500/20'
+                        ? "border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/20"
+                        : "border-white/10 focus:border-indigo-500 focus:ring-indigo-500/20"
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   />
                   {errors.email && (
-                    <p id="login-email-error" className="mt-1.5 text-xs text-rose-400 font-sans">
+                    <p
+                      id="login-email-error"
+                      className="mt-1.5 text-xs text-rose-400 font-sans"
+                    >
                       {errors.email.message}
                     </p>
                   )}
@@ -239,26 +260,34 @@ export function LoginForm() {
                   <div className="relative">
                     <input
                       id="login-password"
-                      type={showPassword ? 'text' : 'password'}
+                      type={showPassword ? "text" : "password"}
                       autoComplete="current-password"
                       disabled={isPending}
                       aria-invalid={!!errors.password}
-                      aria-describedby={errors.password ? 'login-password-error' : undefined}
+                      aria-describedby={
+                        errors.password ? "login-password-error" : undefined
+                      }
                       placeholder="••••••••"
-                      onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
-                      onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
-                      {...register('password')}
+                      onKeyUp={(e) =>
+                        setCapsLockOn(e.getModifierState("CapsLock"))
+                      }
+                      onKeyDown={(e) =>
+                        setCapsLockOn(e.getModifierState("CapsLock"))
+                      }
+                      {...register("password")}
                       className={`w-full rounded-2xl border bg-white/5 px-4 py-3 text-sm text-white placeholder-zinc-500 backdrop-blur-md transition-all focus:outline-none focus:ring-2 pr-11 ${
                         errors.password
-                          ? 'border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/20'
-                          : 'border-white/10 focus:border-indigo-500 focus:ring-indigo-500/20'
+                          ? "border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/20"
+                          : "border-white/10 focus:border-indigo-500 focus:ring-indigo-500/20"
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 transition-colors focus:outline-none p-1"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                     >
                       {showPassword ? (
                         <FiEyeOff className="h-4 w-4" />
@@ -268,7 +297,10 @@ export function LoginForm() {
                     </button>
                   </div>
                   {errors.password && (
-                    <p id="login-password-error" className="mt-1.5 text-xs text-rose-400 font-sans">
+                    <p
+                      id="login-password-error"
+                      className="mt-1.5 text-xs text-rose-400 font-sans"
+                    >
                       {errors.password.message}
                     </p>
                   )}
@@ -279,17 +311,21 @@ export function LoginForm() {
                   id="login-submit-btn"
                   disabled={isPending}
                   aria-disabled={isPending}
-                  className="w-full relative group overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 p-px font-semibold font-manrope text-white shadow-xl shadow-indigo-500/20 transition-all hover:shadow-indigo-500/40 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+                  className="w-full relative group overflow-hidden rounded-2xl bg-linear-to-r from-indigo-500 via-purple-500 to-indigo-600 p-px font-semibold font-manrope text-white shadow-xl shadow-indigo-500/20 transition-all hover:shadow-indigo-500/40 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
                 >
                   <div className="relative flex items-center justify-center space-x-2 rounded-2xl bg-zinc-950/40 px-6 py-3.5 backdrop-blur-xl transition-all group-hover:bg-transparent">
                     {isPending ? (
                       <>
                         <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                        <span className="text-sm font-semibold font-manrope">Authenticating...</span>
+                        <span className="text-sm font-semibold font-manrope">
+                          Authenticating...
+                        </span>
                       </>
                     ) : (
                       <>
-                        <span className="text-sm font-semibold font-manrope">Sign In</span>
+                        <span className="text-sm font-semibold font-manrope">
+                          Sign In
+                        </span>
                         <FiLogIn className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                       </>
                     )}
@@ -298,7 +334,7 @@ export function LoginForm() {
               </form>
 
               <div className="mt-8 pt-6 border-t border-white/10 text-center text-xs text-zinc-400 font-sans">
-                Don&apos;t have an account yet?{' '}
+                Don&apos;t have an account yet?{" "}
                 <Link
                   href={ROUTES.SIGNUP}
                   className="font-semibold font-manrope text-indigo-400 hover:text-indigo-300 underline underline-offset-4 transition-colors"

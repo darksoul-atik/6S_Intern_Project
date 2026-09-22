@@ -155,6 +155,7 @@
 - **Rejected Manual Post Creation for Infinite Pagination Testing**: Rather than forcing the user to manually click and type 10+ posts in the UI to trigger page 2, authored an isolated background seed script executing outside git tracking that safely created 7 realistic engineering posts in 2 seconds.
 - **Rejected Direct Browser Axios Calls to NestJS Backend**: Strictly guarded against the frontend architecture refactor switching relative `/api/*` calls to direct `http://localhost:5000/*` URLs, which would have broken `httpOnly` cookie transmission across Next.js BFF route handlers.
 - **Rejected Native Browser Confirmation for Post Deletion**: Rejected `window.confirm` when deleting posts from the feed or details view, enforcing the branded glassmorphic `DeletePostModal`.
+- **Rejected Redundant Re-export Bridge Files**: Following the completion of the feature-based folder migration, audited and removed legacy 1-line re-export files sitting at the root of `features/posts`, `features/admin`, `features/auth`, `features/users`, `components/`, and `lib/`. Refactored direct imports in `pagination.tsx` and `page.tsx` to directly consume canonical paths (`@/lib/utils/cn`, `@/components/ui/mesh-gradient-background`), eliminating import indirection and ensuring strict compliance with the mandated architecture.
 
 ---
 
