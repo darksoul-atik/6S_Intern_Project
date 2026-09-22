@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { Comment, CommentSchema } from './schemas/comment.schema.js';
+import { CommentsService } from './comments.service.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { PostsModule } from '../posts/posts.module.js';
 import { UsersModule } from '../users/users.module.js';
@@ -18,6 +19,7 @@ import { UsersModule } from '../users/users.module.js';
     PostsModule,
     UsersModule,
   ],
-  exports: [MongooseModule],
+  providers: [CommentsService],
+  exports: [CommentsService, MongooseModule],
 })
 export class CommentsModule {}

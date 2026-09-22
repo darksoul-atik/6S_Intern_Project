@@ -835,4 +835,22 @@ export class UsersService {
 
     return user.save();
   }
+
+  async incrementCommentsCount(userId: string): Promise<void> {
+    const result = await this.userModel
+      .updateOne(
+        {
+          _id: userId,
+          isDeleted: { $ne: true },
+        },
+        {
+          $inc: { commentsCount: 1 },
+        },
+      )
+      .exec();
+
+    if (result.matchedCount === 0) {
+      throw new NotFoundException('User profile not found');
+    }
+  }
 }

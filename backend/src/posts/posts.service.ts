@@ -446,4 +446,24 @@ export class PostsService {
       message: 'Post soft-deleted successfully',
     };
   }
+
+  async incrementCommentCount(postId: string): Promise<void> {
+    this.validatePostId(postId);
+
+    const result = await this.postModel
+      .updateOne(
+        {
+          _id: postId,
+          deletedAt: { $exists: false },
+        },
+        {
+          $inc: { commentCount: 1 },
+        },
+      )
+      .exec();
+
+    if (result.matchedCount === 0) {
+      throw new NotFoundException(`Post with ID '${postId}' not found`);
+    }
+  }
 }
