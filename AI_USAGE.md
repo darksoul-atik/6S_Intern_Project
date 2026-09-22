@@ -90,6 +90,16 @@
   - Styled dark theme "Read Post" action button (`bg-[#090d16] hover:bg-[#121827] text-white`) with vibrant purple arrow icon (`text-indigo-400 group-hover:text-purple-300`).
   - Completely eliminated white-on-white text blending on light feed cards.
 
+### Day 9: Threaded Comments API, Self-Referencing Tree & Data Integrity
+- **Self-Referencing Domain Modeling & Compound Indexing**: Directed the creation of the `Comment` schema with `postId` ref `Post`, `authorId` ref `User`, `parentCommentId` ref `Comment` (nullable for top-level, ObjectId for reply), `body` (1–5000 chars), and timestamps. Enforced compound indexes `{ postId: 1, parentCommentId: 1 }` and `{ postId: 1, createdAt: 1, _id: 1 }` for high-throughput chronological tree retrieval.
+- **RESTful Endpoints & Depth Boundary Enforcement**:
+  - `GET /posts/:postId/comments`: Single database query retrieving all comments for the post, with O(N) in-memory tree assembly nesting flat replies under their parent root comment.
+  - `POST /posts/:postId/comments`: Top-level comment creation deriving author strictly from `@CurrentUser()`.
+  - `POST /posts/:postId/comments/:commentId/replies`: Reply creation validating parent comment existence, checking cross-post boundary (`parent.postId === postId`), and rejecting replies if `parent.parentCommentId` is already present to enforce max depth 1.
+  - `DELETE /comments/:id`: Protected by `JwtAuthGuard` and `CommentOwnerOrAdminGuard`. Deleting a reply deletes only that reply; deleting a root comment executes a cascade deletion of the entire thread (`root + replies`).
+- **Atomic Counter Synchronization**: Prompted the addition of atomic `$inc` updates (`incrementCommentCount` / `decrementCommentCount` on `PostsService`, and `incrementCommentsCount` / `decrementCommentsCount` on `UsersService`) ensuring post and user comment counts stay synchronized across creation and cascade deletions.
+- **Automated Vitest Test Suite Expansion**: Directed the creation of unit test suites for `CommentsService` (13 tests) and `CommentOwnerOrAdminGuard` (5 tests), validating depth constraints, cross-post rejection, hierarchy construction, and cascade deletion.
+
 ---
 
 ## What I Reviewed or Rejected
@@ -156,6 +166,12 @@
 - **Rejected Direct Browser Axios Calls to NestJS Backend**: Strictly guarded against the frontend architecture refactor switching relative `/api/*` calls to direct `http://localhost:5000/*` URLs, which would have broken `httpOnly` cookie transmission across Next.js BFF route handlers.
 - **Rejected Native Browser Confirmation for Post Deletion**: Rejected `window.confirm` when deleting posts from the feed or details view, enforcing the branded glassmorphic `DeletePostModal`.
 - **Rejected Redundant Re-export Bridge Files**: Following the completion of the feature-based folder migration, audited and removed legacy 1-line re-export files sitting at the root of `features/posts`, `features/admin`, `features/auth`, `features/users`, `components/`, and `lib/`. Refactored direct imports in `pagination.tsx` and `page.tsx` to directly consume canonical paths (`@/lib/utils/cn`, `@/components/ui/mesh-gradient-background`), eliminating import indirection and ensuring strict compliance with the mandated architecture.
+
+### Day 9
+- **Rejected Recursive Database Lookups (N+1 Query Anti-Pattern)**: Rejected querying child replies recursively from the database for each comment. Enforced a single indexed database query (`find({ postId }).sort({ createdAt: 1, _id: 1 })`) and assembled the parent-child tree hierarchy in-memory using an `O(N)` hash map.
+- **Rejected Unbounded Recursive Nesting**: Rejected allowing infinite reply depth, which ruins mobile readability and creates extreme UI indentation. Enforced a strict maximum depth of 1 (top-level comment at depth 0, replies at depth 1).
+- **Rejected Orphaned Child Replies on Parent Deletion**: Explicitly rejected leaving child replies orphaned with dangling `parentCommentId` pointers when a parent comment is deleted. Implemented cascade thread deletion (`$or: [{ _id: comment._id }, { parentCommentId: comment._id }]`) combined with multi-author counter reconciliation.
+- **Rejected Singular Route Naming (`/comment`)**: Audited endpoint naming and rejected singular routes (`/comment`), enforcing strict plural REST conventions (`/posts/:postId/comments`, `/comments/:id`) across the entire API.
 
 ---
 
@@ -231,5 +247,11 @@
 - **Edge Route Protection for Posts Subtrees**: Configured Next.js Edge `src/middleware.ts` to protect creation and editing routes (`/posts/new`, `/posts/*/edit`) while ensuring public read access to `/posts` and `/posts/:id`.
 - **Feed Cache Eviction on Soft-Delete**: Fixed an issue where deleting a post from the detail view left stale cache entries in the feed. Wired `useSoftDeletePostMutation` to invalidate `postKeys.feed()` and redirect cleanly to `/posts`.
 - **Comprehensive API Specification Export**: Generated a standalone 11-page high-resolution PDF document ([`DevPulse_API_Endpoints_Day8.pdf`](file:///c:/Users/hp/Downloads/6senseHQ/DevPulse_API_Endpoints_Day8.pdf)) detailing all 32 endpoints with exact methods, URLs, testing payloads, and expected responses for manual Hoppscotch testing.
+
+### Day 9 — Threaded Comments API, Tree Hierarchy & Counter Integrity
+- **Cross-Post Reply Infiltration Vulnerability**: Caught a potential data corruption bug where a client could supply a valid `parentCommentId` belonging to Post A while submitting a reply to `/posts/Post-B/comments/:commentId/replies`. Implemented cross-post boundary validation (`parent.postId.toString() !== postId`) returning `400 BadRequestException`.
+- **Thread Cascade Counter Drift on Post Deletions**: Identified that simply decrementing `post.commentCount` by 1 when deleting a root comment with nested replies caused database counter desynchronization. Implemented a thread gathering step to calculate exact `deletedCount` and author-grouped counts, atomically decrementing `Post.commentCount` by `deletedCount` and each respective author's `User.commentsCount`.
+- **Missing Test Coverage for Comments Domain**: Caught that no unit tests existed for `CommentsService` and `CommentOwnerOrAdminGuard`. Authored 18 exhaustive unit tests covering parent validation, depth boundaries, tree assembly, and cascade deletion, expanding the backend test suite from 86 to 104 tests (100% green).
+
 
 

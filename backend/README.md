@@ -4,7 +4,7 @@
 
 ---
 
-## 🏛️ System Architecture Overview (As of Day 8)
+## 🏛️ System Architecture Overview (As of Day 9)
 
 The DevPulse backend is engineered as a modular, domain-driven NestJS service adhering to enterprise security standards, strict data encapsulation, and predictable REST conventions:
 
@@ -106,11 +106,51 @@ Interactive OpenAPI Swagger documentation is available at:
 - **`DELETE /posts/:id/permanent`**: Irreversible hard delete from database, restricted strictly to administrators.
 - **Automated Background Purge (`PostCleanupTask`)**: Automated hourly cron (`@Cron(CronExpression.EVERY_HOUR)`) that permanently deletes posts soft-deleted older than 5 days.
 
+### 4. `CommentsModule` (`/posts/:postId/comments`, `/comments/:id`) — *Day 9 Deliverables*
+- **`GET /posts/:postId/comments`**: Public endpoint returning hierarchical comments and nested replies sorted chronologically (`createdAt: 1, _id: 1`). Author is populated with public fields (`name`, `headline`, `avatarUrl`).
+- **`POST /posts/:postId/comments`**: Authenticated creation of top-level comments (`parentCommentId: null`). Atomically increments parent `Post.commentCount` and author `User.commentsCount` by 1.
+- **`POST /posts/:postId/comments/:commentId/replies`**: Authenticated creation of replies linked to `parentCommentId`. Enforces that the parent comment belongs to the specified post and enforces a strict maximum reply depth of 1 (replies cannot have child replies).
+- **`DELETE /comments/:id`**: Guarded by `CommentOwnerOrAdminGuard`. Deleting a reply deletes only that single reply (decrementing counters by 1). Deleting a root comment executes a cascade deletion of the entire thread (`root + replies`), decrementing `Post.commentCount` by `deletedCount` and author counts accurately.
+
 ---
 
-## 🔄 Working Flow as of Day 8
+## 🔄 Working Flow as of Day 9
 
-### Post Creation to Feed Delivery Flow
+### 1. Threaded Comments & Replies Lifecycle
+
+```
+1. Client POST /posts/:postId/comments with { body } + Bearer Token
+                 │
+                 ▼
+2. JwtAuthGuard authenticates JWT -> extracts { userId, role }
+                 │
+                 ▼
+3. CommentsService:
+   ├── Verifies active post exists via PostsService.findActivePostByIdOrThrow(postId)
+   ├── Creates Comment document with parentCommentId: null
+   ├── Atomically increments Post.commentCount by +1
+   └── Atomically increments User.commentsCount by +1
+                 │
+                 ▼
+4. Replying: POST /posts/:postId/comments/:commentId/replies with { body }
+   ├── Verifies parent exists and belongs to :postId
+   ├── Enforces max reply depth: rejects if parent.parentCommentId is already set
+   └── Creates reply with parentCommentId: parent._id & increments counters
+                 │
+                 ▼
+5. Retrieval: GET /posts/:postId/comments
+   ├── Executes single query sorted by { createdAt: 1, _id: 1 }
+   ├── Populates author with safe fields (name, headline, avatarUrl)
+   └── Assembles nested tree hierarchy in memory in O(N) time (roots with replies: [])
+                 │
+                 ▼
+6. Deletion: DELETE /comments/:id
+   ├── CommentOwnerOrAdminGuard enforces authorship or admin role
+   ├── Reply: deletes 1 document, decrements counters by -1
+   └── Root Comment: cascade-deletes root + all replies, decrements counters by -deletedCount
+```
+
+### 2. Post Creation to Feed Delivery Flow
 
 ```
 1. Client POST /posts with Bearer Token & { title, body }
@@ -139,7 +179,7 @@ Interactive OpenAPI Swagger documentation is available at:
    }
 ```
 
-### Feed Pagination & Infinite Scroll Query
+### 3. Feed Pagination & Infinite Scroll Query
 
 ```
 1. Client GET /posts?page=2&limit=10&status=active
@@ -163,7 +203,7 @@ Interactive OpenAPI Swagger documentation is available at:
 DevPulse backend maintains a 100% pass rate across unit, integration, and guard test suites powered by **Vitest**:
 
 ```bash
-# Run all 13 test suites (86 tests)
+# Run all 15 test suites (104 tests)
 npx vitest run
 
 # Run with watch mode
@@ -174,6 +214,8 @@ npx vitest run --coverage
 ```
 
 ### Test Coverage Highlights:
+- **`comments.service.spec.ts`**: Top-level creation, reply creation with cross-post & depth validation, single query tree construction, reply/thread cascade deletion, counter integrity.
+- **`comment-owner-or-admin.guard.spec.ts`**: Authentication requirements, author ownership verification, and admin override.
 - **`auth.service.spec.ts`**: Registration, password hashing, JWT issuance, deleted user login rejection.
 - **`posts.service.spec.ts`**: Post CRUD, author derivation, soft-delete, 5-day restore expiration, permanent purge.
 - **`post-owner-or-admin.guard.spec.ts`**: Ownership verification and admin override.

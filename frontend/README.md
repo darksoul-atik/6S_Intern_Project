@@ -148,6 +148,15 @@ frontend/src/
    - The modal closes, and the deleted post immediately vanishes from the live feed.
    - If executed on `/posts/${id}`, user is redirected back to `/posts` with zero orphaned UI states.
 
+### 4. Phase 3 Comments Integration Roadmap (Day 9 BE Completed, Day 10 FE Upcoming)
+- **Backend API Ingestion (Completed in Day 9)**: Fully integrated NestJS `CommentsModule` with endpoints:
+  - `GET /posts/:postId/comments` (hierarchical comment tree with nested replies)
+  - `POST /posts/:postId/comments` (top-level comment creation)
+  - `POST /posts/:postId/comments/:commentId/replies` (reply creation with max depth 1 enforcement)
+  - `DELETE /comments/:id` (cascade thread deletion with accurate post/user counter decrements)
+- **Frontend Architecture Purity**: Pruned all 31 legacy 1-line re-export bridge files across features (`posts/`, `admin/`, `auth/`, `users/`, `components/`, and `lib/`), strictly enforcing clean direct imports from canonical feature subfolders (`components/`, `queries/`, `mutations/`, `schemas/`, `types/`, `utils/`).
+- **Day 10 Target (Threaded Comments Interface)**: Next up is the recursive `CommentItem` component, inline reply form with keyboard focus management, and optimistic posting with TanStack Query cache reconciliation.
+
 ---
 
 ## 🚀 Development Scripts

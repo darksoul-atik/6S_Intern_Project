@@ -26,9 +26,12 @@ DevPulse is a high-performance, engineering-first developer community platform e
 | **Day 8** | **Feed & Reusable Post Interface** | `PostCard`, feed components, `useInfiniteQuery`, Intersection Observer infinite scroll, query cache invalidation. | ✅ **Completed** |
 
 ### Phase 3: Comments, Reactions, and Reliable UI (Days 9–12)
-| Day | Focus Areas | Status |
-|:---:|---|:---:|
-| **Day 9–12** | Threaded comments API, recursive comment interface, reaction engine (like/dislike toggling), optimistic UI with instant rollback. | ⏳ *Upcoming* |
+| Day | Milestone | Focus Areas | Status |
+|:---:|---|---|:---:|
+| **Day 9** | **Threaded Comments API & Data Integrity** | Self-referencing Mongoose `Comment` schema (`postId`, `authorId`, `parentCommentId`), compound indexes, single-query tree hierarchy assembly, cross-post boundary check, max depth 1 enforcement, thread cascade deletion, atomic post & user counter `$inc` synchronization. | ✅ **Completed** |
+| **Day 10** | **Threaded Comments Interface** | Recursive comment UI, inline reply forms, keyboard navigation, optimistic comment posting & rollback. | ⏳ *Upcoming* |
+| **Day 11** | **Reaction Engine & Data Integrity** | Toggle behavior for like/dislike, compound unique indexes, concurrency-safe atomic counters. | ⏳ *Upcoming* |
+| **Day 12** | **Optimistic Reaction Interface** | Instant UI feedback, safe rollbacks, rapid-click throttling, cache reconciliation. | ⏳ *Upcoming* |
 
 ### Phase 4: Discovery, Quality, and Applied Features (Days 13–16)
 | Day | Focus Areas | Status |
@@ -949,4 +952,24 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
    - On your own post, click **"Delete"** to open `DeletePostModal`.
    - Confirm deletion. Verify the post vanishes immediately from the feed and author's `postsCount` decrements.
    - Verify soft-deleted posts are excluded from the main feed and recoverable within 5 days.
+
+### 5. Day 9 Threaded Comments API & Data Integrity Verification Flow
+1. **Create Top-Level Comment**:
+   - `POST /posts/:postId/comments` with `{ "body": "Great article on architecture!" }` (Authenticated).
+   - Verify `201 Created` response returning comment object with `parentCommentId: null`.
+   - Verify parent post `commentCount` and author's user `commentsCount` both increment by 1.
+2. **Reply to Comment with Max Depth Enforcement**:
+   - `POST /posts/:postId/comments/:commentId/replies` with `{ "body": "I agree with your point." }`.
+   - Verify `201 Created` returning reply object referencing `parentCommentId: commentId`.
+   - Attempting to reply to a reply returns `400 Bad Request` with:
+     > *"Maximum reply depth exceeded. Replies cannot have child replies"*
+   - Attempting to reference a parent comment belonging to another post returns `400 Bad Request` with:
+     > *"Parent comment does not belong to this post"*
+3. **Hierarchical Tree Retrieval**:
+   - `GET /posts/:postId/comments` (Public).
+   - Returns chronological top-level comments with populated authors (`name`, `headline`, `avatarUrl`) and their nested `replies: []`.
+4. **Cascade Deletion & Counter Integrity**:
+   - **Delete Reply**: `DELETE /comments/:replyId` removes the single reply, decrementing post and author counts by 1.
+   - **Delete Root Comment**: `DELETE /comments/:rootId` cascade-deletes the root and all its replies, decrementing `post.commentCount` by `deletedCount` and each author's `commentsCount` accurately.
+   - Standard users cannot delete comments authored by others (`403 Forbidden`); administrators possess full override deletion rights via `CommentOwnerOrAdminGuard`.
 
