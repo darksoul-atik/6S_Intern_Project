@@ -27,7 +27,6 @@ export class CommentsService {
   constructor(
     @InjectModel(Comment.name)
     private readonly commentModel: Model<CommentDocument>,
-
     private readonly postsService: PostsService,
     private readonly usersService: UsersService,
   ) {}
@@ -204,6 +203,18 @@ export class CommentsService {
     return {
       deletedCount,
     };
+  }
+
+  async findCommentByIdOrThrow(commentId: string): Promise<CommentDocument> {
+    this.validateCommentId(commentId);
+
+    const comment = await this.commentModel.findById(commentId).exec();
+
+    if (!comment) {
+      throw new NotFoundException(`Comment with ID '${commentId}' not found`);
+    }
+
+    return comment;
   }
 
   private toTreeItem(comment: CommentDocument): CommentTreeItem {
