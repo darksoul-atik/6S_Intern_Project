@@ -141,6 +141,71 @@ export class CommentsService {
     return roots;
   }
 
+  async deleteComment(commentId: string): Promise<{ deletedCount: number }> {
+    this.validateCommentId(commentId);
+
+    const comment = await this.commentModel.findById(commentId).exec();
+
+    if (!comment) {
+      throw new NotFoundException(`Comment with ID '${commentId}' not found`);
+    }
+
+    const postId = comment.postId.toString();
+
+    // Reply: delete only this reply.
+    if (comment.parentCommentId) {
+      await this.commentModel.deleteOne({ _id: comment._id }).exec();
+
+      await this.postsService.decrementCommentCount(postId);
+      await this.usersService.decrementCommentsCount(
+        comment.authorId.toString(),
+      );
+
+      return {
+        deletedCount: 1,
+      };
+    }
+
+    // Main comment: delete the entire thread.
+    const thread = await this.commentModel
+      .find({
+        $or: [{ _id: comment._id }, { parentCommentId: comment._id }],
+      })
+      .exec();
+
+    const authorCounts = new Map<string, number>();
+
+    for (const item of thread) {
+      const authorId = item.authorId.toString();
+
+      authorCounts.set(authorId, (authorCounts.get(authorId) ?? 0) + 1);
+    }
+
+    const result = await this.commentModel
+      .deleteMany({
+        _id: {
+          $in: thread.map((item) => item._id),
+        },
+      })
+      .exec();
+
+    const deletedCount = result.deletedCount;
+
+    if (deletedCount > 0) {
+      await this.postsService.decrementCommentCount(postId, deletedCount);
+
+      await Promise.all(
+        Array.from(authorCounts.entries()).map(([authorId, count]) =>
+          this.usersService.decrementCommentsCount(authorId, count),
+        ),
+      );
+    }
+
+    return {
+      deletedCount,
+    };
+  }
+
   private toTreeItem(comment: CommentDocument): CommentTreeItem {
     return {
       id: comment._id.toString(),
