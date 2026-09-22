@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { Comment, CommentSchema } from './schemas/comment.schema.js';
+
 import { CommentsService } from './comments.service.js';
+import { CommentsController } from './comments.controller.js';
 import { CommentOwnerOrAdminGuard } from './guards/comment-owner-or-admin.guard.js';
 
 import { AuthModule } from '../auth/auth.module.js';
@@ -21,6 +23,8 @@ import { UsersModule } from '../users/users.module.js';
     PostsModule,
     UsersModule,
   ],
+
+  controllers: [CommentsController],
 
   providers: [CommentsService, CommentOwnerOrAdminGuard],
 
