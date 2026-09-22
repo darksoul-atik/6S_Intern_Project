@@ -52,26 +52,17 @@ export class Comment {
   })
   body!: string;
 
-  // Used only when a parent must remain as a deleted placeholder.
-  @Prop({
-    type: Date,
-    default: undefined,
-  })
-  deletedAt?: Date;
-
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);
 
-// Main comments and replies for a post.
 CommentSchema.index({
   postId: 1,
   parentCommentId: 1,
 });
 
-// Stable chronological comment ordering.
 CommentSchema.index({
   postId: 1,
   createdAt: 1,

@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Types, type Model } from 'mongoose';
 
@@ -35,5 +39,54 @@ export class CommentsService {
     await this.usersService.incrementCommentsCount(authorId);
 
     return comment;
+  }
+
+  async createReply(
+    postId: string,
+    parentCommentId: string,
+    authorId: string,
+    dto: CreateCommentDto,
+  ): Promise<CommentDocument> {
+    await this.postsService.findActivePostByIdOrThrow(postId);
+
+    this.validateCommentId(parentCommentId);
+
+    const parent = await this.commentModel.findById(parentCommentId).exec();
+
+    if (!parent) {
+      throw new NotFoundException(
+        `Comment with ID '${parentCommentId}' not found`,
+      );
+    }
+
+    if (parent.postId.toString() !== postId) {
+      throw new BadRequestException(
+        'Parent comment does not belong to this post',
+      );
+    }
+
+    if (parent.parentCommentId) {
+      throw new BadRequestException(
+        'Maximum reply depth exceeded. Replies cannot have child replies',
+      );
+    }
+
+    const reply = await this.commentModel.create({
+      postId: new Types.ObjectId(postId),
+      authorId: new Types.ObjectId(authorId),
+      parentCommentId: parent._id,
+      body: dto.body,
+    });
+
+    await this.postsService.incrementCommentCount(postId);
+    await this.usersService.incrementCommentsCount(authorId);
+
+    return reply;
+  }
+
+  private validateCommentId(commentId: string): void {
+    if (!Types.ObjectId.isValid(commentId)) {
+      throw new NotFoundException(`Comment with ID '${commentId}' not found`);
+    }
   }
 }
