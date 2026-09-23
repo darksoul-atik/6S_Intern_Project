@@ -6,7 +6,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
-import type { Connection, Model } from 'mongoose';
+import type { ClientSession, Connection, Model } from 'mongoose';
 import { GridFSBucket } from 'mongodb';
 
 import { User, UserDocument } from './schemas/user.schema.js';
@@ -836,7 +836,10 @@ export class UsersService {
     return user.save();
   }
 
-  async incrementCommentsCount(userId: string): Promise<void> {
+  async incrementCommentsCount(
+    userId: string,
+    session?: ClientSession,
+  ): Promise<void> {
     const result = await this.userModel
       .updateOne(
         {
@@ -846,6 +849,9 @@ export class UsersService {
         {
           $inc: { commentsCount: 1 },
         },
+        {
+          session,
+        },
       )
       .exec();
 
@@ -854,7 +860,11 @@ export class UsersService {
     }
   }
 
-  async decrementCommentsCount(userId: string, amount = 1): Promise<void> {
+  async decrementCommentsCount(
+    userId: string,
+    amount = 1,
+    session?: ClientSession,
+  ): Promise<void> {
     const result = await this.userModel
       .updateOne(
         {
@@ -863,6 +873,9 @@ export class UsersService {
         },
         {
           $inc: { commentsCount: -amount },
+        },
+        {
+          session,
         },
       )
       .exec();
