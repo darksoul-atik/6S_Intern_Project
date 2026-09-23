@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Types, type Model } from 'mongoose';
+import { Types, type ClientSession, type Model } from 'mongoose';
 
 import { Post, type PostDocument } from './schemas/post.schema.js';
 
@@ -258,7 +258,6 @@ export class PostsService {
   | Does NOT physically remove the document.
   |
   | Instead:
-  |
   | - deletedAt = current time
   | - deletedBy = user/admin who performed deletion
   | - author's postsCount decreases by 1
@@ -266,19 +265,19 @@ export class PostsService {
   */
 
   /*
-|--------------------------------------------------------------------------
-| Restore Soft-Deleted Post
-|--------------------------------------------------------------------------
-|
-| A post may only be restored within 5 days
-| of deletedAt.
-|
-| Restore:
-| - clears deletedAt
-| - clears deletedBy
-| - increments the original author's postsCount
-|--------------------------------------------------------------------------
-*/
+  |--------------------------------------------------------------------------
+  | Restore Soft-Deleted Post
+  |--------------------------------------------------------------------------
+  |
+  | A post may only be restored within 5 days
+  | of deletedAt.
+  |
+  | Restore:
+  | - clears deletedAt
+  | - clears deletedBy
+  | - increments the original author's postsCount
+  |--------------------------------------------------------------------------
+  */
 
   async restorePost(postId: string): Promise<PostDocument> {
     /*
@@ -337,19 +336,19 @@ export class PostsService {
   }
 
   /*
-|--------------------------------------------------------------------------
-| Permanently Delete Soft-Deleted Post
-|--------------------------------------------------------------------------
-|
-| This endpoint is irreversible.
-|
-| Approved rule:
-| - the post MUST already be soft-deleted
-| - active posts cannot be permanently deleted directly
-| - postsCount does NOT change here because it was already
-|   decremented during soft delete
-|--------------------------------------------------------------------------
-*/
+  |--------------------------------------------------------------------------
+  | Permanently Delete Soft-Deleted Post
+  |--------------------------------------------------------------------------
+  |
+  | This endpoint is irreversible.
+  |
+  | Approved rule:
+  | - the post MUST already be soft-deleted
+  | - active posts cannot be permanently deleted directly
+  | - postsCount does NOT change here because it was already
+  |   decremented during soft delete
+  |--------------------------------------------------------------------------
+  */
 
   async permanentlyDeletePost(postId: string): Promise<DeletePostResult> {
     /*
@@ -375,16 +374,16 @@ export class PostsService {
   }
 
   /*
-|--------------------------------------------------------------------------
-| Purge Expired Soft-Deleted Posts
-|--------------------------------------------------------------------------
-|
-| Permanently deletes posts whose deletedAt
-| is older than 5 days.
-|
-| This method is called by the scheduled cleanup task.
-|--------------------------------------------------------------------------
-*/
+  |--------------------------------------------------------------------------
+  | Purge Expired Soft-Deleted Posts
+  |--------------------------------------------------------------------------
+  |
+  | Permanently deletes posts whose deletedAt
+  | is older than 5 days.
+  |
+  | This method is called by the scheduled cleanup task.
+  |--------------------------------------------------------------------------
+  */
 
   async purgeExpiredDeletedPosts(): Promise<number> {
     const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
@@ -447,7 +446,16 @@ export class PostsService {
     };
   }
 
-  async incrementCommentCount(postId: string): Promise<void> {
+  /*
+  |--------------------------------------------------------------------------
+  | Increment Comment Count
+  |--------------------------------------------------------------------------
+  */
+
+  async incrementCommentCount(
+    postId: string,
+    session?: ClientSession,
+  ): Promise<void> {
     this.validatePostId(postId);
 
     const result = await this.postModel
@@ -459,6 +467,9 @@ export class PostsService {
         {
           $inc: { commentCount: 1 },
         },
+        {
+          session,
+        },
       )
       .exec();
 
@@ -467,7 +478,17 @@ export class PostsService {
     }
   }
 
-  async decrementCommentCount(postId: string, amount = 1): Promise<void> {
+  /*
+  |--------------------------------------------------------------------------
+  | Decrement Comment Count
+  |--------------------------------------------------------------------------
+  */
+
+  async decrementCommentCount(
+    postId: string,
+    amount = 1,
+    session?: ClientSession,
+  ): Promise<void> {
     this.validatePostId(postId);
 
     const result = await this.postModel
@@ -478,6 +499,9 @@ export class PostsService {
         },
         {
           $inc: { commentCount: -amount },
+        },
+        {
+          session,
         },
       )
       .exec();
