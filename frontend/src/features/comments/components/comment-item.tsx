@@ -71,7 +71,7 @@ export function CommentItem({
                   onError={() => setFailedAvatarSrc(avatarSrc)}
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-600 to-emerald-500 font-manrope text-xs font-bold text-white">
+                <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-indigo-600 to-emerald-500 font-manrope text-xs font-bold text-white">
                   {getInitials(comment.authorId.name)}
                 </div>
               )}
@@ -96,7 +96,7 @@ export function CommentItem({
         </div>
 
         {/* Comment body */}
-        <p className="mt-4 whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-6 text-slate-700">
+        <p className="mt-4 whitespace-pre-wrap wrap-break-word text-sm leading-6 text-slate-700">
           {comment.body}
         </p>
 
