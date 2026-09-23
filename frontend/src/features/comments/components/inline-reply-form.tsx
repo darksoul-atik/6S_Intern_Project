@@ -102,13 +102,13 @@ export function InlineReplyForm({
         }
       }}
       noValidate
-      className="mt-3 space-y-3"
+      className="mt-3.5 space-y-3 rounded-2xl border border-slate-200/90 bg-slate-50/90 p-3.5 sm:p-4 shadow-[0_4px_16px_rgba(0,0,0,0.06)] backdrop-blur-xs"
     >
       {serverError && (
         <div
           role="alert"
           aria-live="assertive"
-          className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-medium text-rose-700"
+          className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-medium text-rose-700 shadow-xs"
         >
           <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>{serverError}</p>
@@ -125,7 +125,7 @@ export function InlineReplyForm({
           aria-invalid={Boolean(errors.body)}
           aria-describedby={errors.body ? "reply-body-error" : undefined}
           {...register("body")}
-          className={`w-full resize-y rounded-2xl border bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition-all placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 ${
+          className={`w-full resize-y rounded-xl border bg-white px-4 py-3 text-sm leading-6 text-slate-900 shadow-xs outline-none transition-all placeholder:text-slate-400 focus:shadow-md disabled:cursor-not-allowed disabled:opacity-50 ${
             errors.body
               ? "border-rose-300 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10"
               : "border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"

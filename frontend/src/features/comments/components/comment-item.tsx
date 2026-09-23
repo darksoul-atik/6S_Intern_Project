@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { FiCornerUpLeft, FiTrash2 } from "react-icons/fi";
 
 import { useAuth } from "@/context/AuthContext";
@@ -43,6 +43,14 @@ export function CommentItem({
 
   const isDeleting = deletingCommentId === comment.id;
 
+  const sortedReplies = useMemo(() => {
+    return [...comment.replies].sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
+  }, [comment.replies]);
+
   const avatarSrc = resolveAvatarUrl(comment.authorId.avatarUrl);
 
   const showAvatar = Boolean(avatarSrc && failedAvatarSrc !== avatarSrc);
@@ -54,10 +62,16 @@ export function CommentItem({
   return (
     <article
       className={
-        level > 0 ? "ml-4 border-l border-slate-200 pl-3 sm:ml-10 sm:pl-5" : ""
+        level > 0 ? "ml-3 border-l-2 border-slate-200/80 pl-3 sm:ml-8 sm:pl-4" : ""
       }
     >
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5">
+      <div
+        className={`rounded-2xl border transition-all ${
+          level > 0
+            ? "border-slate-200/90 bg-slate-50/70 p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]"
+            : "border-slate-200/90 bg-white p-4 sm:p-5 shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_25px_rgba(0,0,0,0.09)]"
+        }`}
+      >
         {/* Author */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
@@ -142,9 +156,9 @@ export function CommentItem({
       </div>
 
       {/* Recursive replies */}
-      {comment.replies.length > 0 && (
+      {sortedReplies.length > 0 && (
         <div className="mt-3 space-y-3">
-          {comment.replies.map((reply) => (
+          {sortedReplies.map((reply) => (
             <CommentItem
               key={reply.id}
               comment={reply}

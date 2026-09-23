@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { FiAlertTriangle, FiLoader, FiTrash2, FiX } from "react-icons/fi";
 
 import type { Comment } from "../types/comment";
@@ -14,6 +15,8 @@ interface DeleteCommentModalProps {
   onConfirm: () => void;
 }
 
+const emptySubscribe = () => () => {};
+
 export function DeleteCommentModal({
   isOpen,
   comment,
@@ -22,6 +25,7 @@ export function DeleteCommentModal({
   onClose,
   onConfirm,
 }: DeleteCommentModalProps) {
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
   const isRootComment = comment?.parentCommentId === null;
@@ -30,6 +34,9 @@ export function DeleteCommentModal({
     if (!isOpen) {
       return;
     }
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
     cancelButtonRef.current?.focus();
 
@@ -42,17 +49,18 @@ export function DeleteCommentModal({
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen, isDeleting, onClose]);
 
-  if (!isOpen || !comment) {
+  if (!mounted || !isOpen || !comment) {
     return null;
   }
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !isDeleting) {
           onClose();
@@ -146,6 +154,7 @@ export function DeleteCommentModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

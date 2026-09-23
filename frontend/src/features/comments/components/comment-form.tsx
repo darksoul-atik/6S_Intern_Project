@@ -123,7 +123,7 @@ export function CommentForm({ postId }: CommentFormProps) {
           aria-invalid={Boolean(errors.body)}
           aria-describedby={errors.body ? "comment-body-error" : undefined}
           {...register("body")}
-          className={`w-full resize-y rounded-2xl border bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition-all placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 ${
+          className={`w-full resize-y rounded-2xl border bg-white px-4 py-3 text-sm leading-6 text-slate-900 shadow-xs outline-none transition-all placeholder:text-slate-400 focus:shadow-md disabled:cursor-not-allowed disabled:opacity-50 ${
             errors.body
               ? "border-rose-300 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10"
               : "border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"

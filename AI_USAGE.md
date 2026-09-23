@@ -283,6 +283,26 @@
   - NestJS production build (`nest build`) passes with 0 errors.
   - Frontend ESLint (`npm run lint`) and TypeScript (`tsc --noEmit`) pass with 0 errors.
 
+### Day 10 (Follow-up) — UI Elevation, Full-Screen Portals, Mobile Ergonomics & Chronological Comment Stacking
+- **Post Action Pills Reordering & Functional Share Button**:
+  - Standardized post interaction pills in `post-card.tsx` and `post-details.tsx` to: `Likes`, `Dislikes`, `Comment`, `Share` with capitalized labels.
+  - Built a fully functional Share button with clipboard copy (`navigator.clipboard.writeText` with textarea fallback), visual feedback ("Copied!" with `FiCheck`), and isolated event propagation (`stopPropagation`) to prevent triggering card navigation.
+- **Full-Screen Modal Backdrops via React Portals**:
+  - Diagnosed CSS containing block trapping where parent containers with `backdrop-blur-xl` constrained `fixed inset-0` modal backdrops to local component bounds rather than the entire browser viewport.
+  - Portaled `DeleteCommentModal` and `DeletePostModal` directly to `document.body` via `createPortal`.
+  - Implemented hydration-safe mounting via `useSyncExternalStore` (0 React Compiler / ESLint warnings) and added dynamic document body scroll locking (`overflow: hidden`).
+- **Mobile Action Layout & Colorful Glass Buttons**:
+  - Streamlined post action buttons on mobile screens (`<640px`) by hiding button text (`hidden sm:inline`) and highlighting glass buttons with distinct colorful icons: Edit (Amber), Delete (Rose), Likes (Indigo), Dislikes (Rose), Comment (Sky), and Share (Violet).
+  - Re-anchored the "Read Post" action button on mobile cards to the bottom-right corner using a responsive full-width flex container (`flex w-full sm:w-auto justify-end ml-auto`).
+- **Comment Section Header Streamlining & Visual Elevation**:
+  - Removed redundant icons and text header above "Add a Comment" in `comments-section.tsx` while retaining clear empty state guidance.
+  - Elevated root comment cards with `shadow-[0_4px_20px_rgba(0,0,0,0.06)]` and nested replies with `shadow-[0_2px_12px_rgba(0,0,0,0.04)]` to create depth distinction against page backgrounds.
+- **Chronological Comment & Reply Stacking (Newest First)**:
+  - Updated `CommentsService.findCommentsByPost` query sorting to `{ createdAt: -1, _id: -1 }` so top-level comments and nested replies are fetched newest-first.
+  - Updated MongoDB compound index in `comment.schema.ts` to `{ postId: 1, createdAt: -1, _id: -1 }` for optimal query execution plans.
+  - Enhanced client-side rendering in `comments-section.tsx` and `comment-item.tsx` with type-safe `useMemo` date sorting to guarantee immediate newest-first stacking.
+
+
 
 
 

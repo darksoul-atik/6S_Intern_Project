@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -20,6 +21,8 @@ interface DeletePostModalProps {
   onConfirm: () => void;
 }
 
+const emptySubscribe = () => () => {};
+
 export function DeletePostModal({
   isOpen,
   postTitle,
@@ -28,9 +31,11 @@ export function DeletePostModal({
   onClose,
   onConfirm,
 }: DeletePostModalProps) {
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+
   /*
   |--------------------------------------------------------------------------
-  | Escape key
+  | Escape key & Body Scroll Lock
   |--------------------------------------------------------------------------
   */
 
@@ -38,6 +43,9 @@ export function DeletePostModal({
     if (!isOpen) {
       return;
     }
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !isDeleting) {
@@ -48,11 +56,16 @@ export function DeletePostModal({
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen, isDeleting, onClose]);
 
-  return (
+  if (!mounted) {
+    return null;
+  }
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -191,6 +204,7 @@ export function DeletePostModal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

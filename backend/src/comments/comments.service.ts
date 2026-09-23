@@ -239,8 +239,8 @@ export class CommentsService {
         postId: new Types.ObjectId(postId),
       })
       .sort({
-        createdAt: 1,
-        _id: 1,
+        createdAt: -1,
+        _id: -1,
       })
       .populate({
         path: "authorId",

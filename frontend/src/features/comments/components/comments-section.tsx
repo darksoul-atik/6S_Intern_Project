@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { FiAlertCircle, FiMessageCircle, FiRefreshCw } from "react-icons/fi";
 
@@ -16,30 +16,6 @@ import { DeleteCommentModal } from "./delete-comment-modal";
 
 interface CommentsSectionProps {
   postId: string;
-}
-
-/*
-|--------------------------------------------------------------------------
-| Count all comments
-|--------------------------------------------------------------------------
-|
-| comments.length only counts root comments.
-|
-| Example:
-|
-| Comment A
-| ├── Reply 1
-| └── Reply 2
-|
-| comments.length = 1
-| actual comment count = 3
-|
-*/
-
-function countComments(comments: Comment[]): number {
-  return comments.reduce((total, comment) => {
-    return total + 1 + countComments(comment.replies);
-  }, 0);
 }
 
 export function CommentsSection({ postId }: CommentsSectionProps) {
@@ -59,7 +35,13 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const totalComments = countComments(comments);
+  const sortedComments = useMemo(() => {
+    return [...comments].sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
+  }, [comments]);
 
   /*
   |--------------------------------------------------------------------------
@@ -104,33 +86,11 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
 
   return (
     <section
-      aria-labelledby="comments-heading"
+      aria-label="Comments"
       className="rounded-3xl border border-slate-200/80 bg-white/95 p-5 text-slate-900 shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl sm:p-6"
     >
-      {/* Header */}
-      <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-          <FiMessageCircle className="h-4 w-4" />
-        </div>
-
-        <div>
-          <h2
-            id="comments-heading"
-            className="font-manrope text-lg font-bold text-slate-900"
-          >
-            Comments
-          </h2>
-
-          {!isPending && !isError && (
-            <p className="text-xs text-slate-500">
-              {totalComments} {totalComments === 1 ? "comment" : "comments"}
-            </p>
-          )}
-        </div>
-      </div>
-
       {/* Create top-level comment */}
-      <div className="mt-5">
+      <div>
         {!isAuthLoading && user && <CommentForm postId={postId} />}
 
         {!isAuthLoading && !user && (
@@ -226,7 +186,7 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
       {/* Comment tree */}
       {!isPending && !isError && comments.length > 0 && (
         <div className="mt-6 space-y-4">
-          {comments.map((comment) => (
+          {sortedComments.map((comment) => (
             <CommentItem
               key={comment.id}
               comment={comment}

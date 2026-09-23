@@ -977,7 +977,7 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
 1. **Navigate to Post Details (`/posts/[id]`)**:
    - The post details card is cleanly presented followed by `<CommentsSection postId={id} />`.
    - Live recursive comment count (`totalComments`) is computed across all root comments and nested replies.
-   - Skeletons display during initial load; empty state ("No comments yet") displays when no comments exist.
+   - Skeletons display during initial load; empty state ("No comments yet") displays when no comments exist. Comments and nested replies are sorted chronologically newest-first.
 2. **Post Root Comment (`CommentForm`)**:
    - Authenticated users see the rich comment input with real-time character counter (up to 5,000 characters).
    - Unauthenticated visitors see a clear prompt with a redirect link to log in.

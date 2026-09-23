@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import {
   FiAlertCircle,
   FiArrowLeft,
+  FiCheck,
   FiEdit2,
   FiMessageCircle,
   FiRefreshCw,
+  FiShare2,
   FiThumbsDown,
   FiThumbsUp,
   FiTrash2,
@@ -85,6 +87,43 @@ export function PostDetails({ postId }: PostDetailsProps) {
   */
 
   const [failedAvatarSrc, setFailedAvatarSrc] = useState<string | null>(null);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Share handler
+  |--------------------------------------------------------------------------
+  */
+
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    if (!post) return;
+
+    const postUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/posts/${post.id}`
+        : `/posts/${post.id}`;
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(postUrl);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = postUrl;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback: silent handling
+    }
+  };
 
   /*
   |--------------------------------------------------------------------------
@@ -245,20 +284,24 @@ export function PostDetails({ postId }: PostDetailsProps) {
             <div className="flex items-center gap-2">
               <Link
                 href={`/posts/${post.id}/edit`}
-                className="inline-flex items-center space-x-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 px-3.5 py-2 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all cursor-pointer"
+                title="Edit"
+                aria-label="Edit post"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white/80 hover:bg-slate-100 text-slate-700 hover:text-slate-900 px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all cursor-pointer"
               >
-                <FiEdit2 className="h-3.5 w-3.5 text-slate-500" />
-                <span>Edit</span>
+                <FiEdit2 className="h-3.5 w-3.5 text-amber-500" />
+                <span className="hidden sm:inline">Edit</span>
               </Link>
 
               <button
                 type="button"
                 onClick={handleOpenDelete}
                 disabled={deleteMutation.isPending}
-                className="inline-flex items-center space-x-1.5 rounded-xl border border-rose-200 bg-rose-50/80 hover:bg-rose-100 text-rose-700 hover:text-rose-800 px-3.5 py-2 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                title="Delete"
+                aria-label="Delete post"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200/90 bg-rose-50/80 hover:bg-rose-100 text-rose-700 hover:text-rose-800 px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <FiTrash2 className="h-3.5 w-3.5 text-rose-600" />
-                <span>Delete</span>
+                <span className="hidden sm:inline">Delete</span>
               </button>
             </div>
           )}
@@ -274,37 +317,64 @@ export function PostDetails({ postId }: PostDetailsProps) {
           {post.body}
         </div>
 
-        {/* Frosted Glass Counters */}
+        {/* Frosted Glass Counters + Share */}
         <div className="mt-8 flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-5">
+          {/* Likes */}
           <div
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
-            title="Comments"
-          >
-            <FiMessageCircle className="h-3.5 w-3.5 text-slate-600" />
-            <span className="font-bold text-slate-900">
-              {post.commentCount} comments
-            </span>
-          </div>
-
-          <div
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
             title="Likes"
           >
             <FiThumbsUp className="h-3.5 w-3.5 text-indigo-600" />
-            <span className="font-bold text-slate-900">
-              {post.reactionCounts.like} likes
-            </span>
+            <span className="font-bold text-slate-900">{post.reactionCounts.like}</span>
+            <span className="hidden sm:inline font-medium">Likes</span>
           </div>
 
+          {/* Dislikes */}
           <div
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
             title="Dislikes"
           >
             <FiThumbsDown className="h-3.5 w-3.5 text-rose-500" />
-            <span className="font-bold text-slate-900">
-              {post.reactionCounts.dislike} dislikes
+            <span className="font-bold text-slate-900">{post.reactionCounts.dislike}</span>
+            <span className="hidden sm:inline font-medium">Dislikes</span>
+          </div>
+
+          {/* Comment */}
+          <div
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
+            title="Comments"
+          >
+            <FiMessageCircle className="h-3.5 w-3.5 text-sky-500" />
+            <span className="font-bold text-slate-900">{post.commentCount}</span>
+            <span className="hidden sm:inline font-medium">
+              {post.commentCount === 1 ? "Comment" : "Comments"}
             </span>
           </div>
+
+          {/* Share */}
+          <button
+            type="button"
+            onClick={handleShare}
+            title={copied ? "Copied!" : "Share post URL"}
+            aria-label="Share post"
+            className={`group/share inline-flex cursor-pointer items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all ${
+              copied
+                ? "border-emerald-300 bg-emerald-50/90 text-emerald-700"
+                : "border-slate-200/90 bg-slate-50/80 text-slate-700 hover:bg-slate-100 hover:border-slate-300"
+            }`}
+          >
+            {copied ? (
+              <>
+                <FiCheck className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="hidden sm:inline font-bold text-emerald-700">Copied!</span>
+              </>
+            ) : (
+              <>
+                <FiShare2 className="h-3.5 w-3.5 text-violet-600 transition-colors group-hover/share:text-violet-700" />
+                <span className="hidden sm:inline font-semibold text-slate-700">Share</span>
+              </>
+            )}
+          </button>
         </div>
       </article>
 
