@@ -253,5 +253,36 @@
 - **Thread Cascade Counter Drift on Post Deletions**: Identified that simply decrementing `post.commentCount` by 1 when deleting a root comment with nested replies caused database counter desynchronization. Implemented a thread gathering step to calculate exact `deletedCount` and author-grouped counts, atomically decrementing `Post.commentCount` by `deletedCount` and each respective author's `User.commentsCount`.
 - **Missing Test Coverage for Comments Domain**: Caught that no unit tests existed for `CommentsService` and `CommentOwnerOrAdminGuard`. Authored 18 exhaustive unit tests covering parent validation, depth boundaries, tree assembly, and cascade deletion, expanding the backend test suite from 86 to 104 tests (100% green).
 
+### Day 10 — Threaded Comments Interface, Accessibility & Resilient Transactions
+- **React Compiler & React 19 Ref-in-Render Static Analysis**:
+  - Diagnosed `react-hooks/refs: Cannot access refs during render` in `inline-reply-form.tsx` triggered by writing `onSubmit={handleSubmit(onSubmit)}`. React Compiler flags that `handleSubmit` is evaluated during render and takes `onSubmit` (which closes over `returnFocusRef`).
+  - Resolved by deferring `handleSubmit` evaluation to the event trigger:
+    ```tsx
+    onSubmit={(event) => {
+      void handleSubmit(onSubmit)(event);
+    }}
+    ```
+    This guarantees that the callback capturing the ref is never inspected or called during the component's render phase.
+- **Accessible Focus Restoration & Keyboard Navigation**:
+  - Directed the implementation of automatic focus transfer into the textarea upon mounting the inline reply form (`useEffect(() => setFocus('body'))`).
+  - Wired an `Escape` key listener on the reply form that cancels editing and restores keyboard focus back to the specific "Reply" button that triggered the form via `returnFocusRef.current?.focus()`.
+  - Added focus trapping to `DeleteCommentModal` with backdrop click dismissal and `Escape` key support.
+- **Responsive Layout & Overflow Defense**:
+  - Prevented long unbroken text strings from blowing out comment card boundaries by applying `wrap-break-word` and modern Tailwind gradient syntax `bg-linear-to-br`.
+  - Supported recursive replies with proportional visual indentation (`ml-4 border-l pl-3 sm:ml-10 sm:pl-5`) ensuring comfortable reading on mobile viewports down to 320px.
+- **Resilient MongoDB Transaction Handling**:
+  - Engineered `CommentsService.runInTransaction` to inspect database session availability (`db.startSession`). If running against a replica set, operations execute inside an atomic session; if running against standalone MongoDB or mock environments, operations fall back seamlessly without throwing unhandled session or transaction errors.
+- **Oxlint Warning Eradication (13 to 0)**:
+  - Eliminated all 13 linter warnings detected by `oxlint src/ test/` across 5 backend files:
+    - Removed unused `UpdatePortfolioProjectDto` in `portfolio-project.dto.spec.ts`.
+    - Removed unused `updated` and `result` variable declarations in `posts.service.spec.ts`.
+    - Corrected unnecessary `\/` escapes in regex character classes in `migrate-avatars-to-gridfs.ts` and `users.service.ts`.
+    - Replaced 8 occurrences of `{ then: ... }` object literals in `users.service.spec.ts` with a clean `createQueryMock` Promise helper, resolving all `unicorn/no-thenable` warnings while preserving query chaining (`.select().exec()`).
+- **Comprehensive Verification Suite (107 Tests, 100% Green)**:
+  - Backend Vitest test suite expanded to 107 tests across 15 test files (100% passing).
+  - NestJS production build (`nest build`) passes with 0 errors.
+  - Frontend ESLint (`npm run lint`) and TypeScript (`tsc --noEmit`) pass with 0 errors.
+
+
 
 

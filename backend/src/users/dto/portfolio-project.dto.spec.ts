@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { PortfolioProjectDto } from './portfolio-project.dto.js';
-import { UpdatePortfolioProjectDto } from './update-portfolio-project.dto.js';
 
 describe('PortfolioProjectDto Validation Edge Cases', () => {
   const createDto = (data: Record<string, unknown>): PortfolioProjectDto => {

@@ -203,7 +203,7 @@ describe('PostsService', () => {
         exec: vi.fn().mockResolvedValue(mockPost),
       });
 
-      const updated = await service.updatePost(postId, {
+      await service.updatePost(postId, {
         title: 'New Title',
         body: 'New Body',
       });
@@ -258,7 +258,7 @@ describe('PostsService', () => {
         exec: vi.fn().mockResolvedValue(mockPost),
       });
 
-      const result = await service.restorePost(postId);
+      await service.restorePost(postId);
 
       expect(mockPost.deletedAt).toBeUndefined();
       expect(mockPost.deletedBy).toBeUndefined();

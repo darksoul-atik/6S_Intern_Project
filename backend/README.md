@@ -146,6 +146,7 @@ Interactive OpenAPI Swagger documentation is available at:
                  ▼
 6. Deletion: DELETE /comments/:id
    ├── CommentOwnerOrAdminGuard enforces authorship or admin role
+   ├── Wrapped in MongoDB ClientSession transaction (runInTransaction) with resilient fallback
    ├── Reply: deletes 1 document, decrements counters by -1
    └── Root Comment: cascade-deletes root + all replies, decrements counters by -deletedCount
 ```

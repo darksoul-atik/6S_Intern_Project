@@ -38,7 +38,7 @@ async function migrateAvatars() {
       const userId = user._id.toString();
       const rawAvatar = user.avatarUrl as string;
 
-      const matches = rawAvatar.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      const matches = rawAvatar.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
       if (!matches || matches.length !== 3) {
         console.warn(`⚠️ User ${user.name} (${userId}) has invalid base64 avatarUrl format, skipping.`);
         continue;

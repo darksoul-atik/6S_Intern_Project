@@ -59,7 +59,7 @@ export class UsersService {
 
   async saveBase64Avatar(userId: string, dataUri: string): Promise<string> {
     const bucket = this.getGridFsBucket();
-    const matches = dataUri.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    const matches = dataUri.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
 
     if (!matches || matches.length !== 3) {
       throw new BadRequestException('Invalid base64 image data');

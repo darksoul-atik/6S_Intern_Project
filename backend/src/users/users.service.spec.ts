@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UsersService } from './users.service.js';
 
+function createQueryMock(val: any) {
+  const p: any = Promise.resolve(val);
+  p.select = vi.fn().mockReturnValue({
+    exec: vi.fn().mockResolvedValue(val),
+  });
+  p.exec = vi.fn().mockResolvedValue(val);
+  return p;
+}
+
 describe('UsersService', () => {
   let service: UsersService;
   let mockUserModel: any;
@@ -122,12 +131,7 @@ describe('UsersService', () => {
         return Promise.resolve(this);
       }),
     };
-    mockUserModel.findOne.mockReturnValue({
-      then: (resolve: any) => resolve(mockUser),
-      select: vi.fn().mockReturnValue({
-        exec: vi.fn().mockResolvedValue(mockUser),
-      }),
-    });
+    mockUserModel.findOne.mockReturnValue(createQueryMock(mockUser));
 
     const result = await service.updateBasicProfile(validId, { name: 'New Name' });
     expect(result.name).toBe('New Name');
@@ -136,12 +140,7 @@ describe('UsersService', () => {
 
   it('should throw NotFoundException on updateBasicProfile if user does not exist', async () => {
     const validId = '507f1f77bcf86cd799439011';
-    mockUserModel.findOne.mockReturnValue({
-      then: (resolve: any) => resolve(null),
-      select: vi.fn().mockReturnValue({
-        exec: vi.fn().mockResolvedValue(null),
-      }),
-    });
+    mockUserModel.findOne.mockReturnValue(createQueryMock(null));
 
     await expect(
       service.updateBasicProfile(validId, { name: 'New Name' }),
@@ -157,12 +156,7 @@ describe('UsersService', () => {
         return Promise.resolve(this);
       }),
     };
-    mockUserModel.findOne.mockReturnValue({
-      then: (resolve: any) => resolve(mockUser),
-      select: vi.fn().mockReturnValue({
-        exec: vi.fn().mockResolvedValue(mockUser),
-      }),
-    });
+    mockUserModel.findOne.mockReturnValue(createQueryMock(mockUser));
 
     const projectDto: any = {
       title: 'DevPulse',
@@ -197,12 +191,7 @@ describe('UsersService', () => {
         return Promise.resolve(this);
       }),
     };
-    mockUserModel.findOne.mockReturnValue({
-      then: (resolve: any) => resolve(mockUser),
-      select: vi.fn().mockReturnValue({
-        exec: vi.fn().mockResolvedValue(mockUser),
-      }),
-    });
+    mockUserModel.findOne.mockReturnValue(createQueryMock(mockUser));
 
     await service.updatePortfolioProject(validId, projectId, {
       title: 'New Title',
@@ -230,9 +219,7 @@ describe('UsersService', () => {
         },
       ],
     };
-    mockUserModel.findOne.mockReturnValue({
-      then: (resolve: any) => resolve(mockUser),
-    });
+    mockUserModel.findOne.mockResolvedValue(mockUser);
 
     await expect(
       service.updatePortfolioProject(validId, projectId, {
@@ -256,9 +243,7 @@ describe('UsersService', () => {
         },
       ],
     };
-    mockUserModel.findOne.mockReturnValue({
-      then: (resolve: any) => resolve(mockUser),
-    });
+    mockUserModel.findOne.mockReturnValue(createQueryMock(mockUser));
 
     await expect(
       service.updatePortfolioProject(validId, projectId, {
@@ -274,9 +259,7 @@ describe('UsersService', () => {
       _id: validId,
       portfolioProjects: [],
     };
-    mockUserModel.findOne.mockReturnValue({
-      then: (resolve: any) => resolve(mockUser),
-    });
+    mockUserModel.findOne.mockReturnValue(createQueryMock(mockUser));
 
     await expect(
       service.updatePortfolioProject(validId, 'nonexistent', { title: 'New' }),
@@ -298,12 +281,7 @@ describe('UsersService', () => {
         return Promise.resolve(this);
       }),
     };
-    mockUserModel.findOne.mockReturnValue({
-      then: (resolve: any) => resolve(mockUser),
-      select: vi.fn().mockReturnValue({
-        exec: vi.fn().mockResolvedValue(mockUser),
-      }),
-    });
+    mockUserModel.findOne.mockReturnValue(createQueryMock(mockUser));
 
     await service.removePortfolioProject(validId, projectId);
     expect(mockUser.save).toHaveBeenCalled();

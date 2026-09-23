@@ -29,7 +29,7 @@ DevPulse is a high-performance, engineering-first developer community platform e
 | Day | Milestone | Focus Areas | Status |
 |:---:|---|---|:---:|
 | **Day 9** | **Threaded Comments API & Data Integrity** | Self-referencing Mongoose `Comment` schema (`postId`, `authorId`, `parentCommentId`), compound indexes, single-query tree hierarchy assembly, cross-post boundary check, max depth 1 enforcement, thread cascade deletion, atomic post & user counter `$inc` synchronization. | ✅ **Completed** |
-| **Day 10** | **Threaded Comments Interface** | Recursive comment UI, inline reply forms, keyboard navigation, optimistic comment posting & rollback. | ⏳ *Upcoming* |
+| **Day 10** | **Threaded Comments Interface** | Recursive comment hierarchy (`CommentItem`), inline reply forms with keyboard focus management, TanStack Query cache invalidation, accessible delete confirmation dialog with cascade warning, mobile-responsive layout. | ✅ **Completed** |
 | **Day 11** | **Reaction Engine & Data Integrity** | Toggle behavior for like/dislike, compound unique indexes, concurrency-safe atomic counters. | ⏳ *Upcoming* |
 | **Day 12** | **Optimistic Reaction Interface** | Instant UI feedback, safe rollbacks, rapid-click throttling, cache reconciliation. | ⏳ *Upcoming* |
 
@@ -972,4 +972,26 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
    - **Delete Reply**: `DELETE /comments/:replyId` removes the single reply, decrementing post and author counts by 1.
    - **Delete Root Comment**: `DELETE /comments/:rootId` cascade-deletes the root and all its replies, decrementing `post.commentCount` by `deletedCount` and each author's `commentsCount` accurately.
    - Standard users cannot delete comments authored by others (`403 Forbidden`); administrators possess full override deletion rights via `CommentOwnerOrAdminGuard`.
+
+### 6. Day 10 Threaded Comments Interface Verification Flow
+1. **Navigate to Post Details (`/posts/[id]`)**:
+   - The post details card is cleanly presented followed by `<CommentsSection postId={id} />`.
+   - Live recursive comment count (`totalComments`) is computed across all root comments and nested replies.
+   - Skeletons display during initial load; empty state ("No comments yet") displays when no comments exist.
+2. **Post Root Comment (`CommentForm`)**:
+   - Authenticated users see the rich comment input with real-time character counter (up to 5,000 characters).
+   - Unauthenticated visitors see a clear prompt with a redirect link to log in.
+   - Submitting a comment disables inputs with an animated loading spinner (`Posting...`), displays a success banner upon completion, and invalidates post and feed caches.
+3. **Nested Replies (`InlineReplyForm`)**:
+   - Click **"Reply"** on any top-level comment to expand the inline reply form.
+   - Keyboard focus automatically shifts to the textarea (`setFocus("body")`).
+   - Pressing **`Escape`** cancels and restores focus directly back to the triggering **"Reply"** button.
+   - Replies cannot be replied to, strictly maintaining a clean 1-level thread hierarchy.
+4. **Accessible Deletion Modal (`DeleteCommentModal`)**:
+   - Authorized users (comment author or admin) see a delete action button.
+   - Clicking **"Delete"** opens the accessible confirmation dialog (`role="dialog"`, `aria-modal="true"`).
+   - If deleting a root comment, the modal displays a clear cascade warning:
+     > *"This comment and every reply under it will be permanently deleted."*
+   - Traps focus to Cancel button, dismisses on backdrop click or `Escape` key, and shows spinner during in-flight deletion.
+
 
