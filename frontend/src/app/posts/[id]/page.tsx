@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FiArrowLeft } from "react-icons/fi";
 
 import { PostDetails } from "@/features/posts/components/post-details";
+import { CommentsSection } from "@/features/comments/components/comments-section";
 
 interface PostPageProps {
   params: Promise<{
@@ -42,6 +43,8 @@ export default async function PostPage({ params }: PostPageProps) {
           </Link>
 
           <PostDetails postId={id} />
+
+          <CommentsSection postId={id} />
         </div>
       </main>
     </div>
