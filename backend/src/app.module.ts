@@ -11,6 +11,7 @@ import { UsersModule } from './users/users.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { PostsModule } from './posts/posts.module.js';
 import { CommentsModule } from './comments/comments.module.js';
+import { ReactionsModule } from './reactions/reactions.module.js';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { CommentsModule } from './comments/comments.module.js';
     AuthModule,
     PostsModule,
     CommentsModule,
+    ReactionsModule,
   ],
 
   controllers: [AppController],
