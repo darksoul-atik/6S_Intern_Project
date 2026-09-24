@@ -179,7 +179,7 @@ describe('ReactionsService', () => {
           },
         },
         {
-          new: true,
+          returnDocument: 'after',
           session: mockSession,
         },
       );
@@ -262,7 +262,7 @@ describe('ReactionsService', () => {
           },
         },
         {
-          new: true,
+          returnDocument: 'after',
           session: mockSession,
         },
       );

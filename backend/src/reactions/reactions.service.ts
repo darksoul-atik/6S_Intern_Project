@@ -404,7 +404,7 @@ export class ReactionsService {
             $inc: increment,
           },
           {
-            new: true,
+            returnDocument: 'after',
             session,
           },
         )
@@ -466,7 +466,7 @@ export class ReactionsService {
           $inc: increment,
         },
         {
-          new: true,
+          returnDocument: 'after',
           session,
         },
       )
