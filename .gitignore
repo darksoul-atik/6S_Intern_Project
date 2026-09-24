@@ -49,3 +49,4 @@ next-env.d.ts
 *.rar
 *.zip
 *.tar.gz
+*.pdf
