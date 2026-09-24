@@ -27,14 +27,20 @@ export type ReactionAction = 'created' | 'removed' | 'switched';
 
 export interface ToggleReactionResult {
   action: ReactionAction;
-
   reaction: ReactionType | null;
-
   reactionCounts: {
     like: number;
     dislike: number;
   };
 }
+
+interface ResolvedTarget {
+  targetType: ReactionTargetType;
+  targetId: Types.ObjectId;
+  parentPostId?: Types.ObjectId;
+}
+
+const MAX_CONCURRENCY_ATTEMPTS = 5;
 
 @Injectable()
 export class ReactionsService {
@@ -56,13 +62,32 @@ export class ReactionsService {
     userId: string,
     dto: ToggleReactionDto,
   ): Promise<ToggleReactionResult> {
+    for (let attempt = 1; attempt <= MAX_CONCURRENCY_ATTEMPTS; attempt++) {
+      try {
+        return await this.runToggleTransaction(userId, dto);
+      } catch (error) {
+        const shouldRetry =
+          attempt < MAX_CONCURRENCY_ATTEMPTS &&
+          this.isRetryableConcurrencyError(error);
+
+        if (!shouldRetry) {
+          throw error;
+        }
+      }
+    }
+
+    throw new Error('Reaction toggle failed after maximum retry attempts');
+  }
+
+  private async runToggleTransaction(
+    userId: string,
+    dto: ToggleReactionDto,
+  ): Promise<ToggleReactionResult> {
     const session = await this.connection.startSession();
 
     try {
-      let result: ToggleReactionResult | undefined;
-
-      await session.withTransaction(async () => {
-        result = await this.toggleInsideTransaction(userId, dto, session);
+      const result = await session.withTransaction(async () => {
+        return this.toggleInsideTransaction(userId, dto, session);
       });
 
       if (!result) {
@@ -83,8 +108,29 @@ export class ReactionsService {
     const userObjectId = new Types.ObjectId(userId);
     const targetObjectId = new Types.ObjectId(dto.targetId);
 
-    await this.ensureTargetIsActive(dto.targetType, targetObjectId, session);
+    /*
+     * Validate the target inside the transaction.
+     *
+     * Post:
+     * - must exist
+     * - must not be soft-deleted
+     *
+     * Comment:
+     * - must exist
+     * - its parent post must still be active
+     */
+    const target = await this.resolveActiveTarget(
+      dto.targetType,
+      targetObjectId,
+      session,
+    );
 
+    /*
+     * A unique index guarantees that only one Reaction
+     * can exist for:
+     *
+     * userId + targetType + targetId
+     */
     const existingReaction = await this.reactionModel
       .findOne({
         userId: userObjectId,
@@ -95,8 +141,15 @@ export class ReactionsService {
       .exec();
 
     /*
-     * CASE 1:
-     * No reaction yet -> create.
+     * CASE 1
+     *
+     * No existing reaction.
+     *
+     * none + like
+     * → create like
+     *
+     * none + dislike
+     * → create dislike
      */
     if (!existingReaction) {
       await this.reactionModel.create(
@@ -114,8 +167,7 @@ export class ReactionsService {
       );
 
       const reactionCounts = await this.updateTargetCounters(
-        dto.targetType,
-        targetObjectId,
+        target,
         {
           [dto.type]: 1,
         },
@@ -130,8 +182,15 @@ export class ReactionsService {
     }
 
     /*
-     * CASE 2:
-     * Same reaction again -> remove.
+     * CASE 2
+     *
+     * Same reaction is sent again.
+     *
+     * like + like
+     * → remove like
+     *
+     * dislike + dislike
+     * → remove dislike
      */
     if (existingReaction.type === dto.type) {
       const deleteResult = await this.reactionModel
@@ -147,8 +206,7 @@ export class ReactionsService {
       }
 
       const reactionCounts = await this.updateTargetCounters(
-        dto.targetType,
-        targetObjectId,
+        target,
         {
           [dto.type]: -1,
         },
@@ -163,8 +221,15 @@ export class ReactionsService {
     }
 
     /*
-     * CASE 3:
-     * Opposite reaction -> switch.
+     * CASE 3
+     *
+     * Existing reaction is different.
+     *
+     * like → dislike
+     *
+     * or
+     *
+     * dislike → like
      */
     const previousType = existingReaction.type;
 
@@ -190,8 +255,7 @@ export class ReactionsService {
     }
 
     const reactionCounts = await this.updateTargetCounters(
-      dto.targetType,
-      targetObjectId,
+      target,
       {
         [previousType]: -1,
         [dto.type]: 1,
@@ -206,11 +270,16 @@ export class ReactionsService {
     };
   }
 
-  private async ensureTargetIsActive(
+  private async resolveActiveTarget(
     targetType: ReactionTargetType,
     targetId: Types.ObjectId,
     session: ClientSession,
-  ): Promise<void> {
+  ): Promise<ResolvedTarget> {
+    /*
+     * POST TARGET
+     *
+     * Active post means deletedAt does not exist.
+     */
     if (targetType === 'post') {
       const post = await this.postModel
         .findOne({
@@ -229,9 +298,21 @@ export class ReactionsService {
         );
       }
 
-      return;
+      return {
+        targetType: 'post',
+        targetId,
+      };
     }
 
+    /*
+     * COMMENT TARGET
+     *
+     * Comments currently use hard-delete.
+     *
+     * Therefore:
+     *
+     * missing Comment = deleted/nonexistent Comment.
+     */
     const comment = await this.commentModel
       .findById(targetId)
       .select('postId')
@@ -244,6 +325,10 @@ export class ReactionsService {
       );
     }
 
+    /*
+     * A Comment cannot be reacted to when its parent
+     * Post has been soft-deleted.
+     */
     const parentPost = await this.postModel
       .findOne({
         _id: comment.postId,
@@ -260,28 +345,57 @@ export class ReactionsService {
         `Comment with ID '${targetId.toString()}' not found`,
       );
     }
+
+    return {
+      targetType: 'comment',
+      targetId,
+      parentPostId: comment.postId,
+    };
   }
 
   private async updateTargetCounters(
-    targetType: ReactionTargetType,
-    targetId: Types.ObjectId,
+    target: ResolvedTarget,
     changes: Partial<Record<ReactionType, number>>,
     session: ClientSession,
   ): Promise<{
     like: number;
     dislike: number;
   }> {
+    /*
+     * Convert:
+     *
+     * { like: 1 }
+     *
+     * into:
+     *
+     * { "reactionCounts.like": 1 }
+     *
+     * Or:
+     *
+     * {
+     *   like: -1,
+     *   dislike: 1
+     * }
+     */
     const increment: Record<string, number> = {};
 
     for (const [type, amount] of Object.entries(changes)) {
       increment[`reactionCounts.${type}`] = amount;
     }
 
-    if (targetType === 'post') {
+    /*
+     * POST COUNTER UPDATE
+     */
+    if (target.targetType === 'post') {
       const post = await this.postModel
         .findOneAndUpdate(
           {
-            _id: targetId,
+            _id: target.targetId,
+
+            /*
+             * Check active state again during
+             * the actual counter mutation.
+             */
             deletedAt: {
               $exists: false,
             },
@@ -299,7 +413,7 @@ export class ReactionsService {
 
       if (!post) {
         throw new NotFoundException(
-          `Post with ID '${targetId.toString()}' not found`,
+          `Post with ID '${target.targetId.toString()}' not found`,
         );
       }
 
@@ -309,10 +423,44 @@ export class ReactionsService {
       };
     }
 
+    /*
+     * COMMENT TARGET
+     *
+     * Verify the parent Post still belongs to the
+     * resolved Comment target.
+     */
+    if (!target.parentPostId) {
+      throw new Error('Resolved comment target is missing parentPostId');
+    }
+
+    /*
+     * Parent Post must still be an active target.
+     */
+    const parentPost = await this.postModel
+      .findOne({
+        _id: target.parentPostId,
+        deletedAt: {
+          $exists: false,
+        },
+      })
+      .select('_id')
+      .session(session)
+      .exec();
+
+    if (!parentPost) {
+      throw new NotFoundException(
+        `Comment with ID '${target.targetId.toString()}' not found`,
+      );
+    }
+
+    /*
+     * COMMENT COUNTER UPDATE
+     */
     const comment = await this.commentModel
       .findOneAndUpdate(
         {
-          _id: targetId,
+          _id: target.targetId,
+          postId: target.parentPostId,
         },
         {
           $inc: increment,
@@ -327,7 +475,7 @@ export class ReactionsService {
 
     if (!comment) {
       throw new NotFoundException(
-        `Comment with ID '${targetId.toString()}' not found`,
+        `Comment with ID '${target.targetId.toString()}' not found`,
       );
     }
 
@@ -335,5 +483,52 @@ export class ReactionsService {
       like: comment.reactionCounts.like,
       dislike: comment.reactionCounts.dislike,
     };
+  }
+
+  private isRetryableConcurrencyError(error: unknown): boolean {
+    if (!error || typeof error !== 'object') {
+      return false;
+    }
+
+    const mongoError = error as {
+      code?: number;
+      errorLabels?: string[];
+      hasErrorLabel?: (label: string) => boolean;
+    };
+
+    /*
+     * Duplicate key.
+     *
+     * Usually happens when two concurrent requests
+     * both initially see no Reaction and both try
+     * to create the same unique:
+     *
+     * userId + targetType + targetId
+     */
+    if (mongoError.code === 11000) {
+      return true;
+    }
+
+    /*
+     * MongoDB write conflict.
+     */
+    if (mongoError.code === 112) {
+      return true;
+    }
+
+    /*
+     * MongoDB transaction conflict.
+     */
+    if (
+      typeof mongoError.hasErrorLabel === 'function' &&
+      mongoError.hasErrorLabel('TransientTransactionError')
+    ) {
+      return true;
+    }
+
+    return (
+      Array.isArray(mongoError.errorLabels) &&
+      mongoError.errorLabels.includes('TransientTransactionError')
+    );
   }
 }

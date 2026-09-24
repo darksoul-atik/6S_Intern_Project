@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Reaction, ReactionSchema } from './schemas/reaction.schema.js';
 
 import { ReactionsService } from './reactions.service.js';
+import { ReactionsController } from './reactions.controller.js';
 
 import { AuthModule } from '../auth/auth.module.js';
 import { PostsModule } from '../posts/posts.module.js';
@@ -23,7 +24,7 @@ import { CommentsModule } from '../comments/comments.module.js';
     CommentsModule,
   ],
 
-  controllers: [],
+  controllers: [ReactionsController],
 
   providers: [ReactionsService],
 
