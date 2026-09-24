@@ -12,6 +12,7 @@ import {
 
 import type { Comment } from "../types/comment";
 import { InlineReplyForm } from "./inline-reply-form";
+import { ReactionButtons } from "@/features/reactions/components/reaction-buttons";
 
 interface CommentItemProps {
   comment: Comment;
@@ -116,6 +117,15 @@ export function CommentItem({
 
         {/* Actions */}
         <div className="mt-4 flex flex-wrap items-center gap-2">
+          {/* Reactions (Likes & Dislikes) */}
+          <ReactionButtons
+            targetType="comment"
+            targetId={comment.id}
+            postId={postId}
+            counts={comment.reactionCounts ?? { like: 0, dislike: 0 }}
+            size="sm"
+          />
+
           {/* Only root comments can receive replies */}
           {user && isRootComment && (
             <button

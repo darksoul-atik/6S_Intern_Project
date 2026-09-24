@@ -60,6 +60,7 @@ describe('ReactionsService', () => {
     */
 
     mockReactionModel = {
+      find: vi.fn(),
       findOne: vi.fn(),
       create: vi.fn(),
       deleteOne: vi.fn(),
@@ -725,6 +726,31 @@ describe('ReactionsService', () => {
       ).rejects.toThrow(NotFoundException);
 
       expect(mockConnection.startSession).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getUserReactions', () => {
+    it('should return a map of targetId to reaction type for the user', async () => {
+      const targetId1 = new Types.ObjectId();
+      const targetId2 = new Types.ObjectId();
+
+      mockReactionModel.find.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        exec: vi.fn().mockResolvedValue([
+          { targetId: targetId1, type: 'like' },
+          { targetId: targetId2, type: 'dislike' },
+        ]),
+      });
+
+      const result = await service.getUserReactions(userId, [
+        targetId1.toString(),
+        targetId2.toString(),
+      ]);
+
+      expect(result).toEqual({
+        [targetId1.toString()]: 'like',
+        [targetId2.toString()]: 'dislike',
+      });
     });
   });
 });

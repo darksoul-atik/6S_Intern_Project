@@ -11,8 +11,6 @@ import {
   FiMessageCircle,
   FiRefreshCw,
   FiShare2,
-  FiThumbsDown,
-  FiThumbsUp,
   FiTrash2,
 } from "react-icons/fi";
 
@@ -26,6 +24,7 @@ import {
 import { DeletePostModal } from "./delete-post-modal";
 import { usePost } from "../queries/post-queries";
 import { useSoftDeletePostMutation } from "../mutations/post-mutations";
+import { ReactionButtons } from "@/features/reactions/components/reaction-buttons";
 
 interface PostDetailsProps {
   postId: string;
@@ -319,25 +318,12 @@ export function PostDetails({ postId }: PostDetailsProps) {
 
         {/* Frosted Glass Counters + Share */}
         <div className="mt-8 flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-5">
-          {/* Likes */}
-          <div
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
-            title="Likes"
-          >
-            <FiThumbsUp className="h-3.5 w-3.5 text-indigo-600" />
-            <span className="font-bold text-slate-900">{post.reactionCounts.like}</span>
-            <span className="hidden sm:inline font-medium">Likes</span>
-          </div>
-
-          {/* Dislikes */}
-          <div
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
-            title="Dislikes"
-          >
-            <FiThumbsDown className="h-3.5 w-3.5 text-rose-500" />
-            <span className="font-bold text-slate-900">{post.reactionCounts.dislike}</span>
-            <span className="hidden sm:inline font-medium">Dislikes</span>
-          </div>
+          {/* Likes & Dislikes */}
+          <ReactionButtons
+            targetType="post"
+            targetId={post.id}
+            counts={post.reactionCounts}
+          />
 
           {/* Comment */}
           <div

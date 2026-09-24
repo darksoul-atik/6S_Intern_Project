@@ -5,12 +5,18 @@ export interface CommentAuthor {
   avatarUrl?: string | null;
 }
 
+export interface CommentReactionCounts {
+  like: number;
+  dislike: number;
+}
+
 export interface Comment {
   id: string;
   postId: string;
   authorId: CommentAuthor;
   parentCommentId: string | null;
   body: string;
+  reactionCounts?: CommentReactionCounts;
   createdAt?: string;
   updatedAt?: string;
   replies: Comment[];

@@ -34,6 +34,11 @@ describe('ReactionsService concurrency', () => {
         count: 1,
         storageEngine: 'wiredTiger',
       },
+      instanceOpts: [
+        {
+          launchTimeout: 60000,
+        },
+      ],
     });
 
     connection = await createConnection(replSet.getUri()).asPromise();

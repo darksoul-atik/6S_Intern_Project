@@ -531,4 +531,35 @@ export class ReactionsService {
       mongoError.errorLabels.includes('TransientTransactionError')
     );
   }
+
+  async getUserReactions(
+    userId: string,
+    targetIds?: string[],
+  ): Promise<Record<string, ReactionType>> {
+    const filter: Record<string, unknown> = {
+      userId: new Types.ObjectId(userId),
+    };
+
+    if (targetIds && targetIds.length > 0) {
+      const validObjectIds = targetIds
+        .filter((id) => Types.ObjectId.isValid(id))
+        .map((id) => new Types.ObjectId(id));
+
+      if (validObjectIds.length > 0) {
+        filter.targetId = { $in: validObjectIds };
+      }
+    }
+
+    const reactions = await this.reactionModel
+      .find(filter)
+      .select('targetId type')
+      .exec();
+
+    const result: Record<string, ReactionType> = {};
+    for (const reaction of reactions) {
+      result[reaction.targetId.toString()] = reaction.type;
+    }
+
+    return result;
+  }
 }

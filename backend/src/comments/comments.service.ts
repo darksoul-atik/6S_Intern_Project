@@ -18,6 +18,10 @@ export interface CommentTreeItem {
   authorId: unknown;
   parentCommentId: string | null;
   body: string;
+  reactionCounts?: {
+    like: number;
+    dislike: number;
+  };
   createdAt?: Date;
   updatedAt?: Date;
   replies: CommentTreeItem[];
@@ -512,6 +516,12 @@ export class CommentsService {
       authorId: comment.authorId,
       parentCommentId: comment.parentCommentId?.toString() ?? null,
       body: comment.body,
+      reactionCounts: comment.reactionCounts
+        ? {
+            like: comment.reactionCounts.like,
+            dislike: comment.reactionCounts.dislike,
+          }
+        : { like: 0, dislike: 0 },
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
       replies: [],

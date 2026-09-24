@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
@@ -25,6 +27,25 @@ import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy.js';
 @Controller('reactions')
 export class ReactionsController {
   constructor(private readonly reactionsService: ReactionsService) {}
+
+  @Get('mine')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get current user reactions',
+    description: 'Retrieves current user reaction types mapped by target ID.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User reactions retrieved successfully',
+  })
+  async getMyReactions(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('targetIds') targetIds?: string,
+  ) {
+    const ids = targetIds ? targetIds.split(',').filter(Boolean) : undefined;
+    return this.reactionsService.getUserReactions(user.userId, ids);
+  }
 
   @Post()
   @HttpCode(HttpStatus.OK)

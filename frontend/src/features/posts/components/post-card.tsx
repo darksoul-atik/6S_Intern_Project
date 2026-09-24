@@ -8,13 +8,12 @@ import {
   FiEdit2,
   FiMessageCircle,
   FiShare2,
-  FiThumbsDown,
-  FiThumbsUp,
   FiTrash2,
 } from "react-icons/fi";
 
 import { useAuth } from "@/context/AuthContext";
 import { formatDateTime, getInitials, resolveAvatarUrl } from "@/lib/utils/formatters";
+import { ReactionButtons } from "@/features/reactions/components/reaction-buttons";
 
 import type { Post } from "../types/post";
 
@@ -181,25 +180,12 @@ export function PostCard({
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
           {/* Frosted Glass Reaction & Comment Counters + Share */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            {/* Likes */}
-            <div
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
-              title="Likes"
-            >
-              <FiThumbsUp className="h-3.5 w-3.5 text-indigo-600" />
-              <span className="font-bold text-slate-900">{post.reactionCounts.like}</span>
-              <span className="hidden sm:inline text-slate-600 font-medium">Likes</span>
-            </div>
-
-            {/* Dislikes */}
-            <div
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md"
-              title="Dislikes"
-            >
-              <FiThumbsDown className="h-3.5 w-3.5 text-rose-500" />
-              <span className="font-bold text-slate-900">{post.reactionCounts.dislike}</span>
-              <span className="hidden sm:inline text-slate-600 font-medium">Dislikes</span>
-            </div>
+            {/* Likes & Dislikes */}
+            <ReactionButtons
+              targetType="post"
+              targetId={post.id}
+              counts={post.reactionCounts}
+            />
 
             {/* Comment */}
             <div
