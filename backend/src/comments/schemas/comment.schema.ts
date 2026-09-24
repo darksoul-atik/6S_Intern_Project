@@ -1,7 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import type { HydratedDocument, Types } from 'mongoose';
 
-import { Post } from '../../posts/schemas/post.schema.js';
+import {
+  Post,
+  ReactionCounts,
+  ReactionCountsSchema,
+} from '../../posts/schemas/post.schema.js';
 import { User } from '../../users/schemas/user.schema.js';
 
 export type CommentDocument = HydratedDocument<Comment>;
@@ -51,6 +55,15 @@ export class Comment {
     maxlength: 5000,
   })
   body!: string;
+
+  @Prop({
+    type: ReactionCountsSchema,
+    default: () => ({
+      like: 0,
+      dislike: 0,
+    }),
+  })
+  reactionCounts!: ReactionCounts;
 
   createdAt?: Date;
   updatedAt?: Date;
