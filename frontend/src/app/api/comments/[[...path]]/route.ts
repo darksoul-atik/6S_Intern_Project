@@ -29,9 +29,20 @@ async function proxyCommentsRequest(
       headers.Authorization = `Bearer ${token}`;
     }
 
+    let body: string | undefined;
+
+    if (method === "POST" || method === "PATCH" || method === "PUT") {
+      try {
+        body = JSON.stringify(await request.json());
+      } catch {
+        body = undefined;
+      }
+    }
+
     const backendResponse = await fetch(backendUrl, {
       method,
       headers,
+      body,
       cache: "no-store",
     });
 
@@ -55,6 +66,19 @@ async function proxyCommentsRequest(
       },
     );
   }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  {
+    params,
+  }: {
+    params: Promise<{
+      path?: string[];
+    }>;
+  },
+) {
+  return proxyCommentsRequest(request, params, "PATCH");
 }
 
 export async function DELETE(

@@ -1,14 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import type {
+  Comment,
   CreateCommentPayload,
   DeleteCommentResult,
+  UpdateCommentPayload,
 } from "../types/comment";
 
 import {
   createComment as apiCreateComment,
   createReply as apiCreateReply,
   deleteComment as apiDeleteComment,
+  updateComment as apiUpdateComment,
 } from "@/services/api/comments";
 
 import { commentKeys } from "../queries/comment-queries";
@@ -51,6 +54,19 @@ export async function deleteComment(
 
   if (!res.data) {
     throw new Error(res.message || "Failed to delete comment");
+  }
+
+  return res.data;
+}
+
+export async function updateComment(
+  commentId: string,
+  payload: UpdateCommentPayload,
+): Promise<Comment> {
+  const res = await apiUpdateComment(commentId, payload);
+
+  if (!res.data) {
+    throw new Error(res.message || "Failed to update comment");
   }
 
   return res.data;
@@ -157,6 +173,27 @@ export function useDeleteCommentMutation() {
           queryKey: profileKeys.all,
         }),
       ]);
+    },
+  });
+}
+
+export function useUpdateCommentMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      commentId,
+      data,
+    }: {
+      commentId: string;
+      postId: string;
+      data: UpdateCommentPayload;
+    }) => updateComment(commentId, data),
+
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: commentKeys.byPost(variables.postId),
+      });
     },
   });
 }

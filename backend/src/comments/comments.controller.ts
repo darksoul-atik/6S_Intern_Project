@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -18,7 +19,9 @@ import {
 
 import { CommentsService } from './comments.service.js';
 import { CreateCommentDto } from './dto/create-comment.dto.js';
+import { UpdateCommentDto } from './dto/update-comment.dto.js';
 import { CommentOwnerOrAdminGuard } from './guards/comment-owner-or-admin.guard.js';
+import { CommentOwnerGuard } from './guards/comment-owner.guard.js';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
@@ -162,5 +165,44 @@ export class CommentsController {
   })
   async deleteComment(@Param('id') id: string) {
     return this.commentsService.deleteComment(id);
+  }
+
+  @Patch('comments/:id')
+  @UseGuards(JwtAuthGuard, CommentOwnerGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Update a comment or reply',
+    description: 'Only the author of the comment or reply can edit its body.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB ObjectId of the comment',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Comment updated successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid comment data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden: Only the author can edit this comment',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Comment not found',
+  })
+  async updateComment(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateCommentDto,
+  ) {
+    return this.commentsService.updateComment(id, user.userId, dto);
   }
 }

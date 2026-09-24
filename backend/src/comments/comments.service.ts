@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,6 +10,7 @@ import { Types, type ClientSession, type Model } from 'mongoose';
 import { Comment, type CommentDocument } from './schemas/comment.schema.js';
 
 import { CreateCommentDto } from './dto/create-comment.dto.js';
+import { UpdateCommentDto } from './dto/update-comment.dto.js';
 import { PostsService } from '../posts/posts.service.js';
 import { UsersService } from '../users/users.service.js';
 
@@ -288,6 +290,19 @@ export class CommentsService {
       }
     }
 
+    /*
+     * Third pass:
+     * sort replies chronologically (ascending) so the latest reply
+     * appears at the bottom of the reply stack.
+     */
+    for (const root of roots) {
+      root.replies.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeA - timeB;
+      });
+    }
+
     return roots;
   }
 
@@ -499,6 +514,33 @@ export class CommentsService {
     if (!comment) {
       throw new NotFoundException(`Comment with ID '${commentId}' not found`);
     }
+
+    return comment;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Update Comment Or Reply (Author Only)
+  |--------------------------------------------------------------------------
+  */
+
+  async updateComment(
+    commentId: string,
+    userId: string,
+    dto: UpdateCommentDto,
+  ): Promise<CommentDocument> {
+    this.validateCommentId(commentId);
+
+    const comment = await this.findCommentByIdOrThrow(commentId);
+
+    if (comment.authorId.toString() !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to edit this comment',
+      );
+    }
+
+    comment.body = dto.body;
+    await comment.save();
 
     return comment;
   }

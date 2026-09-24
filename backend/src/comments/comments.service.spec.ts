@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -414,7 +414,7 @@ describe('CommentsService', () => {
         updatedAt: new Date(),
       };
 
-      const replyComment = {
+      const olderReply = {
         _id: new Types.ObjectId(validReplyId),
 
         postId: new Types.ObjectId(validPostId),
@@ -427,11 +427,32 @@ describe('CommentsService', () => {
 
         parentCommentId: rootComment._id,
 
-        body: 'Reply to Root',
+        body: 'Older Reply',
 
-        createdAt: new Date(),
+        createdAt: new Date('2026-01-01T10:00:00Z'),
 
-        updatedAt: new Date(),
+        updatedAt: new Date('2026-01-01T10:00:00Z'),
+      };
+
+      const newerReplyId = '66e138fc29094e137127e4e4';
+      const newerReply = {
+        _id: new Types.ObjectId(newerReplyId),
+
+        postId: new Types.ObjectId(validPostId),
+
+        authorId: {
+          name: 'Charlie',
+          headline: 'Dev',
+          avatarUrl: null,
+        },
+
+        parentCommentId: rootComment._id,
+
+        body: 'Newer Reply',
+
+        createdAt: new Date('2026-01-01T11:00:00Z'),
+
+        updatedAt: new Date('2026-01-01T11:00:00Z'),
       };
 
       const mockQuery = {
@@ -439,7 +460,7 @@ describe('CommentsService', () => {
 
         populate: vi.fn().mockReturnThis(),
 
-        exec: vi.fn().mockResolvedValue([rootComment, replyComment]),
+        exec: vi.fn().mockResolvedValue([rootComment, newerReply, olderReply]),
       };
 
       mockCommentModel.find.mockReturnValue(mockQuery);
@@ -450,11 +471,15 @@ describe('CommentsService', () => {
 
       expect(tree[0].id).toBe(validCommentId);
 
-      expect(tree[0].replies).toHaveLength(1);
+      expect(tree[0].replies).toHaveLength(2);
 
+      // Oldest reply at top of reply stack
       expect(tree[0].replies[0].id).toBe(validReplyId);
+      expect(tree[0].replies[0].body).toBe('Older Reply');
 
-      expect(tree[0].replies[0].parentCommentId).toBe(validCommentId);
+      // Latest reply at bottom of reply stack
+      expect(tree[0].replies[1].id).toBe(newerReplyId);
+      expect(tree[0].replies[1].body).toBe('Newer Reply');
     });
   });
 
@@ -709,6 +734,58 @@ describe('CommentsService', () => {
 
       const result = await service.findCommentByIdOrThrow(validCommentId);
 
+      expect(result).toEqual(mockDoc);
+    });
+  });
+
+  /*
+  |--------------------------------------------------------------------------
+  | updateComment
+  |--------------------------------------------------------------------------
+  */
+
+  describe('updateComment', () => {
+    it('should throw NotFoundException on invalid commentId', async () => {
+      await expect(
+        service.updateComment('invalid-id', validAuthorId, { body: 'Updated' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException if user is not author of the comment', async () => {
+      const mockDoc = {
+        _id: validCommentId,
+        authorId: { toString: () => 'different-user-id' },
+        body: 'Old text',
+        save: vi.fn(),
+      };
+
+      mockCommentModel.findById.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(mockDoc),
+      });
+
+      await expect(
+        service.updateComment(validCommentId, validAuthorId, { body: 'New text' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should successfully update comment body and return updated document', async () => {
+      const mockDoc = {
+        _id: validCommentId,
+        authorId: { toString: () => validAuthorId },
+        body: 'Old text',
+        save: vi.fn().mockResolvedValue(undefined),
+      };
+
+      mockCommentModel.findById.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(mockDoc),
+      });
+
+      const result = await service.updateComment(validCommentId, validAuthorId, {
+        body: 'New updated text',
+      });
+
+      expect(mockDoc.body).toBe('New updated text');
+      expect(mockDoc.save).toHaveBeenCalled();
       expect(result).toEqual(mockDoc);
     });
   });

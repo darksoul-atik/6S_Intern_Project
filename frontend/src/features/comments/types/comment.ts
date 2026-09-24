@@ -26,6 +26,10 @@ export interface CreateCommentPayload {
   body: string;
 }
 
+export interface UpdateCommentPayload {
+  body: string;
+}
+
 export interface DeleteCommentResult {
   deletedCount: number;
 }

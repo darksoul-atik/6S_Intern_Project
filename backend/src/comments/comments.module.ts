@@ -6,6 +6,7 @@ import { Comment, CommentSchema } from './schemas/comment.schema.js';
 import { CommentsService } from './comments.service.js';
 import { CommentsController } from './comments.controller.js';
 import { CommentOwnerOrAdminGuard } from './guards/comment-owner-or-admin.guard.js';
+import { CommentOwnerGuard } from './guards/comment-owner.guard.js';
 
 import { AuthModule } from '../auth/auth.module.js';
 import { PostsModule } from '../posts/posts.module.js';
@@ -26,7 +27,11 @@ import { UsersModule } from '../users/users.module.js';
 
   controllers: [CommentsController],
 
-  providers: [CommentsService, CommentOwnerOrAdminGuard],
+  providers: [
+    CommentsService,
+    CommentOwnerOrAdminGuard,
+    CommentOwnerGuard,
+  ],
 
   exports: [CommentsService, MongooseModule],
 })

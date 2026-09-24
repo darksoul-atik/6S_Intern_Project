@@ -56,3 +56,15 @@ export async function deleteComment(
 
   return res.data;
 }
+
+export async function updateComment(
+  commentId: string,
+  payload: { body: string },
+): Promise<ApiResponse<Comment>> {
+  const res = await apiClient.patch<ApiResponse<Comment>>(
+    `/comments/${commentId}`,
+    payload,
+  );
+
+  return res.data;
+}
