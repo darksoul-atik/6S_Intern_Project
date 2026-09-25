@@ -118,11 +118,11 @@ export function PostCard({
 
   return (
     <article className="group/card overflow-hidden rounded-3xl border border-slate-200/80 bg-white hover:bg-slate-50/80 text-slate-900 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl transition-all duration-200 hover:shadow-[0_16px_40px_rgba(0,0,0,0.08)] hover:border-slate-300 hover:-translate-y-0.5">
-      <div className="p-6 sm:p-7">
+      <div className="p-4 sm:p-6 md:p-7">
         {/* --------------------------------
             Author
         -------------------------------- */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-3 sm:gap-4">
           <div className="flex min-w-0 items-center gap-3.5">
             {/* Avatar / Initials */}
             <Link
@@ -226,12 +226,12 @@ export function PostCard({
         -------------------------------- */}
         <div className="mt-5 flex-1">
           <Link href={`/posts/${post.id}`} className="block">
-            <h2 className="font-manrope text-lg sm:text-xl font-bold tracking-tight text-slate-900">
+            <h2 className="font-manrope text-base sm:text-lg md:text-xl font-bold tracking-tight text-slate-900 break-words">
               {post.title}
             </h2>
           </Link>
 
-          <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm leading-6 text-slate-700 font-sans">
+          <p className="mt-2 line-clamp-3 whitespace-pre-line text-xs sm:text-sm leading-6 text-slate-700 font-sans break-words">
             {post.body}
           </p>
         </div>

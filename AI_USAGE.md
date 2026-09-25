@@ -411,6 +411,12 @@
 - **Vitest Test Suite Expansion (137 to 142 Passing Tests)**:
   - Added unit test coverage for `GET /reactions` endpoint, reactor pagination, and reply flattening with mention population in `reactions.service.spec.ts` and `comments.service.spec.ts`.
   - All 18 test files and 142 tests passing (100% green).
+- **Reactors Modal Portaling & Text Proportion Refinement**:
+  - Diagnosed CSS containing block clipping where opening `ReactorsModal` from comments trapped the `fixed inset-0` dialog inside the parent `backdrop-blur-xl` comment card, resulting in weirdly proportioned gigantic text, overflow, and layout glitches.
+  - Portaled `ReactorsModal` directly into `document.body` via `createPortal` with SSR safety (`useSyncExternalStore`), applied contextual header naming (`Comment Reactions` vs `Post Reactions`), and tuned typography hierarchy.
+  - Replaced undefined Tailwind font sizes (`text-3xs`, `text-2xs`) in `ReactionPeekPopover` with standard Tailwind classes (`text-[10px]`, `text-[11px]`) and implemented smart edge-aware alignment (`left-0` vs `right-0`) preventing mobile screen overflow.
+  - Upgraded global mobile responsiveness across cards, feeds, post details, comment items, and auth forms down to 320px viewports with `break-words` and fluid padding (`p-4 sm:p-6 md:p-8`).
+
 
 
 

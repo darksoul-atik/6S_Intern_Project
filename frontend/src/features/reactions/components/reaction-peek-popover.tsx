@@ -57,11 +57,21 @@ export function ReactionPeekPopover({
           transition={{ duration: 0.15, ease: "easeOut" }}
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-40 w-48 sm:w-52 rounded-2xl border border-slate-200/90 bg-white/95 p-3 shadow-xl backdrop-blur-md pointer-events-auto text-left"
+          className={`absolute bottom-full mb-2 z-40 w-44 sm:w-48 rounded-2xl border border-slate-200/90 bg-white/95 p-3 shadow-xl backdrop-blur-md pointer-events-auto text-left ${
+            isLike
+              ? "left-0 sm:left-1/2 sm:-translate-x-1/2"
+              : "right-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto"
+          }`}
           role="tooltip"
         >
           {/* Arrow */}
-          <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 h-3 w-3 rotate-45 border-b border-r border-slate-200/90 bg-white" />
+          <div
+            className={`absolute -bottom-1.5 h-3 w-3 rotate-45 border-b border-r border-slate-200/90 bg-white ${
+              isLike
+                ? "left-4 sm:left-1/2 sm:-translate-x-1/2"
+                : "right-4 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto"
+            }`}
+          />
 
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-2">
@@ -71,12 +81,12 @@ export function ReactionPeekPopover({
               ) : (
                 <FiThumbsDown className="h-3.5 w-3.5 text-rose-600 fill-rose-600/30" />
               )}
-              <span className="text-xs font-bold text-slate-800">
+              <span className="text-[11px] sm:text-xs font-bold text-slate-800">
                 {count} {isLike ? (count === 1 ? "Like" : "Likes") : (count === 1 ? "Dislike" : "Dislikes")}
               </span>
             </div>
 
-            <span className="text-3xs font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
               Reactors
             </span>
           </div>
@@ -108,13 +118,13 @@ export function ReactionPeekPopover({
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-indigo-600 to-emerald-500 text-3xs font-bold text-white">
+                        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-indigo-600 to-emerald-500 text-[10px] font-bold text-white">
                           {getInitials(reactor.name)}
                         </div>
                       )}
                     </div>
 
-                    <span className="truncate text-xs font-medium text-slate-700">
+                    <span className="truncate text-[11px] sm:text-xs font-medium text-slate-700">
                       {reactor.name}
                     </span>
                   </li>
@@ -125,7 +135,7 @@ export function ReactionPeekPopover({
 
           {/* Remaining count text */}
           {remaining > 0 && (
-            <p className="mt-1.5 text-3xs font-medium text-slate-500 text-center">
+            <p className="mt-1.5 text-[10px] font-medium text-slate-500 text-center">
               ...and {remaining} {remaining === 1 ? "other" : "others"}
             </p>
           )}
@@ -137,7 +147,7 @@ export function ReactionPeekPopover({
               e.stopPropagation();
               onOpenModal();
             }}
-            className="mt-2 block w-full rounded-lg bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 py-1 text-center text-2xs font-bold text-slate-600 transition-colors cursor-pointer"
+            className="mt-2 block w-full rounded-lg bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 py-1 text-center text-[11px] font-bold text-slate-600 transition-colors cursor-pointer"
           >
             View all {count} →
           </button>

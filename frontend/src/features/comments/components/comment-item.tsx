@@ -145,19 +145,19 @@ export function CommentItem({
     <article
       className={
         level > 0
-          ? "ml-3 border-l-2 border-slate-200/80 pl-3 sm:ml-8 sm:pl-4"
+          ? "ml-2.5 border-l-2 border-slate-200/80 pl-2.5 sm:ml-8 sm:pl-4"
           : ""
       }
     >
       <div
         className={`rounded-2xl border transition-all ${
           level > 0
-            ? "border-slate-200/90 bg-slate-50/70 p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]"
-            : "border-slate-200/90 bg-white p-4 sm:p-5 shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_25px_rgba(0,0,0,0.09)]"
+            ? "border-slate-200/90 bg-slate-50/70 p-3 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]"
+            : "border-slate-200/90 bg-white p-3.5 sm:p-5 shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_25px_rgba(0,0,0,0.09)]"
         }`}
       >
         {/* Header: Author Info + Top-Right Hamburger Menu */}
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-2.5 sm:gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <Link
               href={`/developers/${comment.authorId.id}`}
@@ -300,7 +300,7 @@ export function CommentItem({
             </div>
           </form>
         ) : (
-          <p className="mt-3 whitespace-pre-wrap wrap-break-word text-sm leading-6 text-slate-700">
+          <p className="mt-3 whitespace-pre-wrap wrap-break-word break-words text-sm leading-6 text-slate-700">
             {comment.mentionedUserId && comment.mentionedUserId.name && (
               <Link
                 href={`/developers/${comment.mentionedUserId.id}`}

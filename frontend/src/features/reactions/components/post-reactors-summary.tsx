@@ -131,14 +131,14 @@ export function PostReactorsSummary({
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="group inline-flex cursor-pointer items-center gap-1.5 text-left text-xs text-slate-500 transition hover:text-indigo-600 focus:outline-hidden"
+          className="group inline-flex cursor-pointer items-center gap-1.5 text-left text-[11px] sm:text-xs text-slate-500 transition hover:text-indigo-600 focus:outline-hidden max-w-full flex-wrap"
           title="Click to view all reactors"
         >
           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-linear-to-tr from-indigo-500/10 to-purple-500/15 text-indigo-600 group-hover:from-indigo-500/20 group-hover:to-purple-500/20 transition-all">
             <FiSmile className="h-3 w-3" />
           </div>
 
-          <span className="group-hover:underline">{renderSummaryText()}</span>
+          <span className="group-hover:underline break-words leading-tight">{renderSummaryText()}</span>
         </button>
       </div>
 

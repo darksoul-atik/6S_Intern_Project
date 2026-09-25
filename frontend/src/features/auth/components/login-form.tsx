@@ -138,7 +138,7 @@ export function LoginForm() {
             transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="lg:col-span-6 w-full max-w-md mx-auto"
           >
-            <div className="relative rounded-3xl border border-white/15 bg-zinc-950/70 p-6 sm:p-8 md:p-10 shadow-2xl backdrop-blur-2xl">
+            <div className="relative rounded-3xl border border-white/15 bg-zinc-950/70 p-4 min-[400px]:p-6 sm:p-8 md:p-10 shadow-2xl backdrop-blur-2xl">
               <div className="mb-6 sm:mb-8 text-center sm:text-left">
                 <h2 className="text-xl sm:text-2xl font-bold font-manrope tracking-tight text-white">
                   Sign In

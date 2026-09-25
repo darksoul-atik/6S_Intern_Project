@@ -276,11 +276,11 @@ export function PostDetails({ postId }: PostDetailsProps) {
 
   return (
     <>
-      <article className="rounded-3xl border border-slate-200/80 bg-white/95 text-slate-900 p-6 sm:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl">
+      <article className="rounded-3xl border border-slate-200/80 bg-white/95 text-slate-900 p-4 sm:p-7 md:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl">
         {/* Top Section */}
-        <div className="flex flex-wrap items-start justify-between gap-4 pb-6 border-b border-slate-100">
+        <div className="flex items-start justify-between gap-3 pb-5 sm:pb-6 border-b border-slate-100">
           {/* Author */}
-          <div className="flex min-w-0 items-center gap-3.5">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-3.5">
             <Link
               href={`/developers/${post.authorId.id}`}
               className="group/avatar flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 shadow-xs ring-2 ring-white/90 transition hover:ring-indigo-500/20"
@@ -364,12 +364,12 @@ export function PostDetails({ postId }: PostDetailsProps) {
         </div>
 
         {/* Title */}
-        <h1 className="mt-6 font-manrope text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
+        <h1 className="mt-6 font-manrope text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 break-words">
           {post.title}
         </h1>
 
         {/* Body */}
-        <div className="mt-6 whitespace-pre-wrap wrap-break-word text-[15px] sm:text-base leading-8 text-slate-800 font-sans">
+        <div className="mt-6 whitespace-pre-wrap wrap-break-word text-[15px] sm:text-base leading-7 sm:leading-8 text-slate-800 font-sans break-words">
           {post.body}
         </div>
 
