@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -12,12 +13,14 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 
 import { ReactionsService } from './reactions.service.js';
 import { ToggleReactionDto } from './dto/toggle-reaction.dto.js';
+import type { ReactionTargetType } from './schemas/reaction.schema.js';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
@@ -33,18 +36,52 @@ export class ReactionsController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get current user reactions',
-    description: 'Retrieves current user reaction types mapped by target ID.',
+    description:
+      'Retrieves current user reaction types mapped by target ID, optionally filtered by target type and target IDs.',
+  })
+  @ApiQuery({
+    name: 'targetType',
+    required: false,
+    enum: ['post', 'comment'],
+  })
+  @ApiQuery({
+    name: 'targetIds',
+    required: false,
+    type: String,
+    description: 'Comma-separated target IDs',
   })
   @ApiResponse({
     status: 200,
     description: 'User reactions retrieved successfully',
   })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid target type',
+  })
   async getMyReactions(
     @CurrentUser() user: AuthenticatedUser,
     @Query('targetIds') targetIds?: string,
+    @Query('targetType') targetType?: string,
   ) {
+    let parsedTargetType: ReactionTargetType | undefined;
+
+    if (targetType !== undefined) {
+      if (targetType !== 'post' && targetType !== 'comment') {
+        throw new BadRequestException(
+          'targetType must be either "post" or "comment"',
+        );
+      }
+
+      parsedTargetType = targetType;
+    }
+
     const ids = targetIds ? targetIds.split(',').filter(Boolean) : undefined;
-    return this.reactionsService.getUserReactions(user.userId, ids);
+
+    return this.reactionsService.getUserReactions(
+      user.userId,
+      ids,
+      parsedTargetType,
+    );
   }
 
   @Post()

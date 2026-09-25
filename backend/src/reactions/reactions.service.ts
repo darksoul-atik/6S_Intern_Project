@@ -535,14 +535,18 @@ export class ReactionsService {
   async getUserReactions(
     userId: string,
     targetIds?: string[],
+    targetType?: ReactionTargetType,
   ): Promise<Record<string, ReactionType>> {
     const filter: Record<string, unknown> = {
       userId: new Types.ObjectId(userId),
     };
 
-    // If targetIds was supplied, this must remain a scoped query.
-    // Never fall back to returning all user reactions when
-    // the supplied IDs are invalid.
+    // Keep post and comment reaction lookups separate.
+    if (targetType) {
+      filter.targetType = targetType;
+    }
+
+    // If targetIds was supplied, the query must stay scoped.
     if (targetIds !== undefined) {
       const validObjectIds = targetIds
         .filter((id) => Types.ObjectId.isValid(id))
