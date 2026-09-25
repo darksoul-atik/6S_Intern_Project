@@ -14,6 +14,7 @@ import { useCreateReplyMutation } from "../mutations/comment-mutations";
 interface InlineReplyFormProps {
   postId: string;
   parentCommentId: string;
+  replyingToName?: string;
   onClose: () => void;
   returnFocusRef: RefObject<HTMLButtonElement | null>;
 }
@@ -21,6 +22,7 @@ interface InlineReplyFormProps {
 export function InlineReplyForm({
   postId,
   parentCommentId,
+  replyingToName,
   onClose,
   returnFocusRef,
 }: InlineReplyFormProps) {
@@ -115,11 +117,22 @@ export function InlineReplyForm({
         </div>
       )}
 
+      {replyingToName && (
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+          <span>Replying to</span>
+          <span className="font-bold text-purple-600">@{replyingToName}</span>
+        </div>
+      )}
+
       <div>
         <textarea
           rows={3}
           maxLength={5000}
-          placeholder="Write a reply..."
+          placeholder={
+            replyingToName
+              ? `Reply to @${replyingToName}...`
+              : "Write a reply..."
+          }
           disabled={isBusy}
           aria-label="Write a reply"
           aria-invalid={Boolean(errors.body)}

@@ -5,6 +5,13 @@ export interface CommentAuthor {
   avatarUrl?: string | null;
 }
 
+export interface CommentMentionedUser {
+  id: string;
+  name: string;
+  headline?: string | null;
+  avatarUrl?: string | null;
+}
+
 export interface CommentReactionCounts {
   like: number;
   dislike: number;
@@ -14,6 +21,7 @@ export interface Comment {
   id: string;
   postId: string;
   authorId: CommentAuthor;
+  mentionedUserId?: CommentMentionedUser | null;
   parentCommentId: string | null;
   body: string;
   reactionCounts?: CommentReactionCounts;

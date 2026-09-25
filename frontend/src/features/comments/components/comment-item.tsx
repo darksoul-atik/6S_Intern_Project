@@ -301,11 +301,19 @@ export function CommentItem({
           </form>
         ) : (
           <p className="mt-3 whitespace-pre-wrap wrap-break-word text-sm leading-6 text-slate-700">
+            {comment.mentionedUserId && (
+              <Link
+                href={`/developers/${comment.mentionedUserId.id}`}
+                className="mr-1.5 inline-flex items-center font-bold text-purple-600 transition-colors hover:text-purple-700 hover:underline"
+              >
+                @{comment.mentionedUserId.name}
+              </Link>
+            )}
             {comment.body}
           </p>
         )}
 
-        {/* Bottom Actions Row: Like, Dislike, and Reply moved to Bottom Right Corner */}
+        {/* Bottom Actions Row: Like, Dislike, and Reply */}
         <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
           {/* Reactions (Likes & Dislikes) */}
           <ReactionButtons
@@ -317,8 +325,8 @@ export function CommentItem({
             size="sm"
           />
 
-          {/* Only root comments can receive replies */}
-          {user && isRootComment && (
+          {/* Authenticated users can reply to comments and replies */}
+          {user && (
             <button
               ref={replyButtonRef}
               type="button"
@@ -332,6 +340,19 @@ export function CommentItem({
           )}
         </div>
       </div>
+
+      {/* Inline reply form for reply-to-reply */}
+      {showReplyForm && !isRootComment && (
+        <div className="mt-3">
+          <InlineReplyForm
+            postId={postId}
+            parentCommentId={comment.id}
+            replyingToName={comment.authorId.name}
+            onClose={() => setShowReplyForm(false)}
+            returnFocusRef={replyButtonRef}
+          />
+        </div>
+      )}
 
       {/* Recursive replies (chronological stack with latest reply at bottom) */}
       {sortedReplies.length > 0 && (
@@ -350,7 +371,7 @@ export function CommentItem({
         </div>
       )}
 
-      {/* Inline reply form at bottom of the reply stack */}
+      {/* Inline reply form at bottom of the root reply stack */}
       {showReplyForm && isRootComment && (
         <div className="mt-3 ml-3 sm:ml-8 pl-3 sm:pl-4 border-l-2 border-slate-200/80">
           <InlineReplyForm
