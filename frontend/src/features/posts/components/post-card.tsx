@@ -124,27 +124,33 @@ export function PostCard({
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3.5">
             {/* Avatar / Initials */}
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 shadow-xs ring-2 ring-white/90">
+            <Link
+              href={`/developers/${post.authorId.id}`}
+              className="group/avatar flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 shadow-xs ring-2 ring-white/90 transition hover:ring-indigo-500/20"
+            >
               {showAvatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={avatarSrc ?? undefined}
                   alt={`${post.authorId.name}'s avatar`}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover transition-transform group-hover/avatar:scale-105"
                   onError={() => setFailedAvatarSrc(avatarSrc)}
                 />
               ) : (
-                <div className="h-full w-full bg-linear-to-br from-indigo-600 to-emerald-500 flex items-center justify-center text-white font-bold font-manrope text-xs shadow-inner">
+                <div className="h-full w-full bg-linear-to-br from-indigo-600 to-emerald-500 flex items-center justify-center text-white font-bold font-manrope text-xs shadow-inner transition-transform group-hover/avatar:scale-105">
                   {getInitials(post.authorId.name)}
                 </div>
               )}
-            </div>
+            </Link>
 
             {/* Author information */}
             <div className="min-w-0">
-              <p className="truncate font-manrope text-sm font-bold text-slate-900">
+              <Link
+                href={`/developers/${post.authorId.id}`}
+                className="block truncate font-manrope text-sm font-bold text-slate-900 transition-colors hover:text-indigo-600 hover:underline"
+              >
                 {post.authorId.name}
-              </p>
+              </Link>
 
               {post.authorId.headline && (
                 <p className="truncate text-xs font-medium text-slate-600 font-sans">

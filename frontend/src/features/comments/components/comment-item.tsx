@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { FiCornerUpLeft, FiEdit2, FiMoreVertical, FiTrash2 } from "react-icons/fi";
 
 import { useAuth } from "@/context/AuthContext";
@@ -158,26 +159,32 @@ export function CommentItem({
         {/* Header: Author Info + Top-Right Hamburger Menu */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+            <Link
+              href={`/developers/${comment.authorId.id}`}
+              className="group/avatar flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 transition hover:ring-2 hover:ring-indigo-500/20"
+            >
               {showAvatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={avatarSrc ?? undefined}
                   alt={`${comment.authorId.name}'s avatar`}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover transition-transform group-hover/avatar:scale-105"
                   onError={() => setFailedAvatarSrc(avatarSrc)}
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-indigo-600 to-emerald-500 font-manrope text-xs font-bold text-white">
+                <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-indigo-600 to-emerald-500 font-manrope text-xs font-bold text-white transition-transform group-hover/avatar:scale-105">
                   {getInitials(comment.authorId.name)}
                 </div>
               )}
-            </div>
+            </Link>
 
             <div className="min-w-0">
-              <p className="truncate font-manrope text-sm font-bold text-slate-900">
+              <Link
+                href={`/developers/${comment.authorId.id}`}
+                className="block truncate font-manrope text-sm font-bold text-slate-900 transition-colors hover:text-indigo-600 hover:underline"
+              >
                 {comment.authorId.name}
-              </p>
+              </Link>
 
               {comment.authorId.headline && (
                 <p className="truncate text-xs text-slate-500">
