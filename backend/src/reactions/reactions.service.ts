@@ -540,14 +540,21 @@ export class ReactionsService {
       userId: new Types.ObjectId(userId),
     };
 
-    if (targetIds && targetIds.length > 0) {
+    // If targetIds was supplied, this must remain a scoped query.
+    // Never fall back to returning all user reactions when
+    // the supplied IDs are invalid.
+    if (targetIds !== undefined) {
       const validObjectIds = targetIds
         .filter((id) => Types.ObjectId.isValid(id))
         .map((id) => new Types.ObjectId(id));
 
-      if (validObjectIds.length > 0) {
-        filter.targetId = { $in: validObjectIds };
+      if (validObjectIds.length === 0) {
+        return {};
       }
+
+      filter.targetId = {
+        $in: validObjectIds,
+      };
     }
 
     const reactions = await this.reactionModel
@@ -556,6 +563,7 @@ export class ReactionsService {
       .exec();
 
     const result: Record<string, ReactionType> = {};
+
     for (const reaction of reactions) {
       result[reaction.targetId.toString()] = reaction.type;
     }
