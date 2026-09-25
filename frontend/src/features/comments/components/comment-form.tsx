@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -25,6 +25,45 @@ export function CommentForm({ postId }: CommentFormProps) {
 
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Automatically scroll & focus comment textarea when navigating to comment
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let t1: ReturnType<typeof setTimeout> | undefined;
+    let t2: ReturnType<typeof setTimeout> | undefined;
+
+    const triggerFocus = () => {
+      const hash = window.location.hash;
+      const urlParams = new URLSearchParams(window.location.search);
+      const shouldFocus =
+        hash === "#comments" ||
+        hash === "#comment-body" ||
+        urlParams.get("focus") === "comment";
+
+      if (shouldFocus) {
+        const perform = () => {
+          const textarea = document.getElementById("comment-body");
+          if (textarea) {
+            textarea.scrollIntoView({ behavior: "smooth", block: "center" });
+            textarea.focus();
+          }
+        };
+
+        perform();
+        t1 = setTimeout(perform, 150);
+        t2 = setTimeout(perform, 400);
+      }
+    };
+
+    triggerFocus();
+    window.addEventListener("hashchange", triggerFocus);
+    return () => {
+      if (t1) clearTimeout(t1);
+      if (t2) clearTimeout(t2);
+      window.removeEventListener("hashchange", triggerFocus);
+    };
+  }, []);
 
   const {
     register,

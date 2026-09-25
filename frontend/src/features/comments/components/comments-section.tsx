@@ -89,6 +89,7 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
 
   return (
     <section
+      id="comments"
       aria-label="Comments"
       className="rounded-3xl border border-slate-200/80 bg-white/95 p-5 text-slate-900 shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl sm:p-6"
     >
@@ -101,7 +102,7 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
             <p>You need to sign in to join the discussion.</p>
 
             <Link
-              href={`/login?redirect=${encodeURIComponent(`/posts/${postId}`)}`}
+              href={`/login?redirect=${encodeURIComponent(`/posts/${postId}?focus=comment#comments`)}`}
               className="mt-2 inline-flex font-semibold text-indigo-600 transition hover:text-indigo-700"
             >
               Sign in to comment

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FiCornerUpLeft, FiEdit2, FiMenu, FiTrash2 } from "react-icons/fi";
+import { FiCornerUpLeft, FiEdit2, FiMoreVertical, FiTrash2 } from "react-icons/fi";
 
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -38,7 +38,7 @@ export function CommentItem({
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [failedAvatarSrc, setFailedAvatarSrc] = useState<string | null>(null);
 
-  // Hamburger dropdown & editing states
+  // Three-dot dropdown & editing states
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editBody, setEditBody] = useState(comment.body);
@@ -69,7 +69,7 @@ export function CommentItem({
   const hasMenuActions = canEdit || (canDelete && Boolean(onDelete));
   const isDeleting = deletingCommentId === comment.id;
 
-  // Close hamburger dropdown on outside click or Escape key
+  // Close three-dot dropdown on outside click or Escape key
   useEffect(() => {
     if (!showMenu) return;
 
@@ -196,7 +196,7 @@ export function CommentItem({
             </div>
           </div>
 
-          {/* Top-Right Hamburger Menu */}
+          {/* Top-Right Three-Dot Menu */}
           {hasMenuActions && (
             <div className="relative shrink-0" ref={menuRef}>
               <button
@@ -206,7 +206,7 @@ export function CommentItem({
                 aria-expanded={showMenu}
                 className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 active:scale-95"
               >
-                <FiMenu className="h-4 w-4" />
+                <FiMoreVertical className="h-4 w-4" />
               </button>
 
               {showMenu && (
