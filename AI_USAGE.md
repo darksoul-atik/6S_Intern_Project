@@ -100,6 +100,27 @@
 - **Atomic Counter Synchronization**: Prompted the addition of atomic `$inc` updates (`incrementCommentCount` / `decrementCommentCount` on `PostsService`, and `incrementCommentsCount` / `decrementCommentsCount` on `UsersService`) ensuring post and user comment counts stay synchronized across creation and cascade deletions.
 - **Automated Vitest Test Suite Expansion**: Directed the creation of unit test suites for `CommentsService` (13 tests) and `CommentOwnerOrAdminGuard` (5 tests), validating depth constraints, cross-post rejection, hierarchy construction, and cascade deletion.
 
+### Day 10: Threaded Comments Interface, Accessibility & Resilient Architecture
+- **Accessible Focus Management & Keyboard Navigation**: Directed the implementation of automatic focus transfer into the inline reply form textarea on mount (`setFocus("body")`), wired an `Escape` key listener that cancels editing and restores keyboard focus back to the triggering "Reply" button, and added focus trapping to `DeleteCommentModal`.
+- **RHF & Centralized Zod Validation**: Guided the integration of `CommentForm` with a 5,000-character counter, RHF validation, submission locks, loading indicators, and success confirmation banners.
+- **Resilient MongoDB Transactions**: Prompted the engineering of `CommentsService.runInTransaction` to inspect database session availability, cleanly executing inside a session when connected to a replica set while providing seamless fallback in standalone or mock environments.
+- **Portaled Full-Screen Modal Backdrops**: Directed portaling `DeleteCommentModal` and `DeletePostModal` directly to `document.body` via `createPortal`, eliminating CSS containing block constraints from parent `backdrop-blur` containers.
+
+### Day 11: Reaction Engine, Compound Unique Indexes & Concurrency Safety
+- **Polymorphic Domain Modeling**: Guided the creation of the `Reaction` schema supporting both `post` and `comment` targets, with `reactionType` limited to `like` and `dislike`.
+- **Database-Level Deduplication**: Mandated a compound unique index `{ userId: 1, targetType: 1, targetId: 1 }` preventing duplicate reaction records per user per target.
+- **Idempotent Three-Way Toggle State Machine**: Directed `ReactionsService.toggleReaction` to handle first-time reactions (create), repeated clicks of the same reaction (toggle off / delete), and switching between like and dislike (update), atomically modifying `reactionCounts` with native `$inc` operators.
+- **Target Active Status Validation**: Ensured target lookup validates that the post is active and non-soft-deleted, returning clean 404s for soft-deleted targets.
+- **Concurrency Stress Testing**: Authored `reactions.concurrency.spec.ts` executing parallel simultaneous toggles to verify zero counter drift and zero unhandled race condition errors.
+
+### Day 12: Optimistic Reaction Interface, Rapid-Click Throttling & UX Polish
+- **Instantaneous 0ms Optimistic UI Updates**: Directed the creation of `useToggleReactionMutation` with TanStack Query, canceling in-flight queries, snapshotting prior state, computing anticipated counts immediately, and providing automatic rollback on network failure.
+- **Rapid-Click Debounce & Ref Throttling**: Implemented `inFlightRef` locks inside `ReactionButtons`, rejecting concurrent spam clicks and preventing multi-increment exploits.
+- **Cross-View Cache Consistency**: Coordinated cache reconciliation across `postKeys.feed()`, `postKeys.detail(id)`, and `commentKeys.byPost(postId)`.
+- **Three-Dot (`FiMoreVertical`) Menu on Top-Right**: Consolidated cluttered inline Edit and Delete buttons into a sleek top-right three-dot menu across post cards, post details, and comment/reply items, with outside-click and `Escape` listeners and event bubbling isolation (`stopPropagation`).
+- **Direct Comment Navigation with Auto-Focus**: Converted feed comment count pills into interactive links directing to `/posts/${id}?focus=comment#comments`, with automatic smooth scroll and autofocus into `#comment-body` ("ready to comment situation").
+- **High-Contrast Selection Contrast**: Resolved white-on-white text selection on input fields by applying high-contrast selection colors (`selection:bg-indigo-500 selection:text-white`).
+
 ---
 
 ## What I Reviewed or Rejected
@@ -172,6 +193,22 @@
 - **Rejected Unbounded Recursive Nesting**: Rejected allowing infinite reply depth, which ruins mobile readability and creates extreme UI indentation. Enforced a strict maximum depth of 1 (top-level comment at depth 0, replies at depth 1).
 - **Rejected Orphaned Child Replies on Parent Deletion**: Explicitly rejected leaving child replies orphaned with dangling `parentCommentId` pointers when a parent comment is deleted. Implemented cascade thread deletion (`$or: [{ _id: comment._id }, { parentCommentId: comment._id }]`) combined with multi-author counter reconciliation.
 - **Rejected Singular Route Naming (`/comment`)**: Audited endpoint naming and rejected singular routes (`/comment`), enforcing strict plural REST conventions (`/posts/:postId/comments`, `/comments/:id`) across the entire API.
+
+### Day 10
+- **Rejected Non-Accessible Inline Forms**: Rejected implementing inline reply forms without explicit keyboard focus management and Escape handling, ensuring assistive technologies and keyboard-only users can navigate threaded discussions seamlessly.
+- **Rejected Unconstrained Modal Portals**: Rejected rendering modals inside arbitrary layout divs that cause clipping or backdrop blurring anomalies when parents use `backdrop-filter`. Enforced portaling dialogs directly to `document.body`.
+- **Rejected Cascading Re-Renders from Inline Form State**: Rejected storing reply form open/close flags globally in query state, keeping reply form toggling purely localized to the respective `CommentItem` component.
+
+### Day 11
+- **Rejected Non-Atomic Read-Modify-Write Counter Updates**: Strongly rejected fetching post or comment documents, incrementing reaction numbers in JavaScript memory, and saving them back. Enforced native MongoDB `$inc` operators to prevent counter race conditions and lost updates.
+- **Rejected Separate Schemas for Post and Comment Reactions**: Evaluated polymorphic design and rejected maintaining duplicate `PostReaction` and `CommentReaction` collections. Unified into a clean polymorphic `Reaction` collection indexed by `{ userId: 1, targetType: 1, targetId: 1 }`.
+- **Rejected Separate Endpoints for Add, Remove, and Switch Reactions**: Rejected creating fragmented endpoints (`/reactions/add`, `/reactions/remove`, `/reactions/switch`). Enforced a single, elegant `POST /reactions` toggle endpoint that handles all state transitions predictably.
+
+### Day 12
+- **Rejected Server-Wait Latency for Reactions**: Strongly rejected waiting for network roundtrips before updating like/dislike buttons in the UI. Enforced 0ms optimistic UI updates with TanStack Query so user clicks feel instantaneous.
+- **Rejected Uncontrolled Spam Clicking**: Audited fast-clicking behavior and rejected allowing unrestricted click events that would spam the backend or trigger duplicate counter increments. Enforced `inFlightRef` locks inside `ReactionButtons`.
+- **Rejected Cluttered Inline Edit/Delete Buttons**: Rejected displaying raw, competing buttons side-by-side on cards and headers. Consolidated post, comment, and reply options into a clean, modern three-dot (`FiMoreVertical`) dropdown menu on the top-right position.
+- **Rejected Unfocused Navigation to Comments**: Rejected having feed comment pills just land on `/posts/[id]` without guidance. Mandated directing directly to `/posts/[id]?focus=comment#comments` with smooth scroll and automatic textarea focus.
 
 ---
 
@@ -301,6 +338,48 @@
   - Updated `CommentsService.findCommentsByPost` query sorting to `{ createdAt: -1, _id: -1 }` so top-level comments and nested replies are fetched newest-first.
   - Updated MongoDB compound index in `comment.schema.ts` to `{ postId: 1, createdAt: -1, _id: -1 }` for optimal query execution plans.
   - Enhanced client-side rendering in `comments-section.tsx` and `comment-item.tsx` with type-safe `useMemo` date sorting to guarantee immediate newest-first stacking.
+
+### Day 11 — Reaction Engine, Concurrency Stress & Underflow Defense
+- **MongoDB Compound Unique Duplicate Key Race Condition**:
+  - Identified that during rapid parallel reaction creation requests from the same user, concurrent calls to `findOne` could simultaneously evaluate to `null` before `create` is executed, potentially causing unhandled MongoDB duplicate key errors (`E11000`).
+  - Hardened `ReactionsService.toggleReaction` with defensive error handling that catches duplicate key codes (11000), falling back to re-reading the created reaction and applying the toggle/switch logic gracefully.
+- **Counter Underflow Defense on Soft-Deleted Targets**:
+  - Caught an edge case where an invalid target or soft-deleted post could receive a reaction decrement, driving counters into negative values (`-1`).
+  - Added strict `$max: 0` constraints and pre-validation via `PostsService.findActivePostByIdOrThrow` ensuring deleted posts reject reactions immediately with `404 NotFoundException`.
+- **Parallel Concurrency Verification Suite (18 Test Files, 137 Tests)**:
+  - Developed `reactions.concurrency.spec.ts` using `Promise.all` simulating high-concurrency race conditions across parallel users.
+  - Verified that final counts precisely match net likes and dislikes with zero lost updates.
+
+### Day 12 — Optimistic State Reconciliation, Rapid-Click Locks & Three-Dot Navigation
+- **Rapid-Click Debounce & Multi-Reaction Exploit**:
+  - Detected that spamming the like or dislike button in rapid succession (e.g. 5 clicks in 200ms) could fire overlapping mutations before the previous optimistic mutation resolved, briefly producing anomalous states where a user appeared to register multiple likes.
+  - Resolved by implementing an atomic `inFlightRef` guard inside `ReactionButtons`:
+    ```tsx
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    try {
+      await toggleMutation.mutateAsync({ ... });
+    } finally {
+      inFlightRef.current = false;
+    }
+    ```
+    This completely blocks concurrent mutation dispatches while keeping the user experience responsive and fluid.
+- **React 19 / ESLint Ref-in-Render Compliance**:
+  - Caught `react-hooks/refs: Cannot access refs during render` in `ReactionButtons` when referencing mutable ref values during JSX evaluation. Refactored the ref access strictly into the click callback handler and effect scopes.
+- **Three-Dot Menu Event Bubbling on Post Cards**:
+  - Identified that opening the new three-dot menu on `PostCard` could inadvertently trigger the parent card's navigation to `/posts/[id]`.
+  - Added explicit `e.preventDefault()` and `e.stopPropagation()` to the three-dot button trigger and all dropdown items, guaranteeing menu interactions stay isolated from card navigation.
+- **Outside-Click & Escape Dismissal Across Menu Surfaces**:
+  - Implemented robust `mousedown` and `keydown (Escape)` listeners across `post-card.tsx`, `post-details.tsx`, and `comment-item.tsx` to automatically close open dropdown menus when users interact with other parts of the screen.
+- **Input Field Selection Contrast Fix**:
+  - Identified a UX issue on login and signup input fields where selecting text caused the text and background to both appear white, rendering highlighted text invisible.
+  - Enforced high-contrast selection colors (`selection:bg-indigo-500 selection:text-white`) across inputs and page layouts.
+- **"Ready to Comment" Direct Navigation with Layout Shift Compensation**:
+  - Implemented dual-stage layout-shift compensation in `CommentForm`: when arriving with `#comments` or `?focus=comment`, the auto-focus trigger fires immediately and re-checks at 150ms and 400ms to guarantee smooth centering and blinking cursor placement even if dynamic post content or images cause subtle initial page height adjustments.
+- **Full Verification Matrix**:
+  - Frontend ESLint (`npm run lint`): 0 errors.
+  - Next.js Turbopack production build (`npm run build`): All 20 routes generated with 0 errors.
+  - Backend Vitest test suite (`npm run test`): 18 test files passed (18), 137 tests passed (137), 100% green.
 
 
 

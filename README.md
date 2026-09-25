@@ -681,9 +681,95 @@ curl -X DELETE http://localhost:5000/posts/<POST_ID>/permanent \
 
 ---
 
-## 🔄 End-to-End System Working Flow (As of Day 8)
+## 💬 Day 9 & 10 — Threaded Comments API & Dynamic Hierarchy
 
-The complete end-to-end integration across frontend, Next.js BFF, NestJS core, and MongoDB comprises five interconnected operational flows:
+### 1. Architecture & Self-Referencing Tree
+- **Self-Referencing Domain Model**: Mongoose `Comment` schema with `postId`, `authorId`, `parentCommentId` (nullable for top-level, ObjectId for nested reply), `body` (1–5,000 characters), and timestamps.
+- **Indexed Chronological Retrieval**: Compound index `{ postId: 1, createdAt: -1, _id: -1 }` supporting fast single-query retrieval with O(N) in-memory tree assembly.
+- **Strict Boundary Constraints**:
+  - Maximum depth of 1: Replies cannot have child replies.
+  - Cross-post boundary validation: Prevents replying to a parent comment belonging to another post.
+- **Thread Cascade Deletion**: Deleting a root comment cascade-deletes all its child replies, decrementing `Post.commentCount` and each respective author's `User.commentsCount` atomically.
+
+### 2. Accessible Frontend Threading Interface
+- **Recursive Hierarchy (`CommentItem`)**: Supports visual indentation (`level > 0`), graceful avatar fallbacks to initials gradient, and localized timestamps.
+- **Inline Reply Form (`InlineReplyForm`)**: Dedicated inline reply expansion under parent comments with automatic focus shifting, `Escape` key listener, and keyboard focus restoration.
+- **Accessible Deletion Modal (`DeleteCommentModal`)**: Clear cascade warnings for root comments versus single replies with focus trap and keyboard accessibility.
+
+---
+
+## 👍 Day 11 — Reaction Engine & Data Integrity (Toggle Machine & Atomic Counters)
+
+### 1. Domain Modeling & Compound Unique Indexes
+- **`Reaction` Schema (`backend/src/reactions/schemas/reaction.schema.ts`)**:
+  - `userId`: ObjectId referencing `User` (`required: true`).
+  - `targetType`: Enum string (`'post' | 'comment'`).
+  - `targetId`: ObjectId referencing target post or comment (`required: true`).
+  - `reactionType`: Enum string (`'like' | 'dislike'`).
+  - `timestamps: true` producing `createdAt` and `updatedAt`.
+- **Compound Unique Index**:
+  - `{ userId: 1, targetType: 1, targetId: 1 }` with `{ unique: true }`.
+  - Guarantees at the database level that a user can have at most one active reaction per target entity, preventing duplicate reaction records under race conditions.
+
+### 2. Three-Way Reaction State Machine
+Executed inside `ReactionsService.toggleReaction`:
+1. **Create (First Reaction)**: If no reaction exists for the `(userId, targetType, targetId)` tuple, inserts a new `Reaction` document and atomically increments `target.reactionCounts[reactionType]` by `+1`.
+2. **Toggle Off (Cancel Reaction)**: If an identical reaction already exists (e.g. user clicks "like" on an already liked post), removes the `Reaction` document and atomically decrements `target.reactionCounts[reactionType]` by `-1`.
+3. **Switch Reaction**: If the opposite reaction exists (e.g. user clicks "dislike" on an already liked post), updates the `Reaction` document and atomically applies:
+   `$inc: { [oldReaction]: -1, [newReaction]: +1 }`.
+
+### 3. Concurrency Safety & Underflow Prevention
+- Uses native MongoDB `$inc` operators on `Post.reactionCounts` and `Comment.reactionCounts`.
+- Avoids read-modify-write race conditions, ensuring counters remain 100% synchronized even under concurrent high-throughput requests.
+- Validates target entity existence and active status (rejecting soft-deleted posts with `404 NotFoundException`).
+
+### 4. Endpoints Reference
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `POST` | `/reactions` | Bearer JWT | Toggle like/dislike reaction on a post or comment |
+| `GET` | `/reactions/mine` | Bearer JWT | Retrieve current user's reaction map (`targetId -> reactionType`) |
+
+---
+
+## ⚡ Day 12 — Optimistic Reaction Interface & Reliable UX
+
+### 1. Instant 0ms Optimistic UI Updates
+- **`useToggleReactionMutation` (`frontend/src/features/reactions/mutations/reaction-mutations.ts`)**:
+  - Cancels outgoing queries for the target entity to avoid race overwrites (`queryClient.cancelQueries`).
+  - Snapshots previous reaction counts and user reaction state for rollback safety.
+  - Computes expected new state instantaneously (0ms feedback), updating UI badge numbers and active color states immediately.
+  - Automatically rolls back to the snapshot if network transmission fails, displaying a friendly error toast.
+
+### 2. Rapid-Click Debounce & Ref Throttling
+- Integrated `inFlightRef` locks inside `ReactionButtons`:
+  - Rapid double/triple clicking is safely throttled, preventing multiple concurrent mutations from being dispatched.
+  - Eliminates the vulnerability where spam-clicking could cause counter drift or rapid state desynchronization.
+
+### 3. Cross-View Cache Reconciliation
+- Optimistic mutations surgically update:
+  - Infinite feed query cache (`postKeys.feed()`)
+  - Single post details cache (`postKeys.detail(id)`)
+  - Comment tree query cache (`commentKeys.byPost(postId)`)
+- Guarantees seamless consistency when navigating between the feed and individual post detail pages.
+
+### 4. Three-Dot (`FiMoreVertical`) Menu on Top-Right Position
+- Replaced cluttered inline Edit and Delete buttons across the entire platform:
+  - **Post Cards (`post-card.tsx`)**: Replaced raw buttons with a sleek top-right three-dot menu with event bubbling isolation (`stopPropagation`) to prevent card navigation.
+  - **Post Details (`post-details.tsx`)**: Consolidated header actions into a top-right three-dot menu.
+  - **Comments & Replies (`comment-item.tsx`)**: Standardized comment and reply options to use `FiMoreVertical` in the top-right position.
+- Built-in outside-click listener and `Escape` key dismissal.
+
+### 5. Direct Comment Navigation & Auto-Focus
+- Converted feed comment count pills into interactive links: `<Link href={`/posts/${post.id}?focus=comment#comments`}>`.
+- On post details pages, `CommentForm` detects incoming focus signals:
+  - Automatically scrolls down smoothly to the comments section.
+  - Centers and focuses the `#comment-body` textarea with active cursor, delivering an immediate "ready to comment" user experience.
+
+---
+
+## 🔄 End-to-End System Working Flow (As of Day 12)
+
+The complete end-to-end integration across frontend, Next.js BFF, NestJS core, and MongoDB comprises six interconnected operational flows:
 
 ### 1. Authentication & Route Guarding Flow
 ```
@@ -754,7 +840,28 @@ Edge Middleware (src/middleware.ts):
    └── Soft-Delete User: Revokes login capabilities and displays admin deletion notice.
 ```
 
-### 5. API Testing & Documentation
+### 5. Threaded Comments & Replies Flow (Days 9 & 10)
+```
+1. Client POST /posts/:postId/comments (or /comments/:commentId/replies) with Bearer token.
+2. JwtAuthGuard authenticates JWT claims and extracts userId.
+3. CommentsService enforces max depth 1 and cross-post boundaries.
+4. Atomically increments Post.commentCount and author User.commentsCount.
+5. In-memory single-query tree assembly serves nested hierarchy to frontend.
+6. Cascade deletion accurately decrements multi-author counters.
+```
+
+### 6. Reaction Engine & Concurrency-Safe State Machine Flow (Days 11 & 12)
+```
+1. Client initiates reaction (click like or dislike on post/comment).
+2. TanStack Query useToggleReactionMutation updates UI in 0ms (optimistic feedback).
+3. inFlightRef debounce locks rapid repeated clicks to prevent multi-increment exploits.
+4. Next.js BFF forwards request with httpOnly JWT to NestJS POST /reactions.
+5. ReactionsService verifies target exists and enforces atomic $inc updates.
+6. Compound index { userId, targetType, targetId } prevents duplicate entries.
+7. Success reconciles across feed, details, and comment query caches; failures roll back.
+```
+
+### 7. API Testing & Documentation
 - **Interactive OpenAPI Documentation**: `http://localhost:5000/docs`
 - **Complete Endpoint Specification (PDF)**: [`DevPulse_API_Endpoints_Day8.pdf`](file:///c:/Users/hp/Downloads/6senseHQ/DevPulse_API_Endpoints_Day8.pdf) detailing all 32 endpoints with methods, testing bodies, and expected outputs.
 
@@ -993,5 +1100,43 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
    - If deleting a root comment, the modal displays a clear cascade warning:
      > *"This comment and every reply under it will be permanently deleted."*
    - Traps focus to Cancel button, dismisses on backdrop click or `Escape` key, and shows spinner during in-flight deletion.
+
+### 7. Day 11 Reaction Engine Verification Flow
+1. **Toggle Reactions via cURL**:
+   - `POST http://localhost:5000/reactions` with `{ "targetType": "post", "targetId": "<POST_ID>", "reactionType": "like" }` and Bearer token.
+   - Verify `200 OK` response with `{ "success": true, "data": { "reactionCounts": { "like": 1, "dislike": 0 }, "userReaction": "like" } }`.
+2. **Toggle Off Verification**:
+   - Re-send identical payload `{ "targetType": "post", "targetId": "<POST_ID>", "reactionType": "like" }`.
+   - Verify `userReaction: null` and `reactionCounts.like` decrements back to 0.
+3. **Switch Reaction Verification**:
+   - Send `like` (count becomes 1), then send `dislike`.
+   - Verify `reactionCounts.like` becomes 0, `reactionCounts.dislike` becomes 1, and `userReaction: "dislike"`.
+4. **Current User Reactions Query**:
+   - `GET http://localhost:5000/reactions/mine?targetType=post&targetIds=<POST_ID>` with Bearer token.
+   - Returns `{ "<POST_ID>": "dislike" }`.
+5. **Soft-Deleted Post Target Protection**:
+   - Attempting to react to a soft-deleted post returns `404 Not Found`.
+
+### 8. Day 12 Optimistic Reaction Interface & Three-Dot Menu Navigation Verification Flow
+1. **Instant 0ms Reaction Feedback**:
+   - On `/posts` or `/posts/[id]`, click Like or Dislike on any post or comment.
+   - Badge counter and icon color state update instantaneously (0ms) without waiting for server response.
+   - In network offline mode, the reaction rolls back cleanly to previous state and displays an error alert.
+2. **Rapid-Click Throttling Verification**:
+   - Rapidly click Like 5 times in quick succession.
+   - Verify that `inFlightRef` locks incoming clicks; no double-counting or counter inflation occurs.
+3. **Cross-View Cache Consistency**:
+   - Like a post on the community feed (`/posts`), then click to view that post's detail page (`/posts/[id]`).
+   - The like count and active state remain perfectly synchronized across both views.
+4. **Three-Dot (`FiMoreVertical`) Menu on Top-Right**:
+   - Inspect post cards on the feed: notice the clean three-dot button in the top-right corner.
+   - Click the three-dot button: smooth dropdown menu opens with "Edit" and "Delete".
+   - Click outside or press `Escape`: menu closes immediately.
+   - Clicking options does not trigger card navigation (event bubbling prevented).
+   - Verify identical top-right three-dot menu on post detail headers and on comments/replies.
+5. **Direct Comment Navigation & "Ready to Comment" Auto-Focus**:
+   - On `/posts` feed, click the comment count pill on any post card.
+   - Browser navigates directly to `/posts/[id]?focus=comment#comments`.
+   - Page smoothly scrolls down to the comment box and automatically focuses the `#comment-body` textarea with active cursor, ready for immediate typing.
 
 

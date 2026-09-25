@@ -79,13 +79,28 @@ frontend/src/
 │   │   ├── schemas/               # post-schema.ts (Zod)
 │   │   └── types/                 # post.ts
 │   │
+│   ├── comments/                  # Threaded comments & replies domain (Day 9 & 10)
+│   │   ├── components/            # comment-item.tsx, comment-form.tsx,
+│   │   │                          # inline-reply-form.tsx, comments-section.tsx,
+│   │   │                          # delete-comment-modal.tsx
+│   │   ├── mutations/             # comment-mutations.ts
+│   │   ├── queries/               # comment-queries.ts
+│   │   ├── schemas/               # comment-schema.ts (Zod)
+│   │   └── types/                 # comment.ts
+│   │
+│   ├── reactions/                 # Optimistic reactions domain (Day 11 & 12)
+│   │   ├── components/            # reaction-buttons.tsx
+│   │   ├── mutations/             # reaction-mutations.ts
+│   │   ├── queries/               # reaction-queries.ts
+│   │   └── types/                 # reaction.ts
+│   │
 │   ├── users/                     # Profiles, skills, experiences, portfolios
 │   │   ├── components/            # profile-view.tsx, profile-edit-form.tsx,
 │   │   │                          # experience-modal.tsx, delete-project-modal.tsx
 │   │   ├── mutations/             # user-mutations.ts
 │   │   ├── queries/               # user-queries.ts
 │   │   ├── schemas/               # user-schema.ts (Zod)
-│   │   ├── types/                 # user.ts
+│   │   └── types/                 # user.ts
 │   │   └── utils/                 # image-utils.ts (canvas compression)
 │   │
 │   └── admin/                     # Admin moderation & user directory
@@ -97,6 +112,8 @@ frontend/src/
 ├── services/api/                  # Pure Axios API functions (NO React dependencies)
 │   ├── auth.ts                    # loginUser, signupUser, logoutUser, getCurrentUser
 │   ├── posts.ts                   # getPosts, getPostById, createPost, updatePost, softDeletePost
+│   ├── comments.ts                # getCommentsByPost, createComment, createReply, deleteComment
+│   ├── reactions.ts               # toggleReaction, getUserReactions
 │   ├── users.ts                   # getUserProfile, updateUserProfile, uploadAvatar, deleteAvatar
 │   ├── admin.ts                   # getAdminUsers, updateUserByAdmin, toggleAdminRole
 │   └── health.ts                  # getHealthStatus
@@ -117,7 +134,7 @@ frontend/src/
 
 ---
 
-## 🔄 Working Flow as of Day 8
+## 🔄 Working Flow as of Day 12
 
 ### 1. Community Feed & Infinite Scroll (`/posts`)
 1. User navigates to `/posts`.
@@ -163,6 +180,22 @@ frontend/src/
   - **TanStack Query Hooks**: `useComments` query hook (`commentKeys.byPost`) and mutation hooks (`useCreateCommentMutation`, `useCreateReplyMutation`, `useDeleteCommentMutation`) invalidating post details, feed caches, and user profiles.
   - **Accessible Modal (`DeleteCommentModal`)**: Dialog with clear cascade deletion warnings for root comments versus single replies, focus trap, and keyboard accessibility.
   - **Thin Page Integration**: Cleanly mounted `<CommentsSection postId={id} />` in `frontend/src/app/posts/[id]/page.tsx`.
+
+### 5. Phase 3 Reactions & Interactive UI (Day 11 BE & Day 12 FE Completed)
+- **Instant Optimistic UI Feedback**:
+  - `useToggleReactionMutation` delivers instantaneous 0ms local state updates when clicking like or dislike on posts and comments.
+  - Automatically calculates state transitions (new reaction, toggle off, or switch) and updates UI badge numbers immediately before the HTTP request resolves.
+  - Automatically rolls back to the prior state if a network or server error occurs.
+- **Rapid-Click Debounce & Ref Throttling**:
+  - Protected reaction triggers with atomic execution locks (`inFlightRef`), preventing spam-clicking from creating duplicate increments or desynchronizing counts.
+- **Cross-View Cache Synchronization**:
+  - Automatically reconciles reaction counts and active user states across infinite feed lists (`postKeys.feed()`), single post details (`postKeys.detail(id)`), and comment trees (`commentKeys.byPost(postId)`).
+- **Three-Dot Menu (`FiMoreVertical`) on Top-Right Position**:
+  - Cleaned up post cards, post details, and comments/replies by consolidating Edit and Delete buttons into a sleek top-right three-dot menu.
+  - Implemented outside-click and `Escape` key listeners for effortless dismissal, and isolated event bubbling (`e.stopPropagation()`) so menu clicks do not trigger card navigation.
+- **Direct Comment Navigation & Auto-Focus**:
+  - In community feed cards, clicking the comment count pill navigates directly to `/posts/${id}?focus=comment#comments`.
+  - Automatically scrolls down to the comment form and centers/focuses the `#comment-body` textarea for an immediate "ready to comment" state.
 
 ---
 

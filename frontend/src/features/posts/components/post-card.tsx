@@ -179,7 +179,7 @@ export function PostCard({
               </button>
 
               {showMenu && (
-                <div className="absolute right-0 top-full z-20 mt-1 min-w-[130px] overflow-hidden rounded-xl border border-slate-200/90 bg-white/95 py-1 shadow-lg backdrop-blur-md">
+                <div className="absolute right-0 top-full z-20 mt-1 min-w-32.5 overflow-hidden rounded-xl border border-slate-200/90 bg-white/95 py-1 shadow-lg backdrop-blur-md">
                   <Link
                     href={`/posts/${post.id}/edit`}
                     onClick={(e) => {
