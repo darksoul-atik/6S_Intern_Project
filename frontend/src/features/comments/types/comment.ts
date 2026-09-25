@@ -32,6 +32,7 @@ export interface Comment {
 
 export interface CreateCommentPayload {
   body: string;
+  mentionedUserId?: string;
 }
 
 export interface UpdateCommentPayload {

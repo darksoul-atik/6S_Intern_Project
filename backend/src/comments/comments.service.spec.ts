@@ -426,6 +426,57 @@ describe('CommentsService', () => {
 
       expect(mockSession.endSession).toHaveBeenCalledTimes(1);
     });
+
+    it('should set mentionedUserId to parent comment author when replying to a root comment', async () => {
+      const parentAuthorId = '66e138fc29094e137127e4e1';
+      const parentComment = {
+        _id: new Types.ObjectId(validCommentId),
+        postId: new Types.ObjectId(validPostId),
+        authorId: new Types.ObjectId(parentAuthorId),
+        parentCommentId: null,
+      };
+
+      mockCommentModel.findById.mockReturnValue(
+        createSessionQuery(parentComment),
+      );
+
+      const replyData = {
+        _id: new Types.ObjectId(validReplyId),
+        postId: new Types.ObjectId(validPostId),
+        authorId: new Types.ObjectId(validAuthorId),
+        parentCommentId: parentComment._id,
+        mentionedUserId: parentComment.authorId,
+        body: 'Valid reply to root',
+      };
+
+      mockCommentModel.create.mockResolvedValue([replyData]);
+
+      const result = await service.createReply(
+        validPostId,
+        validCommentId,
+        validAuthorId,
+        {
+          body: 'Valid reply to root',
+        },
+      );
+
+      expect(mockCommentModel.create).toHaveBeenCalledWith(
+        [
+          {
+            postId: expect.any(Types.ObjectId),
+            authorId: expect.any(Types.ObjectId),
+            parentCommentId: parentComment._id,
+            mentionedUserId: parentComment.authorId,
+            body: 'Valid reply to root',
+          },
+        ],
+        {
+          session: mockSession,
+        },
+      );
+
+      expect(result).toEqual(replyData);
+    });
   });
 
   /*

@@ -15,6 +15,7 @@ interface InlineReplyFormProps {
   postId: string;
   parentCommentId: string;
   replyingToName?: string;
+  replyingToUserId?: string;
   onClose: () => void;
   returnFocusRef: RefObject<HTMLButtonElement | null>;
 }
@@ -23,6 +24,7 @@ export function InlineReplyForm({
   postId,
   parentCommentId,
   replyingToName,
+  replyingToUserId,
   onClose,
   returnFocusRef,
 }: InlineReplyFormProps) {
@@ -79,6 +81,7 @@ export function InlineReplyForm({
         parentCommentId,
         data: {
           body: values.body,
+          mentionedUserId: replyingToUserId,
         },
       });
 

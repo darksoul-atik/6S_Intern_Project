@@ -301,7 +301,7 @@ export function CommentItem({
           </form>
         ) : (
           <p className="mt-3 whitespace-pre-wrap wrap-break-word text-sm leading-6 text-slate-700">
-            {comment.mentionedUserId && (
+            {comment.mentionedUserId && comment.mentionedUserId.name && (
               <Link
                 href={`/developers/${comment.mentionedUserId.id}`}
                 className="mr-1.5 inline-flex items-center font-bold text-purple-600 transition-colors hover:text-purple-700 hover:underline"
@@ -309,7 +309,14 @@ export function CommentItem({
                 @{comment.mentionedUserId.name}
               </Link>
             )}
-            {comment.body}
+            {(() => {
+              if (!comment.mentionedUserId?.name) return comment.body;
+              const mentionPrefix = `@${comment.mentionedUserId.name}`;
+              if (comment.body.startsWith(mentionPrefix)) {
+                return comment.body.slice(mentionPrefix.length).trimStart();
+              }
+              return comment.body;
+            })()}
           </p>
         )}
 
@@ -348,6 +355,7 @@ export function CommentItem({
             postId={postId}
             parentCommentId={comment.id}
             replyingToName={comment.authorId.name}
+            replyingToUserId={comment.authorId.id}
             onClose={() => setShowReplyForm(false)}
             returnFocusRef={replyButtonRef}
           />
@@ -377,6 +385,8 @@ export function CommentItem({
           <InlineReplyForm
             postId={postId}
             parentCommentId={comment.id}
+            replyingToName={comment.authorId.name}
+            replyingToUserId={comment.authorId.id}
             onClose={() => setShowReplyForm(false)}
             returnFocusRef={replyButtonRef}
           />

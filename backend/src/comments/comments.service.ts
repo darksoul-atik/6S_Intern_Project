@@ -194,18 +194,19 @@ export class CommentsService {
       let actualParentId: Types.ObjectId;
       let mentionedUserId: Types.ObjectId | null = null;
 
+      const targetAuthorId =
+        (parent.authorId as any)?._id ?? parent.authorId;
+
       if (parent.parentCommentId) {
         actualParentId = parent.parentCommentId as Types.ObjectId;
-        const targetAuthorId =
-          (parent.authorId as any)?._id ?? parent.authorId;
-        mentionedUserId = dto.mentionedUserId
-          ? new Types.ObjectId(dto.mentionedUserId)
-          : new Types.ObjectId(targetAuthorId.toString());
       } else {
         actualParentId = parent._id as Types.ObjectId;
-        mentionedUserId = dto.mentionedUserId
-          ? new Types.ObjectId(dto.mentionedUserId)
-          : null;
+      }
+
+      if (dto.mentionedUserId) {
+        mentionedUserId = new Types.ObjectId(dto.mentionedUserId);
+      } else if (targetAuthorId) {
+        mentionedUserId = new Types.ObjectId(targetAuthorId.toString());
       }
 
       let reply: CommentDocument;
@@ -571,11 +572,32 @@ export class CommentsService {
   */
 
   private toTreeItem(comment: CommentDocument): CommentTreeItem {
+    const rawMentioned = (comment as any).mentionedUserId;
+    let formattedMentioned: {
+      id: string;
+      name: string;
+      headline?: string | null;
+      avatarUrl?: string | null;
+    } | null = null;
+
+    if (
+      rawMentioned &&
+      typeof rawMentioned === 'object' &&
+      ('_id' in rawMentioned || 'id' in rawMentioned)
+    ) {
+      formattedMentioned = {
+        id: (rawMentioned._id ?? rawMentioned.id).toString(),
+        name: rawMentioned.name,
+        headline: rawMentioned.headline ?? null,
+        avatarUrl: rawMentioned.avatarUrl ?? null,
+      };
+    }
+
     return {
       id: comment._id.toString(),
       postId: comment.postId.toString(),
       authorId: comment.authorId,
-      mentionedUserId: (comment as any).mentionedUserId ?? null,
+      mentionedUserId: formattedMentioned,
       parentCommentId: comment.parentCommentId?.toString() ?? null,
       body: comment.body,
       reactionCounts: comment.reactionCounts
