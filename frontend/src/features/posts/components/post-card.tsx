@@ -19,6 +19,7 @@ import {
   resolveAvatarUrl,
 } from "@/lib/utils/formatters";
 import { ReactionButtons } from "@/features/reactions/components/reaction-buttons";
+import { PostReactorsSummary } from "@/features/reactions/components/post-reactors-summary";
 
 import type { Post } from "../types/post";
 import type { UserReactionState } from "@/features/reactions/types/reaction";
@@ -235,10 +236,18 @@ export function PostCard({
           </p>
         </div>
 
+        {/* Reactors Summary */}
+        <div className="mt-4">
+          <PostReactorsSummary
+            postId={post.id}
+            reactionCounts={post.reactionCounts}
+          />
+        </div>
+
         {/* --------------------------------
             Counters + Read Post
         -------------------------------- */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
           {/* Frosted Glass Reaction & Comment Counters + Share */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {/* Likes & Dislikes */}

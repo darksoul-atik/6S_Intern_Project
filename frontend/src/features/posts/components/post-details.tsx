@@ -26,6 +26,7 @@ import { DeletePostModal } from "./delete-post-modal";
 import { usePost } from "../queries/post-queries";
 import { useSoftDeletePostMutation } from "../mutations/post-mutations";
 import { ReactionButtons } from "@/features/reactions/components/reaction-buttons";
+import { PostReactorsSummary } from "@/features/reactions/components/post-reactors-summary";
 import { useUserReactions } from "@/features/reactions/queries/reaction-queries";
 
 interface PostDetailsProps {
@@ -372,8 +373,16 @@ export function PostDetails({ postId }: PostDetailsProps) {
           {post.body}
         </div>
 
+        {/* Reactors Summary */}
+        <div className="mt-5">
+          <PostReactorsSummary
+            postId={post.id}
+            reactionCounts={post.reactionCounts}
+          />
+        </div>
+
         {/* Frosted Glass Counters + Share */}
-        <div className="mt-8 flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-5">
+        <div className="mt-6 flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-5">
           {/* Likes & Dislikes */}
           <ReactionButtons
             targetType="post"
