@@ -9,13 +9,16 @@ import { toggleReaction } from "@/services/api/reactions";
 import { postKeys } from "@/features/posts/queries/post-queries";
 import { commentKeys } from "@/features/comments/queries/comment-queries";
 
-import { reactionKeys } from "../queries/reaction-queries";
+import { useAuth } from "@/context/AuthContext";
+import { reactionKeys, reactorKeys } from "../queries/reaction-queries";
 import { updateStoredReaction } from "../utils/reaction-storage";
 
 import type {
+  PaginatedReactorsResult,
   ReactionCounts,
   ReactionTargetType,
   ReactionType,
+  ReactorItem,
   ToggleReactionPayload,
   ToggleReactionResponse,
   UserReactionsMap,
@@ -205,6 +208,7 @@ function updatePostInFeed(
 
 export function useToggleReactionMutation() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation<
     ToggleReactionResponse,
@@ -354,6 +358,70 @@ export function useToggleReactionMutation() {
             updatePostInFeed(data, targetId, nextCounts),
           );
         }
+
+        // Optimistically update reactor summary cache for this post
+        if (user) {
+          const reactorsKey = reactorKeys.list({
+            targetType: "post",
+            targetId,
+            limit: 3,
+          });
+
+          queryClient.setQueryData<PaginatedReactorsResult>(reactorsKey, (old) => {
+            const userItem: ReactorItem = {
+              userId: user.id,
+              name: user.name,
+              headline: user.headline ?? null,
+              avatarUrl: user.avatarUrl ?? null,
+              type: nextReaction ?? "like",
+              createdAt: new Date().toISOString(),
+            };
+
+            if (!old) {
+              if (nextReaction === null) return old;
+              return {
+                items: [userItem],
+                total: 1,
+                page: 1,
+                limit: 3,
+                totalPages: 1,
+              };
+            }
+
+            const existingIndex = old.items.findIndex(
+              (item) => item.userId === user.id,
+            );
+
+            if (nextReaction === null) {
+              // User removed their reaction
+              const newItems = old.items.filter((item) => item.userId !== user.id);
+              return {
+                ...old,
+                items: newItems,
+                total: Math.max(0, old.total - (existingIndex >= 0 ? 1 : 0)),
+              };
+            }
+
+            // User added or switched reaction
+            if (existingIndex >= 0) {
+              const updatedItems = [...old.items];
+              updatedItems[existingIndex] = {
+                ...updatedItems[existingIndex],
+                type: nextReaction,
+              };
+              return {
+                ...old,
+                items: updatedItems,
+              };
+            }
+
+            return {
+              ...old,
+              items: [userItem, ...old.items].slice(0, 3),
+              total: old.total + 1,
+            };
+          });
+        }
       }
 
       if (targetType === "comment" && postId) {
@@ -468,6 +536,11 @@ export function useToggleReactionMutation() {
           },
         );
       }
+
+      // Invalidate reactors queries so all reactor lists and summaries remain fresh
+      queryClient.invalidateQueries({
+        queryKey: reactorKeys.all,
+      });
     },
 
     onError: (_error, variables, context) => {
@@ -541,6 +614,11 @@ export function useToggleReactionMutation() {
     },
 
     onSettled: (_data, error, variables) => {
+      // Invalidate reactors queries on settle
+      queryClient.invalidateQueries({
+        queryKey: reactorKeys.all,
+      });
+
       if (error) {
         queryClient.invalidateQueries({
           predicate: (query) =>

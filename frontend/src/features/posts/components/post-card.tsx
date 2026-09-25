@@ -224,7 +224,7 @@ export function PostCard({
         {/* --------------------------------
             Post content
         -------------------------------- */}
-        <div className="mt-5">
+        <div className="mt-5 flex-1">
           <Link href={`/posts/${post.id}`} className="block">
             <h2 className="font-manrope text-lg sm:text-xl font-bold tracking-tight text-slate-900">
               {post.title}
@@ -236,18 +236,17 @@ export function PostCard({
           </p>
         </div>
 
-        {/* Reactors Summary */}
+        {/* --------------------------------
+            Reactors Summary + Counters & Read Post
+        -------------------------------- */}
         <div className="mt-4">
           <PostReactorsSummary
             postId={post.id}
             reactionCounts={post.reactionCounts}
+            className="mb-1.5"
           />
-        </div>
 
-        {/* --------------------------------
-            Counters + Read Post
-        -------------------------------- */}
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
           {/* Frosted Glass Reaction & Comment Counters + Share */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {/* Likes & Dislikes */}
@@ -314,6 +313,7 @@ export function PostCard({
               <FiArrowRight className="h-3.5 w-3.5 text-indigo-400 group-hover/read:text-purple-300 transition-transform group-hover/read:translate-x-0.5" />
             </Link>
           </div>
+        </div>
         </div>
       </div>
     </article>

@@ -373,16 +373,16 @@ export function PostDetails({ postId }: PostDetailsProps) {
           {post.body}
         </div>
 
-        {/* Reactors Summary */}
-        <div className="mt-5">
+        {/* Footer Area: Reactors Summary + Action Counters */}
+        <div className="mt-6">
           <PostReactorsSummary
             postId={post.id}
             reactionCounts={post.reactionCounts}
+            className="mb-2"
           />
-        </div>
 
-        {/* Frosted Glass Counters + Share */}
-        <div className="mt-6 flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-5">
+          {/* Frosted Glass Counters + Share */}
+          <div className="flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-4">
           {/* Likes & Dislikes */}
           <ReactionButtons
             targetType="post"
@@ -438,6 +438,7 @@ export function PostDetails({ postId }: PostDetailsProps) {
               </>
             )}
           </button>
+        </div>
         </div>
       </article>
 
