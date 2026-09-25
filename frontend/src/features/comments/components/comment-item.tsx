@@ -13,7 +13,7 @@ import {
 import type { Comment } from "../types/comment";
 import { InlineReplyForm } from "./inline-reply-form";
 import { ReactionButtons } from "@/features/reactions/components/reaction-buttons";
-import type { UserReactionState, UserReactionsMap } from "@/features/reactions/types/reaction";
+import type { UserReactionsMap } from "@/features/reactions/types/reaction";
 import { useUpdateCommentMutation } from "../mutations/comment-mutations";
 
 interface CommentItemProps {

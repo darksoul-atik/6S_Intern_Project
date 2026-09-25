@@ -77,13 +77,12 @@ export function ReactionButtons({
 
   // Synchronous refs to prevent ANY stale closure on rapid clicking
   const currentReactionRef = useRef<UserReactionState>(currentReaction);
-  currentReactionRef.current = currentReaction;
-
   const serverReactionRef = useRef<ReactionType | null>(serverReaction);
-  serverReactionRef.current = serverReaction;
-
   const baseCountsRef = useRef<ReactionCounts>(counts);
-  baseCountsRef.current = counts;
+
+  useEffect(() => {
+    currentReactionRef.current = currentReaction;
+  }, [currentReaction]);
 
   // Track in-flight mutation and desired user target state
   const isMutatingRef = useRef(false);
