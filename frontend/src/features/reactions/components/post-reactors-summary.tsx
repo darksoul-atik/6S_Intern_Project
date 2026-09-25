@@ -72,21 +72,40 @@ export function PostReactorsSummary({
   const { items, total } = effectiveData;
 
   const renderSummaryText = () => {
-    if (total === 1) {
+    const firstReactor = items[0]?.name || "Someone";
+    const secondReactor = items[1]?.name;
+
+    // If only 1 reactor name is available in items array
+    if (!secondReactor || items.length === 1) {
+      if (total <= 1) {
+        return (
+          <span>
+            <strong className="font-semibold text-slate-700">{firstReactor}</strong>{" "}
+            reacted to this post
+          </span>
+        );
+      }
+
+      const othersCount = total - 1;
       return (
         <span>
-          <strong className="font-semibold text-slate-700">{items[0].name}</strong>{" "}
+          <strong className="font-semibold text-slate-700">{firstReactor}</strong>{" "}
+          and{" "}
+          <strong className="font-semibold text-slate-700">
+            {othersCount} {othersCount === 1 ? "other" : "others"}
+          </strong>{" "}
           reacted to this post
         </span>
       );
     }
 
+    // We have at least 2 reactor names
     if (total === 2) {
       return (
         <span>
-          <strong className="font-semibold text-slate-700">{items[0].name}</strong>{" "}
+          <strong className="font-semibold text-slate-700">{firstReactor}</strong>{" "}
           and{" "}
-          <strong className="font-semibold text-slate-700">{items[1].name}</strong>{" "}
+          <strong className="font-semibold text-slate-700">{secondReactor}</strong>{" "}
           reacted to this post
         </span>
       );
@@ -95,8 +114,8 @@ export function PostReactorsSummary({
     const remaining = total - 2;
     return (
       <span>
-        <strong className="font-semibold text-slate-700">{items[0].name}</strong>,{" "}
-        <strong className="font-semibold text-slate-700">{items[1].name}</strong>{" "}
+        <strong className="font-semibold text-slate-700">{firstReactor}</strong>,{" "}
+        <strong className="font-semibold text-slate-700">{secondReactor}</strong>{" "}
         and{" "}
         <strong className="font-semibold text-slate-700">
           {remaining} {remaining === 1 ? "other" : "others"}
