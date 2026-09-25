@@ -291,11 +291,13 @@ describe('CommentsService', () => {
       expect(mockSession.endSession).toHaveBeenCalledTimes(1);
     });
 
-    it('should reject replying to an existing reply', async () => {
+    it('should flatten reply-to-reply into a sibling under the root comment with mentionedUserId', async () => {
       const existingReply = {
         _id: new Types.ObjectId(validReplyId),
 
         postId: new Types.ObjectId(validPostId),
+
+        authorId: new Types.ObjectId(validAuthorId),
 
         parentCommentId: new Types.ObjectId(validCommentId),
       };
@@ -304,15 +306,51 @@ describe('CommentsService', () => {
         createSessionQuery(existingReply),
       );
 
-      await expect(
-        service.createReply(validPostId, validReplyId, validAuthorId, {
+      const flattenedReplyData = {
+        _id: new Types.ObjectId('66e138fc29094e137127e4e5'),
+
+        postId: new Types.ObjectId(validPostId),
+
+        authorId: new Types.ObjectId('66e138fc29094e137127e4e6'),
+
+        parentCommentId: new Types.ObjectId(validCommentId),
+
+        mentionedUserId: new Types.ObjectId(validAuthorId),
+
+        body: 'nested reply',
+      };
+
+      mockCommentModel.create.mockResolvedValue([flattenedReplyData]);
+
+      const result = await service.createReply(
+        validPostId,
+        validReplyId,
+        '66e138fc29094e137127e4e6',
+        {
           body: 'nested reply',
-        }),
-      ).rejects.toThrow(
-        new BadRequestException(
-          'Maximum reply depth exceeded. Replies cannot have child replies',
-        ),
+        },
       );
+
+      expect(mockCommentModel.create).toHaveBeenCalledWith(
+        [
+          {
+            postId: expect.any(Types.ObjectId),
+
+            authorId: expect.any(Types.ObjectId),
+
+            parentCommentId: existingReply.parentCommentId,
+
+            mentionedUserId: existingReply.authorId,
+
+            body: 'nested reply',
+          },
+        ],
+        {
+          session: mockSession,
+        },
+      );
+
+      expect(result).toEqual(flattenedReplyData);
 
       expect(mockSession.endSession).toHaveBeenCalledTimes(1);
     });
@@ -339,6 +377,8 @@ describe('CommentsService', () => {
 
         parentCommentId: parentComment._id,
 
+        mentionedUserId: null,
+
         body: 'Valid reply',
       };
 
@@ -361,6 +401,8 @@ describe('CommentsService', () => {
             authorId: expect.any(Types.ObjectId),
 
             parentCommentId: parentComment._id,
+
+            mentionedUserId: null,
 
             body: 'Valid reply',
           },

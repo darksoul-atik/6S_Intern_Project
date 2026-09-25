@@ -18,6 +18,7 @@ export interface CommentTreeItem {
   id: string;
   postId: string;
   authorId: unknown;
+  mentionedUserId?: unknown;
   parentCommentId: string | null;
   body: string;
   reactionCounts?: {
@@ -184,15 +185,27 @@ export class CommentsService {
       }
 
       /*
-       * Maximum reply depth = 1.
-       *
-       * A reply already has parentCommentId,
-       * therefore it cannot receive another reply.
+       * Flatten replies:
+       * If parent already has parentCommentId, it is an existing reply.
+       * The new reply becomes a sibling under the same top-level root comment
+       * (parent.parentCommentId), and mentions the author of the reply being addressed.
+       * If parent has no parentCommentId, it is a root comment.
        */
+      let actualParentId: Types.ObjectId;
+      let mentionedUserId: Types.ObjectId | null = null;
+
       if (parent.parentCommentId) {
-        throw new BadRequestException(
-          "Maximum reply depth exceeded. Replies cannot have child replies",
-        );
+        actualParentId = parent.parentCommentId as Types.ObjectId;
+        const targetAuthorId =
+          (parent.authorId as any)?._id ?? parent.authorId;
+        mentionedUserId = dto.mentionedUserId
+          ? new Types.ObjectId(dto.mentionedUserId)
+          : new Types.ObjectId(targetAuthorId.toString());
+      } else {
+        actualParentId = parent._id as Types.ObjectId;
+        mentionedUserId = dto.mentionedUserId
+          ? new Types.ObjectId(dto.mentionedUserId)
+          : null;
       }
 
       let reply: CommentDocument;
@@ -203,7 +216,8 @@ export class CommentsService {
             {
               postId: new Types.ObjectId(postId),
               authorId: new Types.ObjectId(authorId),
-              parentCommentId: parent._id,
+              parentCommentId: actualParentId,
+              mentionedUserId,
               body: dto.body,
             },
           ],
@@ -219,7 +233,8 @@ export class CommentsService {
         reply = await this.commentModel.create({
           postId: new Types.ObjectId(postId),
           authorId: new Types.ObjectId(authorId),
-          parentCommentId: parent._id,
+          parentCommentId: actualParentId,
+          mentionedUserId,
           body: dto.body,
         });
 
@@ -250,6 +265,10 @@ export class CommentsService {
       })
       .populate({
         path: "authorId",
+        select: "name headline avatarUrl",
+      })
+      .populate({
+        path: "mentionedUserId",
         select: "name headline avatarUrl",
       })
       .exec();
@@ -556,6 +575,7 @@ export class CommentsService {
       id: comment._id.toString(),
       postId: comment.postId.toString(),
       authorId: comment.authorId,
+      mentionedUserId: (comment as any).mentionedUserId ?? null,
       parentCommentId: comment.parentCommentId?.toString() ?? null,
       body: comment.body,
       reactionCounts: comment.reactionCounts
