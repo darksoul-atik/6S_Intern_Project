@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { IsMongoId, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateCommentDto {
   @ApiProperty({
@@ -20,4 +20,14 @@ export class CreateCommentDto {
     message: 'body must not exceed 5000 characters',
   })
   body!: string;
+
+  @ApiPropertyOptional({
+    example: '66e138fc29094e137127e4e0',
+    description: 'MongoDB ObjectId of the user mentioned in a reply-to-reply',
+  })
+  @IsOptional()
+  @IsMongoId({
+    message: 'mentionedUserId must be a valid MongoDB ObjectId',
+  })
+  mentionedUserId?: string;
 }

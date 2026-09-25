@@ -48,6 +48,14 @@ export class Comment {
   })
   parentCommentId?: Types.ObjectId | null;
 
+  // null = main comment or direct reply to root, ObjectId = user addressed in reply-to-reply
+  @Prop({
+    type: 'ObjectId',
+    ref: User.name,
+    default: null,
+  })
+  mentionedUserId?: Types.ObjectId | null;
+
   @Prop({
     required: true,
     trim: true,
