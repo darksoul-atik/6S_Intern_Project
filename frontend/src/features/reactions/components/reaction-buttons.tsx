@@ -1,18 +1,27 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import type { MouseEvent } from "react";
 import { FiThumbsDown, FiThumbsUp } from "react-icons/fi";
 
 import { useAuth } from "@/context/AuthContext";
 import { useUserReactions } from "../queries/reaction-queries";
 import { useToggleReactionMutation } from "../mutations/reaction-mutations";
-import type { ReactionCounts, ReactionTargetType, ReactionType } from "../types/reaction";
+
+import type {
+  ReactionCounts,
+  ReactionTargetType,
+  ReactionType,
+  UserReactionState,
+} from "../types/reaction";
 
 interface ReactionButtonsProps {
   targetType: ReactionTargetType;
   targetId: string;
-  postId?: string; // Parent post ID when targetType is 'comment'
+  postId?: string;
   counts: ReactionCounts;
+
+  currentReaction?: UserReactionState;
+
   size?: "sm" | "md";
   showLabels?: boolean;
   className?: string;
@@ -23,33 +32,42 @@ export function ReactionButtons({
   targetId,
   postId,
   counts,
+  currentReaction: propReaction,
   size = "md",
   showLabels,
   className = "",
 }: ReactionButtonsProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { user } = useAuth();
-
-  const { data: userReactions = {} } = useUserReactions(targetType, [targetId]);
-  const currentReaction = userReactions[targetId] ?? null;
-
+  const { user, isLoading: isAuthLoading } = useAuth();
   const toggleMutation = useToggleReactionMutation();
-  const isBusy = toggleMutation.isPending;
+
+  const { data: userReactions = {}, isLoading: isReactionsLoading } =
+    useUserReactions(targetType, [targetId], {
+      enabled: Boolean(user) && propReaction === undefined,
+    });
+
+  const currentReaction =
+    propReaction !== undefined
+      ? propReaction
+      : (userReactions[targetId] ?? null);
+
+  const isReactionStateLoading =
+    Boolean(user) && propReaction === undefined && isReactionsLoading;
+
+  const isBusy =
+    toggleMutation.isPending || isReactionStateLoading || isAuthLoading;
+
+  const isDisabled = !user || isBusy;
 
   const handleReactionClick = (
-    event: React.MouseEvent<HTMLButtonElement>,
+    event: MouseEvent<HTMLButtonElement>,
     type: ReactionType,
   ) => {
     event.preventDefault();
     event.stopPropagation();
 
-    if (!user) {
-      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+    if (!user || isBusy || currentReaction === undefined) {
       return;
     }
-
-    if (isBusy) return;
 
     toggleMutation.mutate({
       targetType,
@@ -61,14 +79,16 @@ export function ReactionButtons({
   };
 
   const isLikeActive = currentReaction === "like";
+
   const isDislikeActive = currentReaction === "dislike";
 
   const isSm = size === "sm";
+
   const shouldShowLabels = showLabels !== undefined ? showLabels : !isSm;
 
   const buttonBaseClass = isSm
-    ? "inline-flex h-7 cursor-pointer items-center gap-1 rounded-lg border px-2 text-xs font-semibold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-    : "inline-flex cursor-pointer items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60";
+    ? "inline-flex h-7 cursor-pointer items-center gap-1 rounded-lg border px-2 text-xs font-semibold transition-all active:scale-95 "
+    : "inline-flex cursor-pointer items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all active:scale-95 ";
 
   const likeActiveClass = isSm
     ? "border-indigo-300 bg-indigo-50/90 text-indigo-700"
@@ -86,15 +106,39 @@ export function ReactionButtons({
     ? "border-slate-200/80 bg-slate-50/70 text-slate-600 hover:bg-slate-100 hover:text-slate-900 hover:border-slate-300"
     : "border-slate-200/90 bg-slate-50/80 text-slate-700 hover:bg-slate-100 hover:border-slate-300";
 
+  const getButtonTitle = (type: ReactionType, isActive: boolean) => {
+    if (!user) {
+      return "Log in to react";
+    }
+
+    if (isReactionStateLoading) {
+      return "Loading reaction...";
+    }
+
+    if (isBusy) {
+      return "Updating reaction...";
+    }
+
+    if (type === "like") {
+      return isActive ? "Liked" : "Like";
+    }
+
+    return isActive ? "Disliked" : "Dislike";
+  };
+
   return (
-    <div className={`inline-flex items-center ${isSm ? "gap-1" : "gap-1.5"} ${className}`}>
-      {/* Like Button */}
+    <div
+      className={`inline-flex items-center ${
+        isSm ? "gap-1" : "gap-1.5"
+      } ${className}`}
+    >
       <button
         type="button"
-        onClick={(e) => handleReactionClick(e, "like")}
-        disabled={isBusy}
+        onClick={(event) => handleReactionClick(event, "like")}
+        disabled={isDisabled}
         aria-label={isLikeActive ? "Remove like" : "Like"}
-        title={isLikeActive ? "Liked" : "Like"}
+        aria-pressed={isLikeActive}
+        title={getButtonTitle("like", isLikeActive)}
         className={`group/like ${buttonBaseClass} ${
           isLikeActive ? likeActiveClass : likeInactiveClass
         }`}
@@ -106,6 +150,7 @@ export function ReactionButtons({
               : "text-indigo-600 group-hover/like:scale-110 transition-transform"
           }`}
         />
+
         <span
           className={`font-bold tabular-nums ${
             isLikeActive ? "text-indigo-900" : "text-slate-900"
@@ -113,6 +158,7 @@ export function ReactionButtons({
         >
           {counts.like}
         </span>
+
         {shouldShowLabels && (
           <span
             className={`hidden sm:inline font-medium ${
@@ -124,13 +170,13 @@ export function ReactionButtons({
         )}
       </button>
 
-      {/* Dislike Button */}
       <button
         type="button"
-        onClick={(e) => handleReactionClick(e, "dislike")}
-        disabled={isBusy}
+        onClick={(event) => handleReactionClick(event, "dislike")}
+        disabled={isDisabled}
         aria-label={isDislikeActive ? "Remove dislike" : "Dislike"}
-        title={isDislikeActive ? "Disliked" : "Dislike"}
+        aria-pressed={isDislikeActive}
+        title={getButtonTitle("dislike", isDislikeActive)}
         className={`group/dislike ${buttonBaseClass} ${
           isDislikeActive ? dislikeActiveClass : dislikeInactiveClass
         }`}
@@ -142,6 +188,7 @@ export function ReactionButtons({
               : "text-rose-500 group-hover/dislike:scale-110 transition-transform"
           }`}
         />
+
         <span
           className={`font-bold tabular-nums ${
             isDislikeActive ? "text-rose-900" : "text-slate-900"
@@ -149,6 +196,7 @@ export function ReactionButtons({
         >
           {counts.dislike}
         </span>
+
         {shouldShowLabels && (
           <span
             className={`hidden sm:inline font-medium ${
