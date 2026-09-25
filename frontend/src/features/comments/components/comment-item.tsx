@@ -13,12 +13,14 @@ import {
 import type { Comment } from "../types/comment";
 import { InlineReplyForm } from "./inline-reply-form";
 import { ReactionButtons } from "@/features/reactions/components/reaction-buttons";
+import type { UserReactionState, UserReactionsMap } from "@/features/reactions/types/reaction";
 import { useUpdateCommentMutation } from "../mutations/comment-mutations";
 
 interface CommentItemProps {
   comment: Comment;
   postId: string;
   level?: number;
+  userReactions?: UserReactionsMap;
   onDelete?: (comment: Comment) => void;
   deletingCommentId?: string | null;
 }
@@ -27,6 +29,7 @@ export function CommentItem({
   comment,
   postId,
   level = 0,
+  userReactions,
   onDelete,
   deletingCommentId = null,
 }: CommentItemProps) {
@@ -49,6 +52,11 @@ export function CommentItem({
   const isUpdating = updateMutation.isPending;
 
   const isRootComment = comment.parentCommentId === null;
+
+  const currentReaction =
+    userReactions === undefined
+      ? undefined
+      : userReactions[comment.id] ?? null;
 
   // Only the author can edit their own comment or reply
   const canEdit = Boolean(user) && user?.id === comment.authorId.id;
@@ -298,6 +306,7 @@ export function CommentItem({
             targetId={comment.id}
             postId={postId}
             counts={comment.reactionCounts ?? { like: 0, dislike: 0 }}
+            currentReaction={currentReaction}
             size="sm"
           />
 
@@ -326,6 +335,7 @@ export function CommentItem({
               comment={reply}
               postId={postId}
               level={level + 1}
+              userReactions={userReactions}
               onDelete={onDelete}
               deletingCommentId={deletingCommentId}
             />

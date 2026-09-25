@@ -25,6 +25,7 @@ import { DeletePostModal } from "./delete-post-modal";
 import { usePost } from "../queries/post-queries";
 import { useSoftDeletePostMutation } from "../mutations/post-mutations";
 import { ReactionButtons } from "@/features/reactions/components/reaction-buttons";
+import { useUserReactions } from "@/features/reactions/queries/reaction-queries";
 
 interface PostDetailsProps {
   postId: string;
@@ -68,6 +69,13 @@ export function PostDetails({ postId }: PostDetailsProps) {
   const router = useRouter();
   const { user } = useAuth();
   const { data: post, isPending, isError, error, refetch } = usePost(postId);
+
+  const { data: userReactions } = useUserReactions("post", [postId], {
+    enabled: Boolean(postId),
+  });
+
+  const currentReaction =
+    userReactions === undefined ? undefined : (userReactions[postId] ?? null);
 
   /*
   |--------------------------------------------------------------------------
@@ -323,6 +331,7 @@ export function PostDetails({ postId }: PostDetailsProps) {
             targetType="post"
             targetId={post.id}
             counts={post.reactionCounts}
+            currentReaction={currentReaction}
           />
 
           {/* Comment */}

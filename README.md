@@ -31,7 +31,7 @@ DevPulse is a high-performance, engineering-first developer community platform e
 | **Day 9** | **Threaded Comments API & Data Integrity** | Self-referencing Mongoose `Comment` schema (`postId`, `authorId`, `parentCommentId`), compound indexes, single-query tree hierarchy assembly, cross-post boundary check, max depth 1 enforcement, thread cascade deletion, atomic post & user counter `$inc` synchronization. | ✅ **Completed** |
 | **Day 10** | **Threaded Comments Interface** | Recursive comment hierarchy (`CommentItem`), inline reply forms with keyboard focus management, TanStack Query cache invalidation, accessible delete confirmation dialog with cascade warning, mobile-responsive layout. | ✅ **Completed** |
 | **Day 11** | **Reaction Engine & Data Integrity** | Toggle behavior for like/dislike, compound unique indexes, concurrency-safe atomic counters. | ✅ **Completed** |
-| **Day 12** | **Optimistic Reaction Interface** | Instant UI feedback, safe rollbacks, rapid-click throttling, cache reconciliation. | ⏳ *Upcoming* |
+| **Day 12** | **Optimistic Reaction Interface** | Instant UI feedback, safe rollbacks, rapid-click throttling, cache reconciliation. | ✅ **Completed** |
 
 ### Phase 4: Discovery, Quality, and Applied Features (Days 13–16)
 | Day | Focus Areas | Status |

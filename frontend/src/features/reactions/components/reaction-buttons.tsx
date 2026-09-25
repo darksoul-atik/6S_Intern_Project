@@ -1,11 +1,19 @@
 "use client";
 
-import type { MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { FiThumbsDown, FiThumbsUp } from "react-icons/fi";
 
 import { useAuth } from "@/context/AuthContext";
 import { useUserReactions } from "../queries/reaction-queries";
-import { useToggleReactionMutation } from "../mutations/reaction-mutations";
+import {
+  computeCountsFromBase,
+  useToggleReactionMutation,
+} from "../mutations/reaction-mutations";
+import {
+  getStoredReactions,
+  updateStoredReaction,
+} from "../utils/reaction-storage";
 
 import type {
   ReactionCounts,
@@ -19,9 +27,7 @@ interface ReactionButtonsProps {
   targetId: string;
   postId?: string;
   counts: ReactionCounts;
-
   currentReaction?: UserReactionState;
-
   size?: "sm" | "md";
   showLabels?: boolean;
   className?: string;
@@ -37,26 +43,149 @@ export function ReactionButtons({
   showLabels,
   className = "",
 }: ReactionButtonsProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const { user, isLoading: isAuthLoading } = useAuth();
   const toggleMutation = useToggleReactionMutation();
 
   const { data: userReactions = {}, isLoading: isReactionsLoading } =
     useUserReactions(targetType, [targetId], {
-      enabled: Boolean(user) && propReaction === undefined,
+      enabled: propReaction === undefined,
     });
 
-  const currentReaction =
+  const serverReaction =
     propReaction !== undefined
       ? propReaction
       : (userReactions[targetId] ?? null);
 
-  const isReactionStateLoading =
-    Boolean(user) && propReaction === undefined && isReactionsLoading;
+  // Initialize from props, query cache, or stored reactions (instant 0ms on refresh!)
+  const [currentReaction, setCurrentReaction] = useState<UserReactionState>(() => {
+    if (propReaction !== undefined) {
+      return propReaction;
+    }
+    if (userReactions[targetId] !== undefined) {
+      return userReactions[targetId];
+    }
+    if (typeof window !== "undefined") {
+      const stored = getStoredReactions(targetType);
+      return stored[targetId] ?? null;
+    }
+    return null;
+  });
 
-  const isBusy =
-    toggleMutation.isPending || isReactionStateLoading || isAuthLoading;
+  const [currentCounts, setCurrentCounts] = useState<ReactionCounts>(counts);
 
-  const isDisabled = !user || isBusy;
+  // Synchronous refs to prevent ANY stale closure on rapid clicking
+  const currentReactionRef = useRef<UserReactionState>(currentReaction);
+  currentReactionRef.current = currentReaction;
+
+  const serverReactionRef = useRef<ReactionType | null>(serverReaction);
+  serverReactionRef.current = serverReaction;
+
+  const baseCountsRef = useRef<ReactionCounts>(counts);
+  baseCountsRef.current = counts;
+
+  // Track in-flight mutation and desired user target state
+  const isMutatingRef = useRef(false);
+  const desiredReactionRef = useRef<ReactionType | null>(
+    currentReaction ?? null,
+  );
+
+  // Synchronize state when server reaction changes externally
+  useEffect(() => {
+    const next =
+      propReaction !== undefined
+        ? propReaction
+        : (userReactions[targetId] ?? null);
+
+    serverReactionRef.current = next;
+
+    // Only update local UI if no in-flight or pending user interaction is active
+    if (
+      !isMutatingRef.current &&
+      desiredReactionRef.current === currentReactionRef.current
+    ) {
+      setCurrentReaction(next);
+      currentReactionRef.current = next;
+      desiredReactionRef.current = next ?? null;
+      updateStoredReaction(targetType, targetId, next);
+    }
+  }, [propReaction, userReactions, targetId, targetType]);
+
+  useEffect(() => {
+    baseCountsRef.current = counts;
+    if (!isMutatingRef.current) {
+      const computed = computeCountsFromBase(
+        counts,
+        serverReactionRef.current,
+        currentReactionRef.current ?? null,
+      );
+      setCurrentCounts(computed);
+    }
+  }, [counts]);
+
+  const executeMutation = (targetReaction: ReactionType | null) => {
+    isMutatingRef.current = true;
+
+    // The backend is a toggle endpoint.
+    // If targetReaction is not null, send targetReaction (which sets or switches to it).
+    // If targetReaction is null, send serverReactionRef.current (which removes/untoggles it).
+    const actionType: ReactionType | null =
+      targetReaction !== null ? targetReaction : serverReactionRef.current;
+
+    if (!actionType) {
+      isMutatingRef.current = false;
+      return;
+    }
+
+    toggleMutation.mutate(
+      {
+        targetType,
+        targetId,
+        postId: targetType === "comment" ? postId : undefined,
+        type: actionType,
+        currentReaction: serverReactionRef.current,
+      },
+      {
+        onSuccess: (data) => {
+          serverReactionRef.current = data.reaction;
+          baseCountsRef.current = data.reactionCounts;
+        },
+        onError: () => {
+          // Revert to known server state on network error
+          const reverted = serverReactionRef.current;
+          setCurrentReaction(reverted);
+          currentReactionRef.current = reverted;
+          desiredReactionRef.current = reverted;
+          const revertedCounts = computeCountsFromBase(
+            baseCountsRef.current,
+            reverted,
+            reverted,
+          );
+          setCurrentCounts(revertedCounts);
+          updateStoredReaction(targetType, targetId, reverted);
+        },
+        onSettled: () => {
+          isMutatingRef.current = false;
+
+          // If the user clicked again while the request was in flight, reconcile
+          const desired = desiredReactionRef.current;
+          const server = serverReactionRef.current;
+
+          if (desired !== server) {
+            executeMutation(desired);
+          } else {
+            const finalCounts = computeCountsFromBase(
+              baseCountsRef.current,
+              server,
+              desired,
+            );
+            setCurrentCounts(finalCounts);
+          }
+        },
+      },
+    );
+  };
 
   const handleReactionClick = (
     event: MouseEvent<HTMLButtonElement>,
@@ -65,25 +194,41 @@ export function ReactionButtons({
     event.preventDefault();
     event.stopPropagation();
 
-    if (!user || isBusy || currentReaction === undefined) {
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
       return;
     }
 
-    toggleMutation.mutate({
-      targetType,
-      targetId,
-      postId: targetType === "comment" ? postId : undefined,
-      type,
-      currentReaction,
-    });
+    // 1. Read current state from the synchronous ref (NEVER stale, even on 1ms clicks)
+    const current = currentReactionRef.current ?? null;
+    const nextReaction: ReactionType | null = current === type ? null : type;
+
+    // 2. Immediately update the synchronous refs (0ms!)
+    currentReactionRef.current = nextReaction;
+    desiredReactionRef.current = nextReaction;
+
+    // 3. Compute deterministic counts from baseline (STRICTLY bounded by [neutral, neutral + 1])
+    const nextCounts = computeCountsFromBase(
+      baseCountsRef.current,
+      serverReactionRef.current,
+      nextReaction,
+    );
+
+    // 4. Instant UI updates (0ms!)
+    setCurrentReaction(nextReaction);
+    setCurrentCounts(nextCounts);
+    updateStoredReaction(targetType, targetId, nextReaction);
+
+    // 5. If no request is in-flight, execute mutation; otherwise onSettled will execute the latest desired state
+    if (!isMutatingRef.current) {
+      executeMutation(nextReaction);
+    }
   };
 
   const isLikeActive = currentReaction === "like";
-
   const isDislikeActive = currentReaction === "dislike";
 
   const isSm = size === "sm";
-
   const shouldShowLabels = showLabels !== undefined ? showLabels : !isSm;
 
   const buttonBaseClass = isSm
@@ -111,12 +256,8 @@ export function ReactionButtons({
       return "Log in to react";
     }
 
-    if (isReactionStateLoading) {
+    if (isReactionsLoading && currentReaction === null) {
       return "Loading reaction...";
-    }
-
-    if (isBusy) {
-      return "Updating reaction...";
     }
 
     if (type === "like") {
@@ -135,7 +276,7 @@ export function ReactionButtons({
       <button
         type="button"
         onClick={(event) => handleReactionClick(event, "like")}
-        disabled={isDisabled}
+        disabled={isAuthLoading}
         aria-label={isLikeActive ? "Remove like" : "Like"}
         aria-pressed={isLikeActive}
         title={getButtonTitle("like", isLikeActive)}
@@ -156,7 +297,7 @@ export function ReactionButtons({
             isLikeActive ? "text-indigo-900" : "text-slate-900"
           }`}
         >
-          {counts.like}
+          {currentCounts.like}
         </span>
 
         {shouldShowLabels && (
@@ -173,7 +314,7 @@ export function ReactionButtons({
       <button
         type="button"
         onClick={(event) => handleReactionClick(event, "dislike")}
-        disabled={isDisabled}
+        disabled={isAuthLoading}
         aria-label={isDislikeActive ? "Remove dislike" : "Dislike"}
         aria-pressed={isDislikeActive}
         title={getButtonTitle("dislike", isDislikeActive)}
@@ -194,7 +335,7 @@ export function ReactionButtons({
             isDislikeActive ? "text-rose-900" : "text-slate-900"
           }`}
         >
-          {counts.dislike}
+          {currentCounts.dislike}
         </span>
 
         {shouldShowLabels && (

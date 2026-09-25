@@ -10,6 +10,7 @@ import { postKeys } from "@/features/posts/queries/post-queries";
 import { commentKeys } from "@/features/comments/queries/comment-queries";
 
 import { reactionKeys } from "../queries/reaction-queries";
+import { updateStoredReaction } from "../utils/reaction-storage";
 
 import type {
   ReactionCounts,
@@ -72,16 +73,12 @@ function isReactionQueryForTarget(
   return scope.split(",").includes(targetId);
 }
 
-function updateReactionMap(
+export function updateReactionMap(
   old: UserReactionsMap | undefined,
   targetId: string,
   reaction: ReactionType | null,
-) {
-  if (!old) {
-    return old;
-  }
-
-  const updated = { ...old };
+): UserReactionsMap {
+  const updated: UserReactionsMap = { ...(old ?? {}) };
 
   if (reaction) {
     updated[targetId] = reaction;
@@ -92,30 +89,40 @@ function updateReactionMap(
   return updated;
 }
 
-function calculateNewCounts(
-  currentCounts: ReactionCounts,
-  currentReaction: ReactionType | null,
-  newReaction: ReactionType | null,
+export function computeCountsFromBase(
+  serverCounts: ReactionCounts,
+  serverReaction: ReactionType | null,
+  userReaction: ReactionType | null,
 ): ReactionCounts {
-  let { like, dislike } = currentCounts;
+  // 1. Calculate neutral counts (without this user's reaction)
+  let neutralLike = serverCounts.like;
+  let neutralDislike = serverCounts.dislike;
 
-  if (currentReaction === "like") {
-    like = Math.max(0, like - 1);
+  if (serverReaction === "like") {
+    neutralLike = Math.max(0, neutralLike - 1);
+  } else if (serverReaction === "dislike") {
+    neutralDislike = Math.max(0, neutralDislike - 1);
   }
 
-  if (currentReaction === "dislike") {
-    dislike = Math.max(0, dislike - 1);
-  }
+  // 2. Apply userReaction onto neutral counts
+  let like = neutralLike;
+  let dislike = neutralDislike;
 
-  if (newReaction === "like") {
+  if (userReaction === "like") {
     like += 1;
-  }
-
-  if (newReaction === "dislike") {
+  } else if (userReaction === "dislike") {
     dislike += 1;
   }
 
   return { like, dislike };
+}
+
+export function calculateNewCounts(
+  currentCounts: ReactionCounts,
+  currentReaction: ReactionType | null,
+  newReaction: ReactionType | null,
+): ReactionCounts {
+  return computeCountsFromBase(currentCounts, currentReaction, newReaction);
 }
 
 function updateCommentInTree(
@@ -163,7 +170,9 @@ function findPostInFeed(
   targetId: string,
 ): Post | undefined {
   for (const page of data.pages) {
-    const post = page.posts.find((item) => item.id === targetId);
+    const post = page.posts.find(
+      (item) => item.id === targetId || (item as unknown as { _id?: string })._id === targetId,
+    );
 
     if (post) {
       return post;
@@ -183,7 +192,7 @@ function updatePostInFeed(
     pages: data.pages.map((page) => ({
       ...page,
       posts: page.posts.map((post) =>
-        post.id === targetId
+        post.id === targetId || (post as unknown as { _id?: string })._id === targetId
           ? {
               ...post,
               reactionCounts: counts,
@@ -250,26 +259,43 @@ export function useToggleReactionMutation() {
         previousFeeds: [],
       };
 
+      const exactTargetKey = reactionKeys.mine(targetType, [targetId]);
+      const exactData = queryClient.getQueryData<UserReactionsMap>(exactTargetKey);
+
       const reactionQueries = queryClient.getQueriesData<UserReactionsMap>({
         queryKey: [...reactionKeys.all, "mine", targetType],
       });
 
+      const trackedKeys = new Set<string>();
+
       context.previousReactions = reactionQueries
-        .filter(
-          ([queryKey, data]) =>
-            data !== undefined &&
-            isReactionQueryForTarget(queryKey, targetType, targetId),
+        .filter(([queryKey]) =>
+          isReactionQueryForTarget(queryKey, targetType, targetId),
         )
-        .map(([queryKey, data]) => ({
-          queryKey,
-          previousReaction: data?.[targetId] ?? null,
-        }));
+        .map(([queryKey, data]) => {
+          trackedKeys.add(JSON.stringify(queryKey));
+          return {
+            queryKey,
+            previousReaction: data?.[targetId] ?? null,
+          };
+        });
+
+      if (!trackedKeys.has(JSON.stringify(exactTargetKey))) {
+        context.previousReactions.push({
+          queryKey: exactTargetKey,
+          previousReaction: exactData?.[targetId] ?? null,
+        });
+      }
 
       for (const snapshot of context.previousReactions) {
         queryClient.setQueryData<UserReactionsMap>(snapshot.queryKey, (old) =>
           updateReactionMap(old, targetId, nextReaction),
         );
       }
+
+      queryClient.setQueryData<UserReactionsMap>(exactTargetKey, (old) =>
+        updateReactionMap(old, targetId, nextReaction),
+      );
 
       if (targetType === "post") {
         const detailKey = postKeys.detail(targetId);
@@ -372,9 +398,86 @@ export function useToggleReactionMutation() {
       return context;
     },
 
+    onSuccess: (data, variables) => {
+      const exactTargetKey = reactionKeys.mine(variables.targetType, [
+        variables.targetId,
+      ]);
+
+      // 1. Update exact single-target query cache
+      queryClient.setQueryData<UserReactionsMap>(exactTargetKey, (old) =>
+        updateReactionMap(old, variables.targetId, data.reaction),
+      );
+
+      // 2. D12-7C: Batch-cache consistency fix
+      // Update ALL batched and 'all' reaction queries containing this target
+      queryClient.setQueriesData<UserReactionsMap>(
+        {
+          predicate: (query) =>
+            isReactionQueryForTarget(
+              query.queryKey,
+              variables.targetType,
+              variables.targetId,
+            ),
+        },
+        (old) => updateReactionMap(old, variables.targetId, data.reaction),
+      );
+
+      // 3. Keep local storage in sync with server-confirmed reaction
+      if (typeof window !== "undefined") {
+        updateStoredReaction(
+          variables.targetType,
+          variables.targetId,
+          data.reaction,
+        );
+      }
+
+      if (variables.targetType === "post") {
+        queryClient.setQueryData<Post>(
+          postKeys.detail(variables.targetId),
+          (old) => {
+            if (!old) return old;
+            return {
+              ...old,
+              reactionCounts: data.reactionCounts,
+            };
+          },
+        );
+
+        queryClient.setQueriesData<InfiniteData<PaginatedPostsResponse>>(
+          { queryKey: postKeys.feeds() },
+          (old) => {
+            if (!old) return old;
+            return updatePostInFeed(
+              old,
+              variables.targetId,
+              data.reactionCounts,
+            );
+          },
+        );
+      }
+
+      if (variables.targetType === "comment" && variables.postId) {
+        queryClient.setQueryData<Comment[]>(
+          commentKeys.byPost(variables.postId),
+          (old) => {
+            if (!old) return old;
+            return updateCommentInTree(old, variables.targetId, (comment) => ({
+              ...comment,
+              reactionCounts: data.reactionCounts,
+            }));
+          },
+        );
+      }
+    },
+
     onError: (_error, variables, context) => {
       if (!context) {
         return;
+      }
+
+      if (typeof window !== "undefined") {
+        const prev = context.previousReactions[0]?.previousReaction ?? null;
+        updateStoredReaction(variables.targetType, variables.targetId, prev);
       }
 
       for (const snapshot of context.previousReactions) {
@@ -437,30 +540,32 @@ export function useToggleReactionMutation() {
       }
     },
 
-    onSettled: (_data, _error, variables) => {
-      queryClient.invalidateQueries({
-        predicate: (query) =>
-          isReactionQueryForTarget(
-            query.queryKey,
-            variables.targetType,
-            variables.targetId,
-          ),
-      });
-
-      if (variables.targetType === "post") {
+    onSettled: (_data, error, variables) => {
+      if (error) {
         queryClient.invalidateQueries({
-          queryKey: postKeys.detail(variables.targetId),
+          predicate: (query) =>
+            isReactionQueryForTarget(
+              query.queryKey,
+              variables.targetType,
+              variables.targetId,
+            ),
         });
 
-        queryClient.invalidateQueries({
-          queryKey: postKeys.feeds(),
-        });
-      }
+        if (variables.targetType === "post") {
+          queryClient.invalidateQueries({
+            queryKey: postKeys.detail(variables.targetId),
+          });
 
-      if (variables.targetType === "comment" && variables.postId) {
-        queryClient.invalidateQueries({
-          queryKey: commentKeys.byPost(variables.postId),
-        });
+          queryClient.invalidateQueries({
+            queryKey: postKeys.feeds(),
+          });
+        }
+
+        if (variables.targetType === "comment" && variables.postId) {
+          queryClient.invalidateQueries({
+            queryKey: commentKeys.byPost(variables.postId),
+          });
+        }
       }
     },
   });

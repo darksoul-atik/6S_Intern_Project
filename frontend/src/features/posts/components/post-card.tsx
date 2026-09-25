@@ -12,19 +12,26 @@ import {
 } from "react-icons/fi";
 
 import { useAuth } from "@/context/AuthContext";
-import { formatDateTime, getInitials, resolveAvatarUrl } from "@/lib/utils/formatters";
+import {
+  formatDateTime,
+  getInitials,
+  resolveAvatarUrl,
+} from "@/lib/utils/formatters";
 import { ReactionButtons } from "@/features/reactions/components/reaction-buttons";
 
 import type { Post } from "../types/post";
+import type { UserReactionState } from "@/features/reactions/types/reaction";
 
 interface PostCardProps {
   post: Post;
+  currentReaction?: UserReactionState;
   onDelete?: (post: Post) => void;
   isDeleting?: boolean;
 }
 
 export function PostCard({
   post,
+  currentReaction,
   onDelete,
   isDeleting = false,
 }: PostCardProps) {
@@ -100,7 +107,7 @@ export function PostCard({
                   onError={() => setFailedAvatarSrc(avatarSrc)}
                 />
               ) : (
-                <div className="h-full w-full bg-gradient-to-br from-indigo-600 to-emerald-500 flex items-center justify-center text-white font-bold font-manrope text-xs shadow-inner">
+                <div className="h-full w-full bg-linear-to-br from-indigo-600 to-emerald-500 flex items-center justify-center text-white font-bold font-manrope text-xs shadow-inner">
                   {getInitials(post.authorId.name)}
                 </div>
               )}
@@ -185,6 +192,7 @@ export function PostCard({
               targetType="post"
               targetId={post.id}
               counts={post.reactionCounts}
+              currentReaction={currentReaction}
             />
 
             {/* Comment */}
@@ -193,8 +201,12 @@ export function PostCard({
               title="Comments"
             >
               <FiMessageCircle className="h-3.5 w-3.5 text-sky-500" />
-              <span className="font-bold text-slate-900">{post.commentCount}</span>
-              <span className="hidden sm:inline text-slate-600 font-medium">Comment</span>
+              <span className="font-bold text-slate-900">
+                {post.commentCount}
+              </span>
+              <span className="hidden sm:inline text-slate-600 font-medium">
+                Comment
+              </span>
             </div>
 
             {/* Share */}
@@ -212,12 +224,16 @@ export function PostCard({
               {copied ? (
                 <>
                   <FiCheck className="h-3.5 w-3.5 text-emerald-600" />
-                  <span className="hidden sm:inline font-bold text-emerald-700">Copied!</span>
+                  <span className="hidden sm:inline font-bold text-emerald-700">
+                    Copied!
+                  </span>
                 </>
               ) : (
                 <>
                   <FiShare2 className="h-3.5 w-3.5 text-violet-600 transition-colors group-hover/share:text-violet-700" />
-                  <span className="hidden sm:inline font-medium text-slate-700">Share</span>
+                  <span className="hidden sm:inline font-medium text-slate-700">
+                    Share
+                  </span>
                 </>
               )}
             </button>

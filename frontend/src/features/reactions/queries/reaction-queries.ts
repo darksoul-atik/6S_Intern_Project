@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { getUserReactions } from "@/services/api/reactions";
 
 import type { ReactionTargetType, UserReactionsMap } from "../types/reaction";
+import { getStoredReactions, setStoredReactions } from "../utils/reaction-storage";
 
 /*
 |--------------------------------------------------------------------------
@@ -53,7 +54,7 @@ export function useUserReactions(
     enabled?: boolean;
   },
 ) {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
 
   const normalizedIds = normalizeTargetIds(targetIds);
 
@@ -61,7 +62,9 @@ export function useUserReactions(
     normalizedIds === undefined || normalizedIds.length > 0;
 
   const isEnabled =
-    Boolean(user) && hasUsableTargets && (options?.enabled ?? true);
+    (!isAuthLoading ? Boolean(user) : true) &&
+    hasUsableTargets &&
+    (options?.enabled ?? true);
 
   return useQuery<UserReactionsMap>({
     queryKey: reactionKeys.mine(targetType, normalizedIds),
@@ -72,7 +75,31 @@ export function useUserReactions(
         targetIds: normalizedIds,
       });
 
-      return res.data ?? {};
+      const data = res.data ?? {};
+
+      if (normalizedIds === undefined && typeof window !== "undefined") {
+        setStoredReactions(targetType, data);
+      }
+
+      return data;
+    },
+
+    initialData: () => {
+      if (typeof window !== "undefined") {
+        const stored = getStoredReactions(targetType);
+        if (normalizedIds === undefined) {
+          return stored;
+        }
+
+        const subset: UserReactionsMap = {};
+        for (const id of normalizedIds) {
+          if (stored[id]) {
+            subset[id] = stored[id];
+          }
+        }
+        return Object.keys(subset).length > 0 ? subset : undefined;
+      }
+      return undefined;
     },
 
     enabled: isEnabled,

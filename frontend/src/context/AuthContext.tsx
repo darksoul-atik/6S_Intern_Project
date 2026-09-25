@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentUser, CURRENT_USER_QUERY_KEY } from '@/features/users/queries/user-queries';
 import { useLogoutMutation } from '@/features/auth/mutations/auth-mutations';
+import { clearStoredReactions } from '@/features/reactions/utils/reaction-storage';
 import type { AuthUser } from '@/features/auth/types/auth';
 
 export type UserSession = AuthUser;
@@ -47,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       queryClient.removeQueries({ queryKey: ['auth'] });
       queryClient.clear();
     } finally {
+      clearStoredReactions();
       router.replace('/');
     }
   }, [logoutMutation, queryClient, router]);

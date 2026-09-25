@@ -16,6 +16,7 @@ import { PostCard } from "./post-card";
 import type { Post } from "../types/post";
 import { useInfinitePosts } from "../queries/post-queries";
 import { useSoftDeletePostMutation } from "../mutations/post-mutations";
+import { useUserReactions } from "@/features/reactions/queries/reaction-queries";
 
 const POSTS_PER_PAGE = 10;
 
@@ -81,6 +82,8 @@ export function PostFeed() {
     isFetchNextPageError,
     refetch,
   } = useInfinitePosts(POSTS_PER_PAGE);
+
+  const { data: userPostReactions = {} } = useUserReactions("post");
 
   /*
   |--------------------------------------------------------------------------
@@ -323,6 +326,7 @@ export function PostFeed() {
           <PostCard
             key={post.id}
             post={post}
+            currentReaction={userPostReactions[post.id] ?? null}
             onDelete={handleDeleteRequest}
             isDeleting={
               deleteMutation.isPending && postToDelete?.id === post.id

@@ -13,6 +13,7 @@ import { useDeleteCommentMutation } from "../mutations/comment-mutations";
 import { CommentForm } from "./comment-form";
 import { CommentItem } from "./comment-item";
 import { DeleteCommentModal } from "./delete-comment-modal";
+import { useUserReactions } from "@/features/reactions/queries/reaction-queries";
 
 interface CommentsSectionProps {
   postId: string;
@@ -28,6 +29,8 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
     error,
     refetch,
   } = useComments(postId);
+
+  const { data: userCommentReactions = {} } = useUserReactions("comment");
 
   const deleteMutation = useDeleteCommentMutation();
 
@@ -195,6 +198,7 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
               deletingCommentId={
                 deleteMutation.isPending ? (commentToDelete?.id ?? null) : null
               }
+              userReactions={userCommentReactions}
             />
           ))}
         </div>
