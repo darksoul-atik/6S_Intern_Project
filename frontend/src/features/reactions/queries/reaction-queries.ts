@@ -1,9 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-
 import { useAuth } from "@/context/AuthContext";
-import { getUserReactions } from "@/services/api/reactions";
+import { getReactors, getUserReactions } from "@/services/api/reactions";
 
-import type { ReactionTargetType, UserReactionsMap } from "../types/reaction";
+import type {
+  GetReactorsParams,
+  PaginatedReactorsResult,
+  ReactionTargetType,
+  UserReactionsMap,
+} from "../types/reaction";
 import { getStoredReactions, setStoredReactions } from "../utils/reaction-storage";
 
 /*
@@ -107,3 +111,43 @@ export function useUserReactions(
     staleTime: 60 * 1000,
   });
 }
+
+/*
+|--------------------------------------------------------------------------
+| Reactors List Queries
+|--------------------------------------------------------------------------
+*/
+
+export const reactorKeys = {
+  all: ["reactors"] as const,
+  list: (params: GetReactorsParams) =>
+    [
+      "reactors",
+      params.targetType,
+      params.targetId,
+      params.type ?? "all",
+      params.page ?? 1,
+      params.limit ?? 20,
+    ] as const,
+};
+
+export function useReactors(
+  params: GetReactorsParams,
+  options?: {
+    enabled?: boolean;
+  },
+) {
+  return useQuery<PaginatedReactorsResult>({
+    queryKey: reactorKeys.list(params),
+    queryFn: async () => {
+      const res = await getReactors(params);
+      if (!res.data) {
+        throw new Error(res.message || "Failed to load reactors");
+      }
+      return res.data;
+    },
+    enabled: options?.enabled ?? true,
+    staleTime: 30 * 1000,
+  });
+}
+

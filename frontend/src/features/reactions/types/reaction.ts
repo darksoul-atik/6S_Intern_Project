@@ -29,3 +29,29 @@ export interface GetUserReactionsParams {
 export type UserReactionsMap = Record<string, ReactionType>;
 
 export type UserReactionState = ReactionType | null | undefined;
+
+export interface ReactorItem {
+  userId: string;
+  name: string;
+  headline?: string | null;
+  avatarUrl?: string | null;
+  type: ReactionType;
+  createdAt?: string;
+}
+
+export interface PaginatedReactorsResult {
+  items: ReactorItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface GetReactorsParams {
+  targetType: ReactionTargetType;
+  targetId: string;
+  type?: ReactionType;
+  page?: number;
+  limit?: number;
+}
+

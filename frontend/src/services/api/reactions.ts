@@ -2,7 +2,9 @@ import { apiClient } from "@/lib/axios/client";
 import type { ApiResponse } from "@/types/api";
 
 import type {
+  GetReactorsParams,
   GetUserReactionsParams,
+  PaginatedReactorsResult,
   ToggleReactionPayload,
   ToggleReactionResponse,
   UserReactionsMap,
@@ -49,3 +51,32 @@ export async function getUserReactions({
 
   return res.data;
 }
+
+export async function getReactors(
+  params: GetReactorsParams,
+): Promise<ApiResponse<PaginatedReactorsResult>> {
+  const queryParams: Record<string, string | number> = {
+    targetType: params.targetType,
+    targetId: params.targetId,
+  };
+
+  if (params.type) {
+    queryParams.type = params.type;
+  }
+  if (params.page !== undefined) {
+    queryParams.page = params.page;
+  }
+  if (params.limit !== undefined) {
+    queryParams.limit = params.limit;
+  }
+
+  const res = await apiClient.get<ApiResponse<PaginatedReactorsResult>>(
+    "/reactions",
+    {
+      params: queryParams,
+    },
+  );
+
+  return res.data;
+}
+
