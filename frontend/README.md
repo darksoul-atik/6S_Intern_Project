@@ -88,10 +88,11 @@ frontend/src/
 │   │   ├── schemas/               # comment-schema.ts (Zod)
 │   │   └── types/                 # comment.ts
 │   │
-│   ├── reactions/                 # Optimistic reactions domain (Day 11 & 12)
-│   │   ├── components/            # reaction-buttons.tsx
+│   ├── reactions/                 # Optimistic reactions domain (Day 11 & 12+)
+│   │   ├── components/            # reaction-buttons.tsx, reaction-peek-popover.tsx,
+│   │   │                          # reactors-modal.tsx, post-reactors-summary.tsx
 │   │   ├── mutations/             # reaction-mutations.ts
-│   │   ├── queries/               # reaction-queries.ts
+│   │   ├── queries/               # reaction-queries.ts (useUserReactions, useReactors)
 │   │   └── types/                 # reaction.ts
 │   │
 │   ├── users/                     # Profiles, skills, experiences, portfolios
@@ -196,6 +197,22 @@ frontend/src/
 - **Direct Comment Navigation & Auto-Focus**:
   - In community feed cards, clicking the comment count pill navigates directly to `/posts/${id}?focus=comment#comments`.
   - Automatically scrolls down to the comment form and centers/focuses the `#comment-body` textarea for an immediate "ready to comment" state.
+
+### 6. Post-Day 12 Community Refinements & Reaction Upgrades
+- **Clickable Commenter Profiles**:
+  - Clicking any commenter or replier's name or avatar navigates directly to their public profile view at `/developers/[id]`.
+  - Applied consistently across post author cards, comments, and replies.
+- **Flattened Same-Depth Replies with Structured @Mention**:
+  - Replying to an existing reply flattens into a sibling under the root comment, eliminating deep staircase nesting.
+  - Automatically prefixes a structured, purple `@Username` mention link that directs to the target developer's profile.
+- **Hover Peek Popover (`ReactionPeekPopover`)**:
+  - Hovering over reaction count badges displays a lightweight, floating frosted-glass preview of the top reactors with mini-avatars and names.
+  - Scales gracefully to 100+ reactions (e.g. *"...and 97 others"*), keeping the inline comment row completely clutter-free.
+- **Reactors List Modal (`ReactorsModal`)**:
+  - Clicking any reaction count or summary text opens a paginated modal with `All`, `Likes`, and `Dislikes` tabs, avatar previews, headlines, and profile links.
+- **Post Reactor Summary (`PostReactorsSummary`)**:
+  - Renders a clean social proof line (*"Alex Chen, Sarah Connor and 2 others reacted to this post"*) featuring a friendly reaction icon (`FiSmile`) resting directly above the action divider.
+  - Optimistically updates at 0ms latency when reactions are toggled without requiring page reload.
 
 ---
 

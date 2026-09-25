@@ -121,6 +121,17 @@
 - **Direct Comment Navigation with Auto-Focus**: Converted feed comment count pills into interactive links directing to `/posts/${id}?focus=comment#comments`, with automatic smooth scroll and autofocus into `#comment-body` ("ready to comment situation").
 - **High-Contrast Selection Contrast**: Resolved white-on-white text selection on input fields by applying high-contrast selection colors (`selection:bg-indigo-500 selection:text-white`).
 
+### Post-Day 12: Community Refinements, Reactions Transparency & Interactive Peek Popovers
+- **Hover Peek Popover & Scalable Reactions UX**:
+  - Prompted the design of a modern, uncluttered UI pattern for displaying reaction details on comments, replies, and posts that scales seamlessly to 100+ reactions.
+  - Guided the creation of `ReactionPeekPopover` using `framer-motion` for smooth enter/exit animations, debounced hover detection (200ms enter, 180ms leave buffer), and a direct `"View all {total} →"` link to the paginated modal.
+- **Clickable Commenter Profiles**:
+  - Directed wrapping commenter avatars and display names in `/developers/[id]` profile links across post headers, root comments, and nested replies, while maintaining event isolation (`stopPropagation`) to prevent accidental card navigation or form toggles.
+- **Flattened Same-Depth Replies with Structured Mentions**:
+  - Prompted backend schema enhancement to capture `mentionedUserId` and flatten replies under root comments (`parentCommentId = rootId`), preventing narrow staircase nesting on mobile screens while preserving conversational direction via purple `@Username` links.
+- **Optimistic Social Proof Reaction Summary**:
+  - Directed the implementation of `PostReactorsSummary` with optimistic updates, cache invalidation (`reactorKeys.all`), and replacing generic like icons with the welcoming `FiSmile` icon resting directly above the action divider.
+
 ---
 
 ## What I Reviewed or Rejected
@@ -209,6 +220,13 @@
 - **Rejected Uncontrolled Spam Clicking**: Audited fast-clicking behavior and rejected allowing unrestricted click events that would spam the backend or trigger duplicate counter increments. Enforced `inFlightRef` locks inside `ReactionButtons`.
 - **Rejected Cluttered Inline Edit/Delete Buttons**: Rejected displaying raw, competing buttons side-by-side on cards and headers. Consolidated post, comment, and reply options into a clean, modern three-dot (`FiMoreVertical`) dropdown menu on the top-right position.
 - **Rejected Unfocused Navigation to Comments**: Rejected having feed comment pills just land on `/posts/[id]` without guidance. Mandated directing directly to `/posts/[id]?focus=comment#comments` with smooth scroll and automatic textarea focus.
+
+### Post-Day 12 Community Refinements
+- **Rejected Unbounded Inline Avatar Clusters for Comments**: Explicitly rejected rendering full rows of reactor avatars inline inside comment cards. When a comment receives 50 or 100+ likes, inline avatars push comment text off-screen and ruin mobile layouts. Enforced the "Hover Peek Popover (Top 3) + Click to Open Modal" design pattern.
+- **Rejected Deep Staircase Reply Nesting**: Rejected allowing replies to replies to indent further and further to the right. Enforced flattening all replies under the parent root comment at depth 1 with structured `@Username` mentions.
+- **Rejected Hardcoded Plain Text Mentions**: Rejected using unstyled or unlinked `@name` plain strings in comment bodies. Modeled `mentionedUserId` as a first-class relation populated on the backend and rendered as an interactive, clickable profile pill on the frontend.
+- **Rejected Zero-Delay Instant Popover Triggers**: Rejected firing hover popovers instantaneously on mouseover, which causes visual noise and accidental popups when users merely scroll or sweep their cursor across the screen. Enforced a 200ms debounce delay and 180ms dismissal buffer.
+- **Rejected Repetitive Thumb Icons on Social Proof Summary**: Replaced repetitive thumbs-up icon with a friendly `FiSmile` icon and moved the reactor line directly above the post action divider.
 
 ---
 
@@ -380,6 +398,20 @@
   - Frontend ESLint (`npm run lint`): 0 errors.
   - Next.js Turbopack production build (`npm run build`): All 20 routes generated with 0 errors.
   - Backend Vitest test suite (`npm run test`): 18 test files passed (18), 137 tests passed (137), 100% green.
+
+### Post-Day 12 Community Refinements
+- **`Cannot read properties of undefined (reading 'name')` in `PostReactorsSummary`**:
+  - Diagnosed a runtime crash where `total >= 1` evaluated to true based on optimistic counts, but `items` array was empty or sparse before the background query returned.
+  - Fixed by defensively guarding `items?.[0]?.name` and `items?.[1]?.name` independently of `total`, with safe fallback rendering.
+- **Hover Popover Flicker & Edge Misalignment**:
+  - Resolved popover jitter when mousing from the reaction count badge to the popover card by implementing shared hover state with a 180ms leave timeout and relative anchor containment (`relative inline-flex`).
+- **Mention Parsing & Reply Input Autofill**:
+  - Addressed an issue where replying to an existing reply would double up mention tags (`@name @name`) or leave reply authors confused about whom they were addressing.
+  - Hardened reply initiation to derive the target author cleanly, strip redundant leading mentions, and link the structured `mentionedUserId`.
+- **Vitest Test Suite Expansion (137 to 142 Passing Tests)**:
+  - Added unit test coverage for `GET /reactions` endpoint, reactor pagination, and reply flattening with mention population in `reactions.service.spec.ts` and `comments.service.spec.ts`.
+  - All 18 test files and 142 tests passing (100% green).
+
 
 
 

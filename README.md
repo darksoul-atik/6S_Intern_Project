@@ -25,13 +25,14 @@ DevPulse is a high-performance, engineering-first developer community platform e
 | **Day 7** | **Posts API with Ownership & Pagination** | Post schema, authorId, CRUD endpoints, pagination metadata, author sanitization, query indexing, soft-delete lifecycle (5-day restore, permanent delete), automated hourly cron purge. | ✅ **Completed** |
 | **Day 8** | **Feed & Reusable Post Interface** | `PostCard`, feed components, `useInfiniteQuery`, Intersection Observer infinite scroll, query cache invalidation. | ✅ **Completed** |
 
-### Phase 3: Comments, Reactions, and Reliable UI (Days 9–12)
+### Phase 3: Comments, Reactions, and Reliable UI (Days 9–12+)
 | Day | Milestone | Focus Areas | Status |
 |:---:|---|---|:---:|
 | **Day 9** | **Threaded Comments API & Data Integrity** | Self-referencing Mongoose `Comment` schema (`postId`, `authorId`, `parentCommentId`), compound indexes, single-query tree hierarchy assembly, cross-post boundary check, max depth 1 enforcement, thread cascade deletion, atomic post & user counter `$inc` synchronization. | ✅ **Completed** |
 | **Day 10** | **Threaded Comments Interface** | Recursive comment hierarchy (`CommentItem`), inline reply forms with keyboard focus management, TanStack Query cache invalidation, accessible delete confirmation dialog with cascade warning, mobile-responsive layout. | ✅ **Completed** |
 | **Day 11** | **Reaction Engine & Data Integrity** | Toggle behavior for like/dislike, compound unique indexes, concurrency-safe atomic counters. | ✅ **Completed** |
 | **Day 12** | **Optimistic Reaction Interface** | Instant UI feedback, safe rollbacks, rapid-click throttling, cache reconciliation. | ✅ **Completed** |
+| **Refinements** | **Community Transparency & Reactions Peek** | Hover peek popovers with smooth enter/leave delays scaling to 100+ reactions, paginated reactors modal (`GET /reactions`), clickable commenter profiles (`/developers/[id]`), flattened same-depth replies with structured `@Mention`, optimistic social proof reactor summary (`PostReactorsSummary`). | ✅ **Completed** |
 
 ### Phase 4: Discovery, Quality, and Applied Features (Days 13–16)
 | Day | Focus Areas | Status |
@@ -767,7 +768,57 @@ Executed inside `ReactionsService.toggleReaction`:
 
 ---
 
-## 🔄 End-to-End System Working Flow (As of Day 12)
+## 🌟 Post-Day 12 — Community Refinements: Reactions Transparency, Hover Peek Popovers, Flattened Replies & Profile Navigation
+
+### 1. Hover Peek Popover & Scalable Reactions Transparency (`ReactionPeekPopover`)
+- **Hover-to-Peek Interaction**:
+  - Hovering over any reaction count button (Likes or Dislikes on posts, comments, or replies) triggers a debounced floating frosted-glass preview (`reaction-peek-popover.tsx`) powered by `framer-motion`.
+  - Configured with a 200ms enter delay and 180ms leave buffer to prevent annoying flicker when mousing between elements.
+  - Queries `GET /reactions` with `limit: 3`, keeping overhead minimal and responses near-instantaneous.
+- **Graceful Scaling to 100+ Reactions**:
+  - Displays top 1–3 reactor mini-avatars and full names cleanly stacked.
+  - For high reaction counts (e.g. 50, 100, 1,000+), renders a sleek `+{count} others` pill and a highlighted `"View all {total} →"` call to action.
+  - Prevents comment and post action rows from stretching, wrapping, or overflowing narrow mobile screens.
+- **Seamless Modal Transition**:
+  - Clicking `"View all {count} →"` directly opens the full `ReactorsModal`.
+
+### 2. Paginated Reactors Modal (`ReactorsModal`)
+- **Full Transparency Dialog**:
+  - Clicking any reaction count button, summary text, or peek popover footer opens a full-screen, accessible modal dialog (`reactors-modal.tsx`).
+  - Rendered via React Portals directly into `document.body` with smooth backdrop blur (`backdrop-blur-md bg-black/40`).
+- **Granular Reaction Filter Tabs**:
+  - Interactive tabs for **All**, **Likes** (👍), and **Dislikes** (👎) showing live per-tab counts.
+- **Infinite/Paged Data Streaming**:
+  - Powered by `useReactors` query hook hitting `GET /reactions?targetType=...&targetId=...&type=...&page=...&limit=20`.
+  - Displays developer avatars with initials fallback, full name, headline/bio preview, and an external profile link button.
+  - Supports smooth "Load more" pagination for posts or comments with high community engagement (100+ reactions).
+
+### 3. Clickable Commenter & Author Profiles
+- **Ubiquitous Peer Discovery**:
+  - Commenter and replier avatars and display names in `comment-item.tsx` are now wrapped in Next.js `<Link href={`/developers/${comment.author.id}`}>`.
+  - Preserves event propagation isolation (`stopPropagation` on nested controls) to ensure clicking profile links doesn't trigger unexpected form toggles or card selections.
+  - Provides effortless peer discovery across posts, comments, and replies without disruptive navigation hurdles.
+
+### 4. Flattened Same-Depth Replies with Structured `@Mention`
+- **Elimination of Deep Staircase Nesting**:
+  - Replying to an existing reply flattens under the root comment (`parentCommentId = rootId`) rather than indenting infinitely, preventing narrow column squeeze on mobile devices.
+- **Structured Interactive Mentions**:
+  - Backend derives `mentionedUserId` from the target reply author and populates safe author fields (`name`, `avatarUrl`, `headline`).
+  - Frontend renders a distinct purple `@Username` badge linking directly to the recipient's developer profile (`/developers/[id]`), providing clear conversational context in busy threads.
+
+### 5. Optimistic Social Proof Reaction Summary (`PostReactorsSummary`)
+- **Real-Time Community Social Proof**:
+  - Renders a clean social proof line (e.g., *"Alex Chen, Sarah Connor and 2 others reacted to this post"*) resting directly above the action divider.
+  - Featuring a friendly, welcoming reaction icon (`FiSmile`) rather than a repetitive thumb icon.
+- **Optimistic 0ms Synchronization**:
+  - Toggling like or dislike instantaneously updates the social proof line without waiting for server response or requiring a manual page refresh.
+  - Handled by invalidating `reactorKeys.all` inside `useToggleReactionMutation` so reactor queries refetch immediately after cache snapshot reconciliation.
+- **Defensive Rendering**:
+  - Implements defensive item guards (`items?.[0]`, `items?.[1]`) preventing `Cannot read properties of undefined` runtime crashes when query results update asynchronously.
+
+---
+
+## 🔄 End-to-End System Working Flow (As of Day 12+)
 
 The complete end-to-end integration across frontend, Next.js BFF, NestJS core, and MongoDB comprises six interconnected operational flows:
 
@@ -1138,5 +1189,31 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
    - On `/posts` feed, click the comment count pill on any post card.
    - Browser navigates directly to `/posts/[id]?focus=comment#comments`.
    - Page smoothly scrolls down to the comment box and automatically focuses the `#comment-body` textarea with active cursor, ready for immediate typing.
+
+### 9. Post-Day 12 Community Refinements & Reactions Transparency Verification Flow
+1. **Hover Peek Popover Interaction**:
+   - Hover over the Like or Dislike reaction button on any post, comment, or nested reply.
+   - After a 200ms debounce, observe the floating frosted glass popover displaying the top 1–3 reactors with mini-avatars and full names.
+   - Move the cursor away; verify the popover dismisses cleanly after a 180ms buffer without flickering.
+2. **High-Volume Reaction Scaling (100+ Reactions UX)**:
+   - For items with high engagement (e.g., 100+ likes), verify the popover shows the top 3 reactors followed by a `+{count} others` pill and a highlighted `"View all {total} →"` link.
+   - Verify comment cards and action rows maintain strict pixel boundaries with zero overflow or wrapping.
+3. **Click-to-Open Reactors Modal (`ReactorsModal`)**:
+   - Click any reaction count button or click `"View all {count} →"` inside the peek popover.
+   - Verify the full-screen accessible modal dialog opens over a frosted backdrop (`backdrop-blur-md`).
+   - Switch between **All**, **Likes**, and **Dislikes** tabs to filter reactors with live counts.
+   - Click outside or press `Escape` to close the modal.
+4. **Clickable Commenter Profiles (`/developers/[id]`)**:
+   - Click on any commenter's avatar or display name in the comments or replies section.
+   - Verify seamless client navigation to `/developers/[id]` displaying their full public profile, skills, and work history.
+5. **Flattened Same-Depth Replies & Structured `@Mention`**:
+   - Click **"Reply"** on an existing nested reply.
+   - Observe the reply input opening with `@Username` pre-filled.
+   - Submit the reply: verify it appears at depth 1 under the root comment (no infinite staircase indentation).
+   - Verify the recipient's name is rendered as an interactive purple `@Username` link directing to their developer profile.
+6. **Optimistic Post Reactor Social Proof Line (`PostReactorsSummary`)**:
+   - Observe the social proof summary line positioned directly above the post action divider with the welcoming `FiSmile` icon.
+   - Click Like or Dislike: verify the reactor text (e.g. *"You and 2 others reacted to this post"*) updates optimistically in 0ms without requiring a page reload.
+
 
 

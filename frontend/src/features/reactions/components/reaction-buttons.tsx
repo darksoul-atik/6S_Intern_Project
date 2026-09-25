@@ -22,6 +22,7 @@ import type {
   UserReactionState,
 } from "../types/reaction";
 import { ReactorsModal } from "./reactors-modal";
+import { ReactionPeekPopover } from "./reaction-peek-popover";
 
 interface ReactionButtonsProps {
   targetType: ReactionTargetType;
@@ -77,6 +78,34 @@ export function ReactionButtons({
   const [currentCounts, setCurrentCounts] = useState<ReactionCounts>(counts);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<ReactionType | "all">("all");
+  const [hoveredType, setHoveredType] = useState<ReactionType | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleHoverEnter = (type: ReactionType) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredType(type);
+    }, 200);
+  };
+
+  const handleHoverLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredType(null);
+    }, 180);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Synchronous refs to prevent ANY stale closure on rapid clicking
   const currentReactionRef = useRef<UserReactionState>(currentReaction);
@@ -276,115 +305,161 @@ export function ReactionButtons({
           isSm ? "gap-1" : "gap-1.5"
         } ${className}`}
       >
-        <button
-          type="button"
-          onClick={(event) => handleReactionClick(event, "like")}
-          disabled={isAuthLoading}
-          aria-label={isLikeActive ? "Remove like" : "Like"}
-          aria-pressed={isLikeActive}
-          title={getButtonTitle("like", isLikeActive)}
-          className={`group/like ${buttonBaseClass} ${
-            isLikeActive ? likeActiveClass : likeInactiveClass
-          }`}
+        <div
+          className="relative inline-flex"
+          onMouseEnter={() => handleHoverEnter("like")}
+          onMouseLeave={handleHoverLeave}
         >
-          <FiThumbsUp
-            className={`h-3.5 w-3.5 transition-colors ${
-              isLikeActive
-                ? "text-indigo-600 fill-indigo-600/30"
-                : "text-indigo-600 group-hover/like:scale-110 transition-transform"
+          <button
+            type="button"
+            onClick={(event) => handleReactionClick(event, "like")}
+            disabled={isAuthLoading}
+            aria-label={isLikeActive ? "Remove like" : "Like"}
+            aria-pressed={isLikeActive}
+            title={getButtonTitle("like", isLikeActive)}
+            className={`group/like ${buttonBaseClass} ${
+              isLikeActive ? likeActiveClass : likeInactiveClass
             }`}
-          />
+          >
+            <FiThumbsUp
+              className={`h-3.5 w-3.5 transition-colors ${
+                isLikeActive
+                  ? "text-indigo-600 fill-indigo-600/30"
+                  : "text-indigo-600 group-hover/like:scale-110 transition-transform"
+              }`}
+            />
 
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                setModalType("like");
+                setIsModalOpen(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setModalType("like");
+                  setIsModalOpen(true);
+                }
+              }}
+              title="View who liked"
+              aria-label={`View ${currentCounts.like} users who liked`}
+              className={`font-bold tabular-nums cursor-pointer rounded px-0.5 transition hover:underline hover:scale-110 active:scale-95 ${
+                isLikeActive ? "text-indigo-900" : "text-slate-900 hover:text-indigo-600"
+              }`}
+            >
+              {currentCounts.like}
+            </span>
+
+            {shouldShowLabels && (
+              <span
+                className={`hidden sm:inline font-medium ${
+                  isLikeActive ? "text-indigo-700" : "text-slate-600"
+                }`}
+              >
+                Likes
+              </span>
+            )}
+          </button>
+
+          <ReactionPeekPopover
+            targetType={targetType}
+            targetId={targetId}
+            type="like"
+            count={currentCounts.like}
+            isOpen={hoveredType === "like"}
+            onOpenModal={() => {
               setModalType("like");
               setIsModalOpen(true);
             }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.stopPropagation();
-                e.preventDefault();
-                setModalType("like");
-                setIsModalOpen(true);
-              }
+            onMouseEnter={() => {
+              if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+              setHoveredType("like");
             }}
-            title="View who liked"
-            aria-label={`View ${currentCounts.like} users who liked`}
-            className={`font-bold tabular-nums cursor-pointer rounded px-0.5 transition hover:underline hover:scale-110 active:scale-95 ${
-              isLikeActive ? "text-indigo-900" : "text-slate-900 hover:text-indigo-600"
+            onMouseLeave={handleHoverLeave}
+          />
+        </div>
+
+        <div
+          className="relative inline-flex"
+          onMouseEnter={() => handleHoverEnter("dislike")}
+          onMouseLeave={handleHoverLeave}
+        >
+          <button
+            type="button"
+            onClick={(event) => handleReactionClick(event, "dislike")}
+            disabled={isAuthLoading}
+            aria-label={isDislikeActive ? "Remove dislike" : "Dislike"}
+            aria-pressed={isDislikeActive}
+            title={getButtonTitle("dislike", isDislikeActive)}
+            className={`group/dislike ${buttonBaseClass} ${
+              isDislikeActive ? dislikeActiveClass : dislikeInactiveClass
             }`}
           >
-            {currentCounts.like}
-          </span>
+            <FiThumbsDown
+              className={`h-3.5 w-3.5 transition-colors ${
+                isDislikeActive
+                  ? "text-rose-600 fill-rose-600/30"
+                  : "text-rose-500 group-hover/dislike:scale-110 transition-transform"
+              }`}
+            />
 
-          {shouldShowLabels && (
             <span
-              className={`hidden sm:inline font-medium ${
-                isLikeActive ? "text-indigo-700" : "text-slate-600"
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                setModalType("dislike");
+                setIsModalOpen(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setModalType("dislike");
+                  setIsModalOpen(true);
+                }
+              }}
+              title="View who disliked"
+              aria-label={`View ${currentCounts.dislike} users who disliked`}
+              className={`font-bold tabular-nums cursor-pointer rounded px-0.5 transition hover:underline hover:scale-110 active:scale-95 ${
+                isDislikeActive ? "text-rose-900" : "text-slate-900 hover:text-rose-600"
               }`}
             >
-              Likes
+              {currentCounts.dislike}
             </span>
-          )}
-        </button>
 
-        <button
-          type="button"
-          onClick={(event) => handleReactionClick(event, "dislike")}
-          disabled={isAuthLoading}
-          aria-label={isDislikeActive ? "Remove dislike" : "Dislike"}
-          aria-pressed={isDislikeActive}
-          title={getButtonTitle("dislike", isDislikeActive)}
-          className={`group/dislike ${buttonBaseClass} ${
-            isDislikeActive ? dislikeActiveClass : dislikeInactiveClass
-          }`}
-        >
-          <FiThumbsDown
-            className={`h-3.5 w-3.5 transition-colors ${
-              isDislikeActive
-                ? "text-rose-600 fill-rose-600/30"
-                : "text-rose-500 group-hover/dislike:scale-110 transition-transform"
-            }`}
-          />
+            {shouldShowLabels && (
+              <span
+                className={`hidden sm:inline font-medium ${
+                  isDislikeActive ? "text-rose-700" : "text-slate-600"
+                }`}
+              >
+                Dislikes
+              </span>
+            )}
+          </button>
 
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
+          <ReactionPeekPopover
+            targetType={targetType}
+            targetId={targetId}
+            type="dislike"
+            count={currentCounts.dislike}
+            isOpen={hoveredType === "dislike"}
+            onOpenModal={() => {
               setModalType("dislike");
               setIsModalOpen(true);
             }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.stopPropagation();
-                e.preventDefault();
-                setModalType("dislike");
-                setIsModalOpen(true);
-              }
+            onMouseEnter={() => {
+              if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+              setHoveredType("dislike");
             }}
-            title="View who disliked"
-            aria-label={`View ${currentCounts.dislike} users who disliked`}
-            className={`font-bold tabular-nums cursor-pointer rounded px-0.5 transition hover:underline hover:scale-110 active:scale-95 ${
-              isDislikeActive ? "text-rose-900" : "text-slate-900 hover:text-rose-600"
-            }`}
-          >
-            {currentCounts.dislike}
-          </span>
-
-          {shouldShowLabels && (
-            <span
-              className={`hidden sm:inline font-medium ${
-                isDislikeActive ? "text-rose-700" : "text-slate-600"
-              }`}
-            >
-              Dislikes
-            </span>
-          )}
-        </button>
+            onMouseLeave={handleHoverLeave}
+          />
+        </div>
       </div>
 
       <ReactorsModal

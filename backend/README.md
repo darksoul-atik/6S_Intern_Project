@@ -119,8 +119,12 @@ Interactive OpenAPI Swagger documentation is available at:
   - **Switch reaction**: If the opposite reaction is clicked (e.g. like -> dislike), updates the reaction document and atomically applies `{ [oldReaction]: -1, [newReaction]: +1 }`.
   - **Concurrency Safety**: Enforced via MongoDB compound unique index `{ userId: 1, targetType: 1, targetId: 1 }` preventing race condition duplicates and atomic `$inc` operators preventing counter drift.
 - **`GET /reactions/mine`**: Authenticated endpoint retrieving current user reactions mapped by target ID, with optional `targetType` filter (`post` or `comment`) and comma-separated `targetIds` filter.
+- **`GET /reactions`**: Public paginated endpoint retrieving the list of users who reacted to a post or comment (`targetType`, `targetId`, optional `type` filter: `like` or `dislike`, `page`, `limit`). Populates reactor profiles (`name`, `headline`, `avatarUrl`) and returns pagination metadata (`total`, `page`, `limit`, `totalPages`).
 
 ---
+
+### 6. Comments Hierarchy & Flattened Replies
+- **`POST /posts/:postId/comments/:commentId/replies`**: Replying to a top-level comment stores a reply linked to that comment. Replying to an existing reply flattens into a sibling under the same root comment (`parentCommentId = rootId`) with `mentionedUserId` pointing to the author being addressed, maintaining a clean 2-level hierarchy.
 
 ## 🔄 Working Flow as of Day 12
 
@@ -243,7 +247,7 @@ Interactive OpenAPI Swagger documentation is available at:
 DevPulse backend maintains a 100% pass rate across unit, integration, and guard test suites powered by **Vitest**:
 
 ```bash
-# Run all 18 test suites (137 tests)
+# Run all 18 test suites (142 tests)
 npx vitest run
 
 # Run with watch mode
@@ -254,9 +258,9 @@ npx vitest run --coverage
 ```
 
 ### Test Coverage Highlights:
-- **`reactions.service.spec.ts` (18 tests)**: Toggle creation, toggle off, switch between like/dislike, post/comment target validation, soft-deleted post rejection, user reaction queries.
+- **`reactions.service.spec.ts` (22 tests)**: Toggle creation, toggle off, switch between like/dislike, post/comment target validation, soft-deleted post rejection, user reaction queries, paginated reactor listings.
 - **`reactions.concurrency.spec.ts` (4 tests)**: Concurrent toggle stress tests, duplicate race condition mitigation, and counter synchronization under parallel load.
-- **`comments.service.spec.ts`**: Top-level creation, reply creation with cross-post & depth validation, single query tree construction, reply/thread cascade deletion, counter integrity.
+- **`comments.service.spec.ts` (20 tests)**: Top-level creation, reply creation with root-flattening & mentioned user derivation, tree construction with normalized mentions, reply/thread cascade deletion, counter integrity.
 - **`comment-owner-or-admin.guard.spec.ts`**: Authentication requirements, author ownership verification, and admin override.
 - **`auth.service.spec.ts`**: Registration, password hashing, JWT issuance, deleted user login rejection.
 - **`posts.service.spec.ts`**: Post CRUD, author derivation, soft-delete, 5-day restore expiration, permanent purge.
