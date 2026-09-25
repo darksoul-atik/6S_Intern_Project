@@ -21,4 +21,11 @@ export interface ToggleReactionResponse {
   reactionCounts: ReactionCounts;
 }
 
+export interface GetUserReactionsParams {
+  targetType: ReactionTargetType;
+  targetIds?: string[];
+}
+
 export type UserReactionsMap = Record<string, ReactionType>;
+
+export type UserReactionState = ReactionType | null | undefined;

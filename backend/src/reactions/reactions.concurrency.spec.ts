@@ -99,7 +99,7 @@ describe('ReactionsService concurrency', () => {
 
   /*
   |--------------------------------------------------------------------------
-  | Helper
+  | Helpers
   |--------------------------------------------------------------------------
   */
 
@@ -109,6 +109,22 @@ describe('ReactionsService concurrency', () => {
       title: 'Concurrency test post',
       body: 'Testing reaction concurrency.',
     });
+  }
+
+  async function createComment() {
+    const post = await createPost();
+
+    const comment = await commentModel.create({
+      postId: post._id,
+      authorId: new Types.ObjectId(),
+      parentCommentId: null,
+      body: 'Concurrency test comment',
+    });
+
+    return {
+      post,
+      comment,
+    };
   }
 
   /*
@@ -158,7 +174,7 @@ describe('ReactionsService concurrency', () => {
 
   /*
   |--------------------------------------------------------------------------
-  | Same Concurrent Toggle
+  | Same Concurrent Toggle - Post
   |--------------------------------------------------------------------------
   */
 
@@ -206,11 +222,18 @@ describe('ReactionsService concurrency', () => {
       like: 0,
       dislike: 0,
     });
+
+    /*
+     * Counters must never become negative.
+     */
+    expect(updatedPost?.reactionCounts.like).toBeGreaterThanOrEqual(0);
+
+    expect(updatedPost?.reactionCounts.dislike).toBeGreaterThanOrEqual(0);
   }, 30_000);
 
   /*
   |--------------------------------------------------------------------------
-  | Conflicting Concurrent Toggle
+  | Conflicting Concurrent Toggle - Post
   |--------------------------------------------------------------------------
   */
 
@@ -285,5 +308,64 @@ describe('ReactionsService concurrency', () => {
     expect(updatedPost?.reactionCounts.like).toBeGreaterThanOrEqual(0);
 
     expect(updatedPost?.reactionCounts.dislike).toBeGreaterThanOrEqual(0);
+  }, 30_000);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Same Concurrent Toggle - Comment
+  |--------------------------------------------------------------------------
+  */
+
+  it('should keep comment reactions and counters consistent during concurrent toggles', async () => {
+    const { comment } = await createComment();
+
+    const dto = {
+      targetType: 'comment' as const,
+      targetId: comment._id.toString(),
+      type: 'like' as const,
+    };
+
+    /*
+     * Two identical likes at the same time.
+     *
+     * Logically:
+     *
+     * none → like → none
+     */
+    const results = await Promise.allSettled([
+      service.toggleReaction(userId.toString(), dto),
+      service.toggleReaction(userId.toString(), dto),
+    ]);
+
+    expect(results.every((result) => result.status === 'fulfilled')).toBe(true);
+
+    const reactions = await reactionModel
+      .find({
+        userId,
+        targetType: 'comment',
+        targetId: comment._id,
+      })
+      .lean();
+
+    const updatedComment = await commentModel.findById(comment._id).lean();
+
+    /*
+     * Two identical toggles cancel each other.
+     */
+    expect(reactions).toHaveLength(0);
+
+    expect(updatedComment).not.toBeNull();
+
+    expect(updatedComment?.reactionCounts).toEqual({
+      like: 0,
+      dislike: 0,
+    });
+
+    /*
+     * Counters must never become negative.
+     */
+    expect(updatedComment?.reactionCounts.like).toBeGreaterThanOrEqual(0);
+
+    expect(updatedComment?.reactionCounts.dislike).toBeGreaterThanOrEqual(0);
   }, 30_000);
 });

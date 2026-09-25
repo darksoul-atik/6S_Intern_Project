@@ -730,27 +730,122 @@ describe('ReactionsService', () => {
   });
 
   describe('getUserReactions', () => {
-    it('should return a map of targetId to reaction type for the user', async () => {
+    it('should return a map of targetId to reaction type for requested posts', async () => {
       const targetId1 = new Types.ObjectId();
       const targetId2 = new Types.ObjectId();
 
       mockReactionModel.find.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         exec: vi.fn().mockResolvedValue([
-          { targetId: targetId1, type: 'like' },
-          { targetId: targetId2, type: 'dislike' },
+          {
+            targetId: targetId1,
+            type: 'like',
+          },
+          {
+            targetId: targetId2,
+            type: 'dislike',
+          },
         ]),
       });
 
-      const result = await service.getUserReactions(userId, [
-        targetId1.toString(),
-        targetId2.toString(),
-      ]);
+      const result = await service.getUserReactions(
+        userId,
+        [targetId1.toString(), targetId2.toString()],
+        'post',
+      );
 
       expect(result).toEqual({
         [targetId1.toString()]: 'like',
         [targetId2.toString()]: 'dislike',
       });
+
+      const filter = mockReactionModel.find.mock.calls[0][0];
+
+      expect(filter.targetType).toBe('post');
+
+      expect(
+        filter.targetId.$in.map((id: Types.ObjectId) => id.toString()),
+      ).toEqual([targetId1.toString(), targetId2.toString()]);
+    });
+
+    it('should return an empty object when all supplied target IDs are invalid', async () => {
+      const result = await service.getUserReactions(
+        userId,
+        ['invalid-id', 'also-invalid'],
+        'post',
+      );
+
+      expect(result).toEqual({});
+
+      /*
+       * Critical:
+       * it must NOT accidentally query all reactions.
+       */
+      expect(mockReactionModel.find).not.toHaveBeenCalled();
+    });
+
+    it('should trim IDs, remove duplicates, and ignore invalid IDs', async () => {
+      const targetId = new Types.ObjectId();
+
+      mockReactionModel.find.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        exec: vi.fn().mockResolvedValue([
+          {
+            targetId,
+            type: 'like',
+          },
+        ]),
+      });
+
+      const result = await service.getUserReactions(
+        userId,
+        [`  ${targetId.toString()}  `, targetId.toString(), 'invalid-id'],
+        'post',
+      );
+
+      expect(result).toEqual({
+        [targetId.toString()]: 'like',
+      });
+
+      const filter = mockReactionModel.find.mock.calls[0][0];
+
+      expect(filter.targetId.$in).toHaveLength(1);
+
+      expect(filter.targetId.$in[0].toString()).toBe(targetId.toString());
+    });
+
+    it('should keep comment reactions separate from post reactions', async () => {
+      const targetId = new Types.ObjectId();
+
+      mockReactionModel.find.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        exec: vi.fn().mockResolvedValue([
+          {
+            targetId,
+            type: 'dislike',
+          },
+        ]),
+      });
+
+      await service.getUserReactions(userId, [targetId.toString()], 'comment');
+
+      const filter = mockReactionModel.find.mock.calls[0][0];
+
+      expect(filter.targetType).toBe('comment');
+    });
+
+    it('should allow fetching all user reactions when no targetIds are supplied', async () => {
+      mockReactionModel.find.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        exec: vi.fn().mockResolvedValue([]),
+      });
+
+      await service.getUserReactions(userId, undefined, 'post');
+
+      const filter = mockReactionModel.find.mock.calls[0][0];
+
+      expect(filter.targetType).toBe('post');
+      expect(filter.targetId).toBeUndefined();
     });
   });
 });

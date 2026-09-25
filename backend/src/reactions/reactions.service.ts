@@ -541,23 +541,29 @@ export class ReactionsService {
       userId: new Types.ObjectId(userId),
     };
 
-    // Keep post and comment reaction lookups separate.
     if (targetType) {
       filter.targetType = targetType;
     }
 
-    // If targetIds was supplied, the query must stay scoped.
     if (targetIds !== undefined) {
-      const validObjectIds = targetIds
-        .filter((id) => Types.ObjectId.isValid(id))
-        .map((id) => new Types.ObjectId(id));
+      // Trim whitespace, remove invalid IDs, and remove duplicates.
+      const validIdStrings = [
+        ...new Set(
+          targetIds
+            .map((id) => id.trim())
+            .filter((id) => Types.ObjectId.isValid(id))
+            .map((id) => new Types.ObjectId(id).toHexString()),
+        ),
+      ];
 
-      if (validObjectIds.length === 0) {
+      // A supplied but unusable ID list must never become
+      // an unrestricted "return everything" query.
+      if (validIdStrings.length === 0) {
         return {};
       }
 
       filter.targetId = {
-        $in: validObjectIds,
+        $in: validIdStrings.map((id) => new Types.ObjectId(id)),
       };
     }
 
