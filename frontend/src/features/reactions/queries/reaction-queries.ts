@@ -2,7 +2,22 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/context/AuthContext";
 import { getUserReactions } from "@/services/api/reactions";
-import type { UserReactionsMap } from "../types/reaction";
+
+import type { ReactionTargetType, UserReactionsMap } from "../types/reaction";
+
+/*
+|--------------------------------------------------------------------------
+| Helpers
+|--------------------------------------------------------------------------
+*/
+
+function normalizeTargetIds(targetIds?: string[]) {
+  if (targetIds === undefined) {
+    return undefined;
+  }
+
+  return [...new Set(targetIds.map((id) => id.trim()).filter(Boolean))].sort();
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -13,12 +28,16 @@ import type { UserReactionsMap } from "../types/reaction";
 export const reactionKeys = {
   all: ["reactions"] as const,
 
-  mine: (targetIds?: string[]) =>
-    [
+  mine: (targetType: ReactionTargetType, targetIds?: string[]) => {
+    const normalizedIds = normalizeTargetIds(targetIds);
+
+    return [
       ...reactionKeys.all,
       "mine",
-      targetIds ? [...targetIds].sort().join(",") : "all",
-    ] as const,
+      targetType,
+      normalizedIds === undefined ? "all" : normalizedIds.join(","),
+    ] as const;
+  },
 };
 
 /*
@@ -27,17 +46,37 @@ export const reactionKeys = {
 |--------------------------------------------------------------------------
 */
 
-export function useUserReactions(targetIds?: string[], options?: { enabled?: boolean }) {
+export function useUserReactions(
+  targetType: ReactionTargetType,
+  targetIds?: string[],
+  options?: {
+    enabled?: boolean;
+  },
+) {
   const { user } = useAuth();
-  const isEnabled = Boolean(user) && (options?.enabled ?? true);
+
+  const normalizedIds = normalizeTargetIds(targetIds);
+
+  const hasUsableTargets =
+    normalizedIds === undefined || normalizedIds.length > 0;
+
+  const isEnabled =
+    Boolean(user) && hasUsableTargets && (options?.enabled ?? true);
 
   return useQuery<UserReactionsMap>({
-    queryKey: reactionKeys.mine(targetIds),
+    queryKey: reactionKeys.mine(targetType, normalizedIds),
+
     queryFn: async () => {
-      const res = await getUserReactions(targetIds);
+      const res = await getUserReactions({
+        targetType,
+        targetIds: normalizedIds,
+      });
+
       return res.data ?? {};
     },
+
     enabled: isEnabled,
+
     staleTime: 60 * 1000,
   });
 }

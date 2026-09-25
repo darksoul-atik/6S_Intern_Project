@@ -31,7 +31,7 @@ export function ReactionButtons({
   const pathname = usePathname();
   const { user } = useAuth();
 
-  const { data: userReactions = {} } = useUserReactions([targetId]);
+  const { data: userReactions = {} } = useUserReactions(targetType, [targetId]);
   const currentReaction = userReactions[targetId] ?? null;
 
   const toggleMutation = useToggleReactionMutation();

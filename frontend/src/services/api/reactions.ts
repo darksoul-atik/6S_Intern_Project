@@ -1,6 +1,8 @@
 import { apiClient } from "@/lib/axios/client";
 import type { ApiResponse } from "@/types/api";
+
 import type {
+  GetUserReactionsParams,
   ToggleReactionPayload,
   ToggleReactionResponse,
   UserReactionsMap,
@@ -23,13 +25,27 @@ export async function toggleReaction(
   return res.data;
 }
 
-export async function getUserReactions(
-  targetIds?: string[],
-): Promise<ApiResponse<UserReactionsMap>> {
-  const params = targetIds && targetIds.length > 0 ? { targetIds: targetIds.join(",") } : undefined;
-  const res = await apiClient.get<ApiResponse<UserReactionsMap>>("/reactions/mine", {
-    params,
-  });
+export async function getUserReactions({
+  targetType,
+  targetIds,
+}: GetUserReactionsParams): Promise<ApiResponse<UserReactionsMap>> {
+  const params: {
+    targetType: string;
+    targetIds?: string;
+  } = {
+    targetType,
+  };
+
+  if (targetIds && targetIds.length > 0) {
+    params.targetIds = targetIds.join(",");
+  }
+
+  const res = await apiClient.get<ApiResponse<UserReactionsMap>>(
+    "/reactions/mine",
+    {
+      params,
+    },
+  );
 
   return res.data;
 }
