@@ -205,7 +205,7 @@ export function LoginForm() {
 
               <form
                 onSubmit={handleSubmit(onSubmit)}
-                className="space-y-4 sm:space-y-5"
+                className="space-y-4 sm:space-y-5 selection:bg-white selection:text-black"
                 noValidate
               >
                 <div>
@@ -226,7 +226,7 @@ export function LoginForm() {
                     }
                     placeholder="alex.chen@example.com"
                     {...register("email")}
-                    className={`w-full rounded-2xl border bg-white/5 px-4 py-3 text-sm text-white placeholder-zinc-500 backdrop-blur-md transition-all focus:outline-none focus:ring-2 ${
+                    className={`w-full rounded-2xl border bg-white/5 px-4 py-3 text-sm text-white placeholder-zinc-500 backdrop-blur-md transition-all focus:outline-none focus:ring-2 selection:bg-white selection:text-black ${
                       errors.email
                         ? "border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/20"
                         : "border-white/10 focus:border-indigo-500 focus:ring-indigo-500/20"
@@ -275,7 +275,7 @@ export function LoginForm() {
                         setCapsLockOn(e.getModifierState("CapsLock"))
                       }
                       {...register("password")}
-                      className={`w-full rounded-2xl border bg-white/5 px-4 py-3 text-sm text-white placeholder-zinc-500 backdrop-blur-md transition-all focus:outline-none focus:ring-2 pr-11 ${
+                      className={`w-full rounded-2xl border bg-white/5 px-4 py-3 text-sm text-white placeholder-zinc-500 backdrop-blur-md transition-all focus:outline-none focus:ring-2 pr-11 selection:bg-white selection:text-black ${
                         errors.password
                           ? "border-rose-500/50 focus:border-rose-500 focus:ring-rose-500/20"
                           : "border-white/10 focus:border-indigo-500 focus:ring-indigo-500/20"

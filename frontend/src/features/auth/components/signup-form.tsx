@@ -187,7 +187,7 @@ export function SignupForm() {
                 )}
               </AnimatePresence>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left" noValidate>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left selection:bg-white selection:text-black" noValidate>
                 <div className="space-y-1.5">
                   <label htmlFor="signup-name" className="text-xs font-medium text-zinc-300 font-sans">
                     Full Name
@@ -199,7 +199,7 @@ export function SignupForm() {
                     aria-invalid={!!errors.name}
                     aria-describedby={errors.name ? 'signup-name-error' : undefined}
                     placeholder="e.g. Alex Chen"
-                    className={`w-full rounded-xl border px-3.5 sm:px-4 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all font-sans focus:outline-none focus:ring-2 ${
+                    className={`w-full rounded-xl border px-3.5 sm:px-4 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all font-sans focus:outline-none focus:ring-2 selection:bg-white selection:text-black ${
                       errors.name
                         ? 'border-red-500/60 bg-red-500/[0.05] focus:border-red-500 focus:ring-red-500/20'
                         : 'border-white/10 bg-white/[0.04] focus:border-indigo-500 focus:bg-white/[0.07] focus:ring-indigo-500/20'
@@ -225,7 +225,7 @@ export function SignupForm() {
                     aria-invalid={!!errors.email}
                     aria-describedby={errors.email ? 'signup-email-error' : undefined}
                     placeholder="name@work-email.com"
-                    className={`w-full rounded-xl border px-3.5 sm:px-4 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all font-sans focus:outline-none focus:ring-2 ${
+                    className={`w-full rounded-xl border px-3.5 sm:px-4 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all font-sans focus:outline-none focus:ring-2 selection:bg-white selection:text-black ${
                       errors.email
                         ? 'border-red-500/60 bg-red-500/[0.05] focus:border-red-500 focus:ring-red-500/20'
                         : 'border-white/10 bg-white/[0.04] focus:border-indigo-500 focus:bg-white/[0.07] focus:ring-indigo-500/20'
@@ -254,7 +254,7 @@ export function SignupForm() {
                       onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                       placeholder="Minimum 6 characters"
-                      className={`w-full rounded-xl border pl-3.5 sm:pl-4 pr-11 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all font-sans focus:outline-none focus:ring-2 ${
+                      className={`w-full rounded-xl border pl-3.5 sm:pl-4 pr-11 py-2.5 sm:py-3 text-base sm:text-sm text-white placeholder-zinc-500 transition-all font-sans focus:outline-none focus:ring-2 selection:bg-white selection:text-black ${
                         errors.password
                           ? 'border-red-500/60 bg-red-500/[0.05] focus:border-red-500 focus:ring-red-500/20'
                           : 'border-white/10 bg-white/[0.04] focus:border-indigo-500 focus:bg-white/[0.07] focus:ring-indigo-500/20'
