@@ -34,6 +34,23 @@ export interface ToggleReactionResult {
   };
 }
 
+export interface ReactorItem {
+  userId: string;
+  name: string;
+  headline?: string | null;
+  avatarUrl?: string | null;
+  type: ReactionType;
+  createdAt?: Date;
+}
+
+export interface PaginatedReactorsResult {
+  items: ReactorItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 interface ResolvedTarget {
   targetType: ReactionTargetType;
   targetId: Types.ObjectId;
@@ -579,5 +596,113 @@ export class ReactionsService {
     }
 
     return result;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Get Reactors List
+  |--------------------------------------------------------------------------
+  |
+  | Public method to list users who reacted to a post or comment.
+  | Supports pagination and optional filtering by reaction type.
+  |--------------------------------------------------------------------------
+  */
+
+  async getReactors(query: {
+    targetType: ReactionTargetType;
+    targetId: string;
+    type?: ReactionType;
+    page: number;
+    limit: number;
+  }): Promise<PaginatedReactorsResult> {
+    if (!Types.ObjectId.isValid(query.targetId)) {
+      throw new NotFoundException(
+        `${query.targetType === 'post' ? 'Post' : 'Comment'} with ID '${query.targetId}' not found`,
+      );
+    }
+
+    const targetObjectId = new Types.ObjectId(query.targetId);
+
+    if (query.targetType === 'post') {
+      const post = await this.postModel
+        .findOne({
+          _id: targetObjectId,
+          deletedAt: {
+            $exists: false,
+          },
+        })
+        .select('_id')
+        .exec();
+
+      if (!post) {
+        throw new NotFoundException(
+          `Post with ID '${query.targetId}' not found`,
+        );
+      }
+    } else {
+      const comment = await this.commentModel
+        .findById(targetObjectId)
+        .select('postId')
+        .exec();
+
+      if (!comment) {
+        throw new NotFoundException(
+          `Comment with ID '${query.targetId}' not found`,
+        );
+      }
+    }
+
+    const filter: Record<string, unknown> = {
+      targetType: query.targetType,
+      targetId: targetObjectId,
+    };
+
+    if (query.type) {
+      filter.type = query.type;
+    }
+
+    const page = Math.max(1, query.page || 1);
+    const limit = Math.min(50, Math.max(1, query.limit || 20));
+
+    const [total, reactions] = await Promise.all([
+      this.reactionModel.countDocuments(filter).exec(),
+      this.reactionModel
+        .find(filter)
+        .sort({
+          createdAt: -1,
+          _id: -1,
+        })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate({
+          path: 'userId',
+          select: 'name headline avatarUrl',
+        })
+        .exec(),
+    ]);
+
+    const items: ReactorItem[] = [];
+
+    for (const reaction of reactions) {
+      const user = reaction.userId as any;
+      if (!user) continue;
+
+      items.push({
+        userId: (user._id ?? user.id ?? user).toString(),
+        name: user.name ?? 'Unknown Developer',
+        headline: user.headline ?? null,
+        avatarUrl: user.avatarUrl ?? null,
+        type: reaction.type,
+        createdAt: reaction.createdAt,
+      });
+    }
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+    };
   }
 }

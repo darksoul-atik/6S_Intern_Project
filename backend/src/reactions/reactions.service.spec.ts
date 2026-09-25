@@ -65,6 +65,7 @@ describe('ReactionsService', () => {
       create: vi.fn(),
       deleteOne: vi.fn(),
       updateOne: vi.fn(),
+      countDocuments: vi.fn(),
     };
 
     /*
@@ -846,6 +847,115 @@ describe('ReactionsService', () => {
 
       expect(filter.targetType).toBe('post');
       expect(filter.targetId).toBeUndefined();
+    });
+  });
+
+  /*
+  |--------------------------------------------------------------------------
+  | Get Reactors
+  |--------------------------------------------------------------------------
+  */
+
+  describe('getReactors', () => {
+    it('should throw NotFoundException on invalid targetId', async () => {
+      await expect(
+        service.getReactors({
+          targetType: 'post',
+          targetId: 'invalid-id',
+          page: 1,
+          limit: 20,
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException if post target does not exist or is deleted', async () => {
+      mockPostModel.findOne.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        exec: vi.fn().mockResolvedValue(null),
+      });
+
+      await expect(
+        service.getReactors({
+          targetType: 'post',
+          targetId: postId,
+          page: 1,
+          limit: 20,
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException if comment target does not exist', async () => {
+      mockCommentModel.findById.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        exec: vi.fn().mockResolvedValue(null),
+      });
+
+      await expect(
+        service.getReactors({
+          targetType: 'comment',
+          targetId: commentId,
+          page: 1,
+          limit: 20,
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should return paginated reactors with populated user information', async () => {
+      mockPostModel.findOne.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        exec: vi.fn().mockResolvedValue({ _id: new Types.ObjectId(postId) }),
+      });
+
+      mockReactionModel.countDocuments.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(1),
+      });
+
+      const reactionDoc = {
+        userId: {
+          _id: new Types.ObjectId(userId),
+          name: 'Alice Johnson',
+          headline: 'Senior Full Stack',
+          avatarUrl: 'https://example.com/alice.jpg',
+        },
+        type: 'like',
+        createdAt: new Date('2026-09-25T12:00:00Z'),
+      };
+
+      const mockQuery = {
+        sort: vi.fn().mockReturnThis(),
+        skip: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        populate: vi.fn().mockReturnThis(),
+        exec: vi.fn().mockResolvedValue([reactionDoc]),
+      };
+
+      mockReactionModel.find.mockReturnValue(mockQuery);
+
+      const result = await service.getReactors({
+        targetType: 'post',
+        targetId: postId,
+        type: 'like',
+        page: 1,
+        limit: 20,
+      });
+
+      expect(result.total).toBe(1);
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(20);
+      expect(result.totalPages).toBe(1);
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]).toEqual({
+        userId,
+        name: 'Alice Johnson',
+        headline: 'Senior Full Stack',
+        avatarUrl: 'https://example.com/alice.jpg',
+        type: 'like',
+        createdAt: new Date('2026-09-25T12:00:00Z'),
+      });
+
+      const filter = mockReactionModel.find.mock.calls[0][0];
+      expect(filter.targetType).toBe('post');
+      expect(filter.type).toBe('like');
     });
   });
 });

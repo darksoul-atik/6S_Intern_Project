@@ -20,6 +20,7 @@ import {
 
 import { ReactionsService } from './reactions.service.js';
 import { ToggleReactionDto } from './dto/toggle-reaction.dto.js';
+import { GetReactorsQueryDto } from './dto/get-reactors.dto.js';
 import type { ReactionTargetType } from './schemas/reaction.schema.js';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
@@ -30,6 +31,34 @@ import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy.js';
 @Controller('reactions')
 export class ReactionsController {
   constructor(private readonly reactionsService: ReactionsService) {}
+
+  @Get()
+  @ApiOperation({
+    summary: 'Get reactors for a post or comment',
+    description:
+      'Public endpoint returning a paginated list of users who reacted to a target post or comment, optionally filtered by reaction type.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Reactors list retrieved successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid query parameters',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Target post or comment not found',
+  })
+  async getReactors(@Query() query: GetReactorsQueryDto) {
+    return this.reactionsService.getReactors({
+      targetType: query.targetType,
+      targetId: query.targetId,
+      type: query.type,
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
+    });
+  }
 
   @Get('mine')
   @UseGuards(JwtAuthGuard)
