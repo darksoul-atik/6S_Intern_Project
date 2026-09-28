@@ -76,7 +76,7 @@ export function PostReactorsSummary({
     if (!reactor) return null;
     if (!reactor.userId) {
       return (
-        <strong className="font-semibold text-slate-800">
+        <strong className="font-semibold text-slate-800 shrink-0">
           {reactor.name}
         </strong>
       );
@@ -84,7 +84,7 @@ export function PostReactorsSummary({
     return (
       <Link
         href={`/developers/${reactor.userId}`}
-        className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline transition-colors"
+        className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline transition-colors shrink-0"
         title={`View ${reactor.name}'s profile`}
       >
         {reactor.name}
@@ -100,106 +100,108 @@ export function PostReactorsSummary({
     if (!secondReactor || items.length === 1) {
       if (total <= 1) {
         return (
-          <span className="inline-flex items-center gap-1 flex-wrap">
+          <div className="inline-flex items-center gap-1.5 flex-wrap">
             {renderReactorLink(firstReactor)}
-            <span>reacted to this post</span>
-          </span>
+            <span className="text-slate-500">reacted to this post</span>
+          </div>
         );
       }
 
       const othersCount = total - 1;
       return (
-        <span className="inline-flex items-center gap-1 flex-wrap">
+        <div className="inline-flex items-center gap-1.5 flex-wrap">
           {renderReactorLink(firstReactor)}
-          <span>and</span>
+          <span className="text-slate-500">and</span>
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline transition-colors cursor-pointer"
+            className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline transition-colors cursor-pointer shrink-0"
             title="View all who reacted"
           >
             {othersCount} {othersCount === 1 ? "other" : "others"}
           </button>
-          <span>reacted to this post</span>
+          <span className="text-slate-500">reacted to this post</span>
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer ml-0.5"
+            className="inline-flex items-center gap-1 font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer shrink-0 transition-colors ml-0.5"
             title="View all reactors"
           >
             <span>View all</span>
             <FiArrowRight className="h-3 w-3" />
           </button>
-        </span>
+        </div>
       );
     }
 
     // We have at least 2 reactor items
     if (total === 2) {
       return (
-        <span className="inline-flex items-center gap-1 flex-wrap">
+        <div className="inline-flex items-center gap-1.5 flex-wrap">
           {renderReactorLink(firstReactor)}
-          <span>and</span>
+          <span className="text-slate-500">and</span>
           {renderReactorLink(secondReactor)}
-          <span>reacted to this post</span>
+          <span className="text-slate-500">reacted to this post</span>
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer ml-0.5"
+            className="inline-flex items-center gap-1 font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer shrink-0 transition-colors ml-0.5"
             title="View all reactors"
           >
             <span>View all</span>
             <FiArrowRight className="h-3 w-3" />
           </button>
-        </span>
+        </div>
       );
     }
 
     const remaining = total - 2;
     return (
-      <span className="inline-flex items-center gap-1 flex-wrap">
+      <div className="inline-flex items-center gap-1.5 flex-wrap">
         {renderReactorLink(firstReactor)}
-        <span>,</span>
+        <span className="text-slate-500">,</span>
         {renderReactorLink(secondReactor)}
-        <span>and</span>
+        <span className="text-slate-500">and</span>
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline transition-colors cursor-pointer"
+          className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline transition-colors cursor-pointer shrink-0"
           title="View all who reacted"
         >
           {remaining} {remaining === 1 ? "other" : "others"}
         </button>
-        <span>reacted to this post</span>
+        <span className="text-slate-500">reacted to this post</span>
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer ml-0.5"
+          className="inline-flex items-center gap-1 font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer shrink-0 transition-colors ml-0.5"
           title="View all reactors"
         >
           <span>View all</span>
           <FiArrowRight className="h-3 w-3" />
         </button>
-      </span>
+      </div>
     );
   };
 
   return (
     <>
-      <div
-        className={`flex items-center gap-1.5 text-left text-[11px] sm:text-xs text-slate-500 max-w-full flex-wrap ${className}`}
-      >
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-linear-to-tr from-indigo-500/10 to-purple-500/15 text-indigo-600 hover:from-indigo-500/20 hover:to-purple-500/20 transition-all cursor-pointer"
-          title="Click to view all reactors"
-          aria-label="View all reactors"
-        >
-          <FiSmile className="h-3 w-3" />
-        </button>
+      <div className={`flex items-center ${className}`}>
+        <div className="inline-flex items-center gap-2 rounded-full bg-slate-100/70 backdrop-blur-md px-3 py-1 text-[11px] sm:text-xs text-slate-600 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-indigo-100/80 text-indigo-600 hover:bg-indigo-200 transition-colors cursor-pointer"
+            title="Click to view all reactors"
+            aria-label="View all reactors"
+          >
+            <FiSmile className="h-2.5 w-2.5" />
+          </button>
 
-        <div className="leading-tight flex-wrap">{renderSummaryContent()}</div>
+          <div className="leading-tight flex items-center">
+            {renderSummaryContent()}
+          </div>
+        </div>
       </div>
 
       <ReactorsModal
