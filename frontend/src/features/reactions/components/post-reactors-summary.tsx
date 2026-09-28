@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { FiSmile } from "react-icons/fi";
+import { FiChevronRight, FiSmile } from "react-icons/fi";
 
 import { useAuth } from "@/context/AuthContext";
 import { useReactors } from "../queries/reaction-queries";
@@ -174,6 +174,8 @@ export function PostReactorsSummary({
           <div className="leading-tight flex items-center">
             {renderSummaryContent()}
           </div>
+
+          <FiChevronRight className="h-3 w-3 text-slate-400 group-hover/badge:text-indigo-600 group-hover/badge:translate-x-0.5 transition-all shrink-0 ml-0.5" />
         </div>
       </div>
 
