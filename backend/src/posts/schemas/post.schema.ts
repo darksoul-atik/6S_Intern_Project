@@ -48,6 +48,7 @@ export const ReactionCountsSchema =
         ret.id = ret._id.toString();
         delete ret._id;
       }
+
       delete ret.__v;
 
       return ret;
@@ -88,8 +89,11 @@ export class Post {
   body!: string;
 
   /*
-   * Day 9 will update this when comments
+   * Updated whenever comments or replies
    * are created or deleted.
+   *
+   * Also used as the primary sort field
+   * for the Most Discussed feed.
    */
   @Prop({
     type: Number,
@@ -99,7 +103,10 @@ export class Post {
   commentCount!: number;
 
   /*
-   * Day 11 will update these counters.
+   * Updated whenever reactions change.
+   *
+   * like/dislike counts are also used
+   * when calculating the Top rankScore.
    */
   @Prop({
     type: ReactionCountsSchema,
@@ -156,14 +163,18 @@ export const PostSchema = SchemaFactory.createForClass(Post);
 
 /*
 |--------------------------------------------------------------------------
-| Main Feed Index
+| Main / Latest Feed Index
 |--------------------------------------------------------------------------
 |
 | Used for:
 |
 | GET /posts
+| GET /posts?sort=latest
 |
-| newest-first ordering
+| Order:
+|
+| createdAt DESC
+| -> _id DESC
 |--------------------------------------------------------------------------
 */
 
@@ -179,7 +190,7 @@ PostSchema.index({
 |
 | Used by the scheduled cleanup job.
 |
-| The job will query posts where:
+| The job queries posts where:
 |
 | deletedAt <= fiveDaysAgo
 |--------------------------------------------------------------------------
@@ -187,4 +198,31 @@ PostSchema.index({
 
 PostSchema.index({
   deletedAt: 1,
+});
+
+/*
+|--------------------------------------------------------------------------
+| Most Discussed Feed Index
+|--------------------------------------------------------------------------
+|
+| Used for:
+|
+| GET /posts?sort=most-discussed
+|
+| Order:
+|
+| commentCount DESC
+| -> createdAt DESC
+| -> _id DESC
+|
+| Unlike Top rankScore, commentCount is stored
+| directly on the Post document, so MongoDB
+| can index this ordering.
+|--------------------------------------------------------------------------
+*/
+
+PostSchema.index({
+  commentCount: -1,
+  createdAt: -1,
+  _id: -1,
 });

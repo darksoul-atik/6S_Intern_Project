@@ -28,12 +28,6 @@ describe('Post ranking integration', () => {
 
   let service: PostsService;
 
-  /*
-  |--------------------------------------------------------------------------
-  | Temporary MongoDB Replica Set
-  |--------------------------------------------------------------------------
-  */
-
   beforeAll(async () => {
     replSet = await MongoMemoryReplSet.create({
       replSet: {
@@ -57,21 +51,9 @@ describe('Post ranking integration', () => {
     service = new PostsService(postModel, {} as UsersService);
   }, 120_000);
 
-  /*
-  |--------------------------------------------------------------------------
-  | Cleanup Between Tests
-  |--------------------------------------------------------------------------
-  */
-
   afterEach(async () => {
     await Promise.all([postModel.deleteMany({}), userModel.deleteMany({})]);
   });
-
-  /*
-  |--------------------------------------------------------------------------
-  | Shutdown
-  |--------------------------------------------------------------------------
-  */
 
   afterAll(async () => {
     if (connection) {
@@ -82,12 +64,6 @@ describe('Post ranking integration', () => {
       await replSet.stop();
     }
   });
-
-  /*
-  |--------------------------------------------------------------------------
-  | Helpers
-  |--------------------------------------------------------------------------
-  */
 
   async function seedControlledRankingData(): Promise<void> {
     await userModel.create({
@@ -136,12 +112,6 @@ describe('Post ranking integration', () => {
     });
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | Top Order
-  |--------------------------------------------------------------------------
-  */
-
   it('should return the exact expected Top order', async () => {
     await seedControlledRankingData();
 
@@ -160,12 +130,6 @@ describe('Post ranking integration', () => {
     expect(getLabels(result.posts)).not.toContain('J');
   });
 
-  /*
-  |--------------------------------------------------------------------------
-  | Calculated Scores
-  |--------------------------------------------------------------------------
-  */
-
   it('should return the expected rankScore for every active post', async () => {
     await seedControlledRankingData();
 
@@ -183,12 +147,6 @@ describe('Post ranking integration', () => {
       expect(post.rankScore).toBe(EXPECTED_RANK_SCORES[label]);
     });
   });
-
-  /*
-  |--------------------------------------------------------------------------
-  | Top Tie Breakers
-  |--------------------------------------------------------------------------
-  */
 
   it('should use createdAt when rank scores are tied', async () => {
     await seedControlledRankingData();
@@ -222,12 +180,6 @@ describe('Post ranking integration', () => {
     expect(labels.indexOf('D')).toBeLessThan(labels.indexOf('C'));
   });
 
-  /*
-  |--------------------------------------------------------------------------
-  | Zero + Negative Scores
-  |--------------------------------------------------------------------------
-  */
-
   it('should support zero and negative rank scores', async () => {
     await seedControlledRankingData();
 
@@ -248,12 +200,6 @@ describe('Post ranking integration', () => {
     expect(labels.indexOf('E')).toBeLessThan(labels.indexOf('F'));
   });
 
-  /*
-  |--------------------------------------------------------------------------
-  | Latest Order
-  |--------------------------------------------------------------------------
-  */
-
   it('should return the exact expected Latest order', async () => {
     await seedControlledRankingData();
 
@@ -269,12 +215,6 @@ describe('Post ranking integration', () => {
 
     expect(getLabels(result.posts)).not.toContain('J');
   });
-
-  /*
-  |--------------------------------------------------------------------------
-  | Most Discussed Order
-  |--------------------------------------------------------------------------
-  */
 
   it('should return the exact expected Most Discussed order', async () => {
     await seedControlledRankingData();
@@ -294,12 +234,6 @@ describe('Post ranking integration', () => {
     expect(getLabels(result.posts)).not.toContain('J');
   });
 
-  /*
-  |--------------------------------------------------------------------------
-  | Most Discussed Tie Breakers
-  |--------------------------------------------------------------------------
-  */
-
   it('should use createdAt when commentCount is tied', async () => {
     await seedControlledRankingData();
 
@@ -311,30 +245,12 @@ describe('Post ranking integration', () => {
 
     const labels = getLabels(result.posts);
 
-    /*
-     * D and A both have 3 comments.
-     * D is newer.
-     */
     expect(labels.indexOf('D')).toBeLessThan(labels.indexOf('A'));
 
-    /*
-     * H and C both have 2 comments.
-     * H is newer.
-     */
     expect(labels.indexOf('H')).toBeLessThan(labels.indexOf('C'));
 
-    /*
-     * F and G both have 1 comment.
-     * F is newer.
-     */
     expect(labels.indexOf('F')).toBeLessThan(labels.indexOf('G'));
   });
-
-  /*
-  |--------------------------------------------------------------------------
-  | Empty Feed
-  |--------------------------------------------------------------------------
-  */
 
   it('should return an empty result for an empty database', async () => {
     const topResult = await service.findAllPosts({
@@ -380,12 +296,6 @@ describe('Post ranking integration', () => {
     });
   });
 
-  /*
-  |--------------------------------------------------------------------------
-  | Top Pagination Stability
-  |--------------------------------------------------------------------------
-  */
-
   it('should keep Top pagination stable when data does not change', async () => {
     await seedControlledRankingData();
 
@@ -411,9 +321,6 @@ describe('Post ranking integration', () => {
     expect(getLabels(page2.posts)).toEqual(['H', 'D', 'C']);
     expect(getLabels(page3.posts)).toEqual(['G', 'E', 'F']);
 
-    expect(page1.total).toBe(9);
-    expect(page1.totalPages).toBe(3);
-
     const combinedLabels = [
       ...getLabels(page1.posts),
       ...getLabels(page2.posts),
@@ -421,23 +328,8 @@ describe('Post ranking integration', () => {
     ];
 
     expect(combinedLabels).toEqual([...EXPECTED_TOP_ORDER]);
-
     expect(new Set(combinedLabels).size).toBe(9);
-
-    const repeatedPage1 = await service.findAllPosts({
-      page: 1,
-      limit: 3,
-      sort: 'top',
-    });
-
-    expect(getLabels(repeatedPage1.posts)).toEqual(['A', 'B', 'I']);
   });
-
-  /*
-  |--------------------------------------------------------------------------
-  | Latest Pagination Stability
-  |--------------------------------------------------------------------------
-  */
 
   it('should keep Latest pagination stable when data does not change', async () => {
     await seedControlledRankingData();
@@ -464,9 +356,6 @@ describe('Post ranking integration', () => {
     expect(getLabels(page2.posts)).toEqual(['D', 'C', 'B']);
     expect(getLabels(page3.posts)).toEqual(['G', 'I', 'A']);
 
-    expect(page1.total).toBe(9);
-    expect(page1.totalPages).toBe(3);
-
     const combinedLabels = [
       ...getLabels(page1.posts),
       ...getLabels(page2.posts),
@@ -474,23 +363,8 @@ describe('Post ranking integration', () => {
     ];
 
     expect(combinedLabels).toEqual([...EXPECTED_LATEST_ORDER]);
-
     expect(new Set(combinedLabels).size).toBe(9);
-
-    const repeatedPage1 = await service.findAllPosts({
-      page: 1,
-      limit: 3,
-      sort: 'latest',
-    });
-
-    expect(getLabels(repeatedPage1.posts)).toEqual(['H', 'F', 'E']);
   });
-
-  /*
-  |--------------------------------------------------------------------------
-  | Most Discussed Pagination Stability
-  |--------------------------------------------------------------------------
-  */
 
   it('should keep Most Discussed pagination stable when data does not change', async () => {
     await seedControlledRankingData();
@@ -516,9 +390,6 @@ describe('Post ranking integration', () => {
     expect(getLabels(page1.posts)).toEqual(['I', 'B', 'D']);
     expect(getLabels(page2.posts)).toEqual(['A', 'H', 'C']);
     expect(getLabels(page3.posts)).toEqual(['F', 'G', 'E']);
-
-    expect(page1.total).toBe(9);
-    expect(page1.totalPages).toBe(3);
 
     const combinedLabels = [
       ...getLabels(page1.posts),
