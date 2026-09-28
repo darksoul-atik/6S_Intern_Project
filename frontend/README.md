@@ -214,6 +214,10 @@ frontend/src/
   - Renders a clean social proof line (*"Alex Chen, Sarah Connor and 2 others reacted to this post"*) featuring a friendly reaction icon (`FiSmile`) resting directly above the action divider.
   - Optimistically updates at 0ms latency when reactions are toggled without requiring page reload.
 
+### 7. Phase 4 Feed Discovery & Ranking Foundations (Day 13)
+- **Ranked Feed Integration Readiness**: Backend query parameter `sort=latest` and `sort=top` wired into OpenAPI contracts, prepared for tabbed feed switching in Day 14.
+- **Action Bar Alignment Polish**: Polished post card action bar flex alignments, reaction button padding, and standard word-break typography ensuring seamless scaling across mobile viewports.
+
 ---
 
 ## 🚀 Development Scripts

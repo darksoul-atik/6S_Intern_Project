@@ -132,6 +132,13 @@
 - **Optimistic Social Proof Reaction Summary**:
   - Directed the implementation of `PostReactorsSummary` with optimistic updates, cache invalidation (`reactorKeys.all`), and replacing generic like icons with the welcoming `FiSmile` icon resting directly above the action divider.
 
+### Day 13: Ranked and Latest Feed APIs, Pure Deterministic Scoring & Verification Matrix
+- **Deterministic Mathematical Scoring**: Prompted the implementation of pure function `calculatePostRankScore(likes, dislikes, comments)` with `COMMENT_WEIGHT = 2`, ensuring engagement signals are computed predictably with zero side effects or database dependencies.
+- **Aggregation Pipeline & Server-Side Scoring**: Directed the construction of `buildTopPostsPipeline` utilizing MongoDB `$addFields`, `$subtract`, and `$multiply` operators to perform high-performance score calculations in-engine while filtering soft-deleted posts.
+- **Stable Multi-Tier Tie-Breaking**: Enforced multi-tier secondary sorting (`createdAt: -1, _id: -1`) guaranteeing that posts with identical rank scores or equal timestamps do not shift positions across pagination requests.
+- **Database Safety Guard on Seeding**: Prompted the creation of dedicated CLI seed and cleanup scripts (`seed:ranking`, `cleanup:ranking`) with a strict runtime check refusing execution unless connected specifically to `devpulse_day13_seed`.
+- **End-to-End Replica-Set Testing**: Directed the authoring of 9 integration tests running on `mongodb-memory-server` verifying exact output order, negative score ordering, tie resolution, and pagination stability.
+
 ---
 
 ## What I Reviewed or Rejected
@@ -227,6 +234,12 @@
 - **Rejected Hardcoded Plain Text Mentions**: Rejected using unstyled or unlinked `@name` plain strings in comment bodies. Modeled `mentionedUserId` as a first-class relation populated on the backend and rendered as an interactive, clickable profile pill on the frontend.
 - **Rejected Zero-Delay Instant Popover Triggers**: Rejected firing hover popovers instantaneously on mouseover, which causes visual noise and accidental popups when users merely scroll or sweep their cursor across the screen. Enforced a 200ms debounce delay and 180ms dismissal buffer.
 - **Rejected Repetitive Thumb Icons on Social Proof Summary**: Replaced repetitive thumbs-up icon with a friendly `FiSmile` icon and moved the reactor line directly above the post action divider.
+
+### Day 13
+- **Rejected Schema Modification for Dynamic Ranking**: Strongly rejected storing computed rank scores persistently in the MongoDB `Post` document. Writing dynamic scores on every reaction/comment causes write amplification and out-of-date ranking scores when weights change. Enforced computing `rankScore` dynamically on-the-fly via the aggregation pipeline (`$addFields`) while leaving the underlying schema clean.
+- **Rejected Seeding Against Shared Development Database**: Rejected running ranking verification seeds against the primary `MONGODB_URI`. Seed datasets contain artificial dates, extreme like/dislike balances, and test authors that would pollute real developer feeds. Mandated a dedicated `RANKING_SEED_MONGODB_URI` pointing strictly to `devpulse_day13_seed` with programmatic connection name guards.
+- **Rejected In-Memory Sorting on Unpaginated Collections**: Rejected loading all posts into Node.js memory to sort by score via JavaScript `Array.prototype.sort()`. In production this causes severe memory leaks; enforced performing sorting and pagination (`$sort`, `$skip`, `$limit`) directly inside the MongoDB aggregation engine.
+- **Rejected Non-Deterministic Secondary Sorting**: Rejected single-field sorting (`{ rankScore: -1 }`). Posts with identical scores would return in arbitrary order depending on disk block layout, causing duplicate posts across pagination pages. Enforced `{ rankScore: -1, createdAt: -1, _id: -1 }` tie-breakers.
 
 ---
 
@@ -416,6 +429,20 @@
   - Portaled `ReactorsModal` directly into `document.body` via `createPortal` with SSR safety (`useSyncExternalStore`), applied contextual header naming (`Comment Reactions` vs `Post Reactions`), and tuned typography hierarchy.
   - Replaced undefined Tailwind font sizes (`text-3xs`, `text-2xs`) in `ReactionPeekPopover` with standard Tailwind classes (`text-[10px]`, `text-[11px]`) and implemented smart edge-aware alignment (`left-0` vs `right-0`) preventing mobile screen overflow.
   - Upgraded global mobile responsiveness across cards, feeds, post details, comment items, and auth forms down to 320px viewports with `break-words` and fluid padding (`p-4 sm:p-6 md:p-8`).
+
+### Day 13
+- **TypeScript `post.toJSON()` Double-Casting Compilation Error**:
+  - Diagnosed TS2352 compiler error (`Conversion of type 'Document<...>' to type 'Record<string, unknown>' may be a mistake...`) during NestJS build when enriching post documents with computed aggregation `rankScore`.
+  - Resolved cleanly by applying `post.toJSON() as unknown as Record<string, unknown>`, satisfying strict TypeScript transpilation without runtime performance penalties.
+- **Unit Test File Replacement Guard & Suite Separation**:
+  - Caught an accidental replacement where `posts.service.spec.ts` had its core 14 tests overwritten by utility score tests. Restored `posts.service.spec.ts` immediately via git and cleanly separated pure ranking tests into dedicated `post-ranking.util.spec.ts`, preserving 100% test coverage across both suites.
+- **Accidental Nested Directory & Zero-Byte Fixture Cleanup**:
+  - Detected and removed an empty zero-byte fixture file created in an accidentally duplicated nested path (`backend/src/posts/backend/src/posts/testing`), preventing Vitest runner from failing on empty test files.
+- **Vitest Test Suite Expansion (142 to 158 Passing Tests)**:
+  - Added 7 unit tests in `post-ranking.util.spec.ts` and 9 in-memory replica set integration tests in `post-ranking.integration.spec.ts`.
+  - Expanded total backend test coverage from 142 tests to 158 tests across 20 test files (100% green).
+
+
 
 
 

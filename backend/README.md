@@ -4,7 +4,7 @@
 
 ---
 
-## 🏛️ System Architecture Overview (As of Day 12)
+## 🏛️ System Architecture Overview (As of Day 13)
 
 The DevPulse backend is engineered as a modular, domain-driven NestJS service adhering to enterprise security standards, strict data encapsulation, and predictable REST conventions:
 
@@ -126,7 +126,17 @@ Interactive OpenAPI Swagger documentation is available at:
 ### 6. Comments Hierarchy & Flattened Replies
 - **`POST /posts/:postId/comments/:commentId/replies`**: Replying to a top-level comment stores a reply linked to that comment. Replying to an existing reply flattens into a sibling under the same root comment (`parentCommentId = rootId`) with `mentionedUserId` pointing to the author being addressed, maintaining a clean 2-level hierarchy.
 
-## 🔄 Working Flow as of Day 12
+---
+
+### 7. Ranked & Latest Feeds (Day 13)
+- **`GET /posts?sort=latest`**: Default chronological feed sorted by `{ createdAt: -1, _id: -1 }`.
+- **`GET /posts?sort=top`**: Deterministic ranked feed computing `rankScore` via aggregation pipeline:
+  $$\text{rankScore} = (\text{likes} - \text{dislikes}) + (\text{commentCount} \times \text{COMMENT\_WEIGHT})$$
+  with `COMMENT_WEIGHT = 2`. Secondary tie-breaker sorts by `{ rankScore: -1, createdAt: -1, _id: -1 }` guaranteeing zero item shifting or page order drift.
+- **Validation & OpenAPI**: Query parameter validation via `GetPostsQueryDto` (`@IsIn(['top', 'latest'])`, `@Min(1)`, `@Max(100)`).
+- **Controlled Seed Fixtures & Safety Isolation**: `npm run seed:ranking` and `npm run cleanup:ranking` guarded by strict database name checking (`devpulse_day13_seed`).
+
+## 🔄 Working Flow as of Day 13
 
 ### 1. Threaded Comments & Replies Lifecycle
 
@@ -247,7 +257,7 @@ Interactive OpenAPI Swagger documentation is available at:
 DevPulse backend maintains a 100% pass rate across unit, integration, and guard test suites powered by **Vitest**:
 
 ```bash
-# Run all 18 test suites (142 tests)
+# Run all 20 test suites (158 tests)
 npx vitest run
 
 # Run with watch mode
@@ -258,6 +268,8 @@ npx vitest run --coverage
 ```
 
 ### Test Coverage Highlights:
+- **`post-ranking.util.spec.ts` (7 tests)**: Pure deterministic rank scoring calculations, likes/dislikes cancellation, negative score handling, comment weighting ($+2$), and zero engagement fallback.
+- **`post-ranking.integration.spec.ts` (9 tests)**: End-to-end integration tests on an in-memory replica set verifying controlled top order, latest chronological order, score tie-breakers, pagination order stability (zero duplicates across pages), soft-delete exclusions, and empty feed states.
 - **`reactions.service.spec.ts` (22 tests)**: Toggle creation, toggle off, switch between like/dislike, post/comment target validation, soft-deleted post rejection, user reaction queries, paginated reactor listings.
 - **`reactions.concurrency.spec.ts` (4 tests)**: Concurrent toggle stress tests, duplicate race condition mitigation, and counter synchronization under parallel load.
 - **`comments.service.spec.ts` (20 tests)**: Top-level creation, reply creation with root-flattening & mentioned user derivation, tree construction with normalized mentions, reply/thread cascade deletion, counter integrity.

@@ -35,9 +35,10 @@ DevPulse is a high-performance, engineering-first developer community platform e
 | **Refinements** | **Community Transparency & Reactions Peek** | Hover peek popovers with smooth enter/leave delays scaling to 100+ reactions, paginated reactors modal (`GET /reactions`), clickable commenter profiles (`/developers/[id]`), flattened same-depth replies with structured `@Mention`, optimistic social proof reactor summary (`PostReactorsSummary`). | ✅ **Completed** |
 
 ### Phase 4: Discovery, Quality, and Applied Features (Days 13–16)
-| Day | Focus Areas | Status |
-|:---:|---|:---:|
-| **Day 13–16** | Ranked and latest feed APIs, feed filter tabs with URL sync, full-text search with debounce & abort signal, AI-assisted post summarizer. | ⏳ *Upcoming* |
+| Day | Milestone | Focus Areas | Status |
+|:---:|---|---|:---:|
+| **Day 13** | **Ranked & Latest Feed APIs** | Pure deterministic ranking calculation (`calculatePostRankScore`), aggregation pipeline (`buildTopPostsPipeline`), `sort=top` and `sort=latest` query options on `GET /posts`, stable secondary tie-breaker sorting (`createdAt DESC`, `_id DESC`), controlled seed fixtures, verification scripts (`seed:ranking`, `cleanup:ranking`), unit & replica-set integration test matrix (158/158 tests passing). | ✅ **Completed** |
+| **Day 14–16** | **Feed Tabs, Search & AI** | Feed filter tabs with URL sync, full-text search with debounce & abort signal, AI-assisted post summarizer. | ⏳ *Upcoming* |
 
 ### Phase 5: Testing, Security, Deployment, and Communication (Days 17–20)
 | Day | Focus Areas | Status |
@@ -818,7 +819,62 @@ Executed inside `ReactionsService.toggleReaction`:
 
 ---
 
-## 🔄 End-to-End System Working Flow (As of Day 12+)
+## 📈 Day 13 — Ranked & Latest Feed APIs, Deterministic Scoring & Integration Verification
+
+Day 13 delivers deterministic ranking, pure mathematical scoring, MongoDB aggregation pipelines, and comprehensive replica-set integration testing for DevPulse community feeds:
+
+### 1. Mathematical Ranking Formula & Constant Weighting
+- **Scoring Equation**:
+  $$\text{rankScore} = (\text{likes} - \text{dislikes}) + (\text{commentCount} \times \text{COMMENT\_WEIGHT})$$
+  - Where `COMMENT_WEIGHT = 2` as defined in [`backend/src/posts/posts.constants.ts`](backend/src/posts/posts.constants.ts).
+  - Likes contribute $+1$, dislikes subtract $-1$, and each comment contributes $+2$ to reflect discussion density.
+- **Pure Function Implementation**:
+  - Encapsulated in [`calculatePostRankScore`](backend/src/posts/post-ranking.util.ts) with defensive type checks ensuring `NaN`, `null`, and undefined values safely default to $0$.
+  - Accommodates negative scores (posts with more dislikes than likes/comments) and cancels equal likes/dislikes cleanly.
+
+### 2. MongoDB Aggregation Pipeline (`buildTopPostsPipeline`)
+- **Pipeline Architecture** ([`backend/src/posts/post-ranking.pipeline.ts`](backend/src/posts/post-ranking.pipeline.ts)):
+  1. **`$match`**: Filters active posts excluding soft-deleted records (`deletedAt: { $exists: false }`).
+  2. **`$addFields`**: Dynamically computes `rankScore` in the database engine using `$add`, `$subtract`, `$multiply`, and `$ifNull`.
+  3. **`$sort` (Deterministic Tie-Breaker)**:
+     ```json
+     {
+       "rankScore": -1,
+       "createdAt": -1,
+       "_id": -1
+     }
+     ```
+     Resolves score ties deterministically using post creation timestamp, and breaks identical timestamps using the unique ObjectId.
+  4. **`$skip` & `$limit`**: Server-side pagination parameters ensuring lightweight memory overhead.
+
+### 3. Posts API Sort Query Parameter (`GET /posts?sort=latest|top`)
+- **Query DTO Validation** ([`GetPostsQueryDto`](backend/src/posts/dto/get-posts-query.dto.ts)):
+  - `@IsIn(['top', 'latest'])` validating the `sort` query option (defaults to `latest`).
+  - `@Transform` parsing `page` and `limit` strings into validated integers with `@Min(1)` and `@Max(100)` boundaries.
+  - Documented interactively in OpenAPI / Swagger UI at `http://localhost:5000/docs`.
+- **Hybrid Service Strategy** ([`PostsService.findAllPosts`](backend/src/posts/posts.service.ts)):
+  - When `sort === 'latest'`, executes indexed Mongoose query sorted by `{ createdAt: -1, _id: -1 }`.
+  - When `sort === 'top'`, executes `findTopPosts` running the aggregation pipeline, re-hydrating author profiles via `POPULATE_POST_LIST_AUTHOR`, and preserving computed `rankScore` in the output envelope without mutating original Mongoose schema documents.
+
+### 4. Controlled Seed Dataset & Database Safety Isolation
+- **Deterministic Seed Fixture** ([`backend/src/posts/testing/ranking-seed.fixture.ts`](backend/src/posts/testing/ranking-seed.fixture.ts)):
+  - Defines 10 controlled post documents (`Posts A` through `J`) with predetermined engagement metrics, negative scores, zero balances, and identical timestamps.
+- **Safety-Guarded Seeding & Cleanup Scripts**:
+  - `npm run seed:ranking` ([`backend/src/scripts/seed-ranking.ts`](backend/src/scripts/seed-ranking.ts)): Seeds controlled data only after verifying `connection.name === 'devpulse_day13_seed'`. Refuses execution on production or default database URIs.
+  - `npm run cleanup:ranking` ([`backend/src/scripts/cleanup-ranking-seed.ts`](backend/src/scripts/cleanup-ranking-seed.ts)): Cleans up seeded posts and author records safely.
+  - `npm run check:plans` ([`backend/src/scripts/check-post-query-plans.ts`](backend/src/scripts/check-post-query-plans.ts)): Inspects collection indexes and winning execution plans.
+
+### 5. Comprehensive Unit & Replica-Set Integration Test Matrix
+- **Pure Unit Tests** ([`backend/src/posts/post-ranking.util.spec.ts`](backend/src/posts/post-ranking.util.spec.ts)):
+  - 7 unit tests verifying positive rank scores, cancellation logic, negative scores, comment weighting, and zero engagement.
+- **In-Memory Replica Set Integration Tests** ([`backend/src/posts/post-ranking.integration.spec.ts`](backend/src/posts/post-ranking.integration.spec.ts)):
+  - 9 end-to-end integration tests running on `mongodb-memory-server` with transactions.
+  - Validates exact top order, latest order, tie-breaking, pagination stability across pages (zero duplicates or skipped items), soft-deleted post exclusion, and empty result handling.
+- **Total Backend Test Coverage**: **20 test files, 158 tests passing (`100% green`)**.
+
+---
+
+## 🔄 End-to-End System Working Flow (As of Day 13)
 
 The complete end-to-end integration across frontend, Next.js BFF, NestJS core, and MongoDB comprises six interconnected operational flows:
 
@@ -1214,6 +1270,22 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
 6. **Optimistic Post Reactor Social Proof Line (`PostReactorsSummary`)**:
    - Observe the social proof summary line positioned directly above the post action divider with the welcoming `FiSmile` icon.
    - Click Like or Dislike: verify the reactor text (e.g. *"You and 2 others reacted to this post"*) updates optimistically in 0ms without requiring a page reload.
+
+### 10. Day 13 Ranked and Latest Feed APIs Verification Flow
+1. **Latest Chronological Feed Verification (`GET /posts?sort=latest`)**:
+   - Send `GET http://localhost:5000/posts?sort=latest&page=1&limit=5`.
+   - Verify posts return sorted in strictly descending order by `createdAt` with secondary tie-breaker `_id: -1`.
+2. **Ranked Top Feed Verification (`GET /posts?sort=top`)**:
+   - Send `GET http://localhost:5000/posts?sort=top&page=1&limit=5`.
+   - Verify posts return ordered by computed `rankScore = (likes - dislikes) + (comments * 2)` descending.
+   - Verify each item in `data.items` includes `rankScore: number` alongside populated author information (`name`, `headline`).
+3. **Controlled Seed Dataset Verification**:
+   - In `backend/.env`, set `RANKING_SEED_MONGODB_URI` pointing to `devpulse_day13_seed`.
+   - Run `npm run seed:ranking`: verify 10 controlled posts (`A`–`J`) with known engagement and tie-breaker criteria are created.
+   - Run `npm run cleanup:ranking`: verify all seeded posts and author records are cleanly unmounted.
+4. **Automated Vitest Test Matrix Verification**:
+   - In `backend/`, run `npm test`.
+   - Verify 20 test files pass and all **158 unit and integration tests** execute with 100% green status.
 
 
 
