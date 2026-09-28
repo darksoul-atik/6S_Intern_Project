@@ -9,6 +9,8 @@
   "scripts": {
     "build": "nest build",
     "seed:admin": "nest build && node dist/scripts/seed-admin.js",
+    "seed:ranking": "nest build && node dist/scripts/seed-ranking.js",
+    "cleanup:ranking": "nest build && node dist/scripts/cleanup-ranking-seed.js",
     "deploy": "nest deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
