@@ -138,7 +138,7 @@ Interactive OpenAPI Swagger documentation is available at:
   Supported by dedicated compound index `{ commentCount: -1, createdAt: -1, _id: -1 }` for high-throughput execution without in-memory sort limits.
 - **Validation & OpenAPI**: Query parameter validation via `GetPostsQueryDto` (`@IsIn(['top', 'latest', 'most-discussed'])`, `@Min(1)`, `@Max(100)`).
 - **Query Plan Verification Script**: `npm run check:plans` executes MongoDB `explain("executionStats")` across all three feed sorting modes, confirming index utilization (`IXSCAN`).
-- **Controlled Seed Fixtures & Safety Isolation**: `npm run seed:ranking` and `npm run cleanup:ranking` guarded by strict database name checking (`devpulse_day13_seed`).
+- **Controlled Seed Fixtures & Safety Isolation**: `npm run seed:ranking`, `npm run verify:seed`, and `npm run cleanup:ranking` guarded by strict database name checking (`devpulse_day13_seed`).
 
 ## 🔄 Working Flow as of Day 13
 

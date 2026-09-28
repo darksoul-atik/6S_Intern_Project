@@ -1295,7 +1295,8 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
 5. **Controlled Seed Dataset Verification**:
    - In `backend/.env`, set `RANKING_SEED_MONGODB_URI` pointing to `devpulse_day13_seed`.
    - Run `npm run seed:ranking`: verify 10 controlled posts (`A`–`J`) with known engagement and tie-breaker criteria are created.
-   - Run `npm run cleanup:ranking`: verify all seeded posts and author records are cleanly unmounted.
+   - Run `npm run verify:seed`: verifies that `sort=top`, `sort=latest`, and `sort=most-discussed` orders match expected mathematical fixtures, tie-breakers hold, and 3-page pagination stays 100% stable with zero duplicates.
+   - Run `npm run cleanup:ranking`: cleanly unmounts all seeded test posts and author records.
 6. **Automated Vitest Test Matrix Verification**:
    - In `backend/`, run `npm test`.
    - Verify 20 test files pass and all **161 unit and integration tests** execute with 100% green status.

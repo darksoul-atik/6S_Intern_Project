@@ -109,7 +109,11 @@ async function seedRankingData(): Promise<void> {
     'Expected active Latest order: H -> F -> E -> D -> C -> B -> G -> I -> A',
   );
 
-  console.log('Post J is soft-deleted and must not appear in either feed.');
+  console.log(
+    'Expected active Most Discussed order: I -> B -> D -> A -> H -> C -> F -> G -> E',
+  );
+
+  console.log('Post J is soft-deleted and must not appear in any feed.');
 }
 
 seedRankingData()
