@@ -9,6 +9,7 @@ import { Types, type ClientSession, type Model } from 'mongoose';
 import { Post, type PostDocument } from './schemas/post.schema.js';
 
 import { CreatePostDto } from './dto/create-post.dto.js';
+import type { PostSort } from './dto/get-posts-query.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
 
 import { UsersService } from '../users/users.service.js';
@@ -16,11 +17,16 @@ import {
   POPULATE_POST_LIST_AUTHOR,
   POPULATE_POST_DETAIL_AUTHOR,
 } from './posts.constants.js';
+import { buildTopPostsPipeline } from './post-ranking.pipeline.js';
 
 export * from './posts.constants.js';
 
+export type RankedPostListItem = Record<string, unknown> & {
+  rankScore: number;
+};
+
 export interface PaginatedPostsResult {
-  posts: PostDocument[];
+  posts: Array<PostDocument | RankedPostListItem>;
   total: number;
   page: number;
   limit: number;
@@ -172,16 +178,27 @@ export class PostsService {
   | List ACTIVE Posts
   |--------------------------------------------------------------------------
   |
-  | Order: newest to oldest (createdAt: -1, _id: -1).
-  | Filters out soft-deleted posts.
-  | Uses lean author projection excluding avatarUrl.
+  | latest:
+  | createdAt DESC -> _id DESC
+  |
+  | top:
+  | rankScore DESC -> createdAt DESC -> _id DESC
+  |
+  | Soft-deleted Posts are excluded from both feeds.
   |--------------------------------------------------------------------------
   */
 
   async findAllPosts(query: {
     page: number;
     limit: number;
+    sort?: PostSort;
   }): Promise<PaginatedPostsResult> {
+    const sort = query.sort ?? 'latest';
+
+    if (sort === 'top') {
+      return this.findTopPosts(query.page, query.limit);
+    }
+
     const activePostFilter = {
       deletedAt: {
         $exists: false,
@@ -209,6 +226,91 @@ export class PostsService {
       page: query.page,
       limit: query.limit,
       totalPages: Math.ceil(total / query.limit) || 1,
+    };
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | List TOP Posts
+  |--------------------------------------------------------------------------
+  |
+  | The MongoDB aggregation decides the ranking order.
+  |
+  | After ranking, Posts are loaded again so the existing
+  | author population behavior remains unchanged.
+  |--------------------------------------------------------------------------
+  */
+
+  private async findTopPosts(
+    page: number,
+    limit: number,
+  ): Promise<PaginatedPostsResult> {
+    const activePostFilter = {
+      deletedAt: {
+        $exists: false,
+      },
+    };
+
+    const [total, rankedRows] = await Promise.all([
+      this.postModel.countDocuments(activePostFilter).exec(),
+
+      this.postModel
+        .aggregate<{
+          _id: Types.ObjectId;
+          rankScore: number;
+        }>(buildTopPostsPipeline(page, limit))
+        .exec(),
+    ]);
+
+    if (rankedRows.length === 0) {
+      return {
+        posts: [],
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit) || 1,
+      };
+    }
+
+    const rankedIds = rankedRows.map((post) => post._id);
+
+    const postDocuments = await this.postModel
+      .find({
+        _id: {
+          $in: rankedIds,
+        },
+        deletedAt: {
+          $exists: false,
+        },
+      })
+      .populate(POPULATE_POST_LIST_AUTHOR)
+      .exec();
+
+    const postsById = new Map(
+      postDocuments.map((post) => [post._id.toString(), post]),
+    );
+
+    const posts: RankedPostListItem[] = [];
+
+    for (const rankedRow of rankedRows) {
+      const post = postsById.get(rankedRow._id.toString());
+
+      if (!post) {
+        continue;
+      }
+
+      posts.push({
+        ...(post.toJSON() as Record<string, unknown>),
+        rankScore: rankedRow.rankScore,
+      });
+    }
+
+    return {
+      posts,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
     };
   }
 
