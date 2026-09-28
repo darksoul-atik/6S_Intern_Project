@@ -2,7 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 
-export type PostSort = 'top' | 'latest';
+export type PostSort = 'top' | 'latest' | 'most-discussed';
 
 export class GetPostsQueryDto {
   @ApiPropertyOptional({
@@ -12,7 +12,9 @@ export class GetPostsQueryDto {
   })
   @IsOptional()
   @Transform(({ value }) => {
-    if (value === undefined || value === null || value === '') return 1;
+    if (value === undefined || value === null || value === '') {
+      return 1;
+    }
 
     const parsed = parseInt(value, 10);
 
@@ -29,7 +31,9 @@ export class GetPostsQueryDto {
   })
   @IsOptional()
   @Transform(({ value }) => {
-    if (value === undefined || value === null || value === '') return 10;
+    if (value === undefined || value === null || value === '') {
+      return 10;
+    }
 
     const parsed = parseInt(value, 10);
 
@@ -42,13 +46,13 @@ export class GetPostsQueryDto {
 
   @ApiPropertyOptional({
     example: 'latest',
-    enum: ['top', 'latest'],
+    enum: ['top', 'latest', 'most-discussed'],
     description: 'Feed sort order.',
     default: 'latest',
   })
   @IsOptional()
-  @IsIn(['top', 'latest'], {
-    message: 'sort must be either "top" or "latest"',
+  @IsIn(['top', 'latest', 'most-discussed'], {
+    message: 'sort must be either "top", "latest", or "most-discussed"',
   })
   sort: PostSort = 'latest';
 }
