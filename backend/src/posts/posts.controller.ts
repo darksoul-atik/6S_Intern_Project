@@ -78,11 +78,14 @@ export class PostsController {
   |
   | Public endpoint.
   |
-  | sort=latest
+  | latest:
   | createdAt DESC -> _id DESC
   |
-  | sort=top
+  | top:
   | rankScore DESC -> createdAt DESC -> _id DESC
+  |
+  | most-discussed:
+  | commentCount DESC -> createdAt DESC -> _id DESC
   |
   | If sort is omitted, latest is used.
   |
@@ -95,7 +98,7 @@ export class PostsController {
   @ApiOperation({
     summary: 'Get paginated posts',
     description:
-      'Returns active posts using either latest or top ordering. The default sort is latest.',
+      'Returns active posts using latest, top, or most-discussed ordering. The default sort is latest.',
   })
   @ApiQuery({
     name: 'page',
@@ -112,10 +115,10 @@ export class PostsController {
   @ApiQuery({
     name: 'sort',
     required: false,
-    enum: ['top', 'latest'],
+    enum: ['top', 'latest', 'most-discussed'],
     example: 'latest',
     description:
-      'Feed ordering. "latest" sorts by createdAt and _id. "top" sorts by rankScore, createdAt, and _id.',
+      'Feed ordering. "latest" sorts by createdAt and _id. "top" sorts by rankScore, createdAt, and _id. "most-discussed" sorts by commentCount, createdAt, and _id.',
   })
   @ApiResponse({
     status: 200,
