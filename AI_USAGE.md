@@ -132,12 +132,19 @@
 - **Optimistic Social Proof Reaction Summary**:
   - Directed the implementation of `PostReactorsSummary` with optimistic updates, cache invalidation (`reactorKeys.all`), and replacing generic like icons with the welcoming `FiSmile` icon resting directly above the action divider.
 
-### Day 13: Ranked and Latest Feed APIs, Pure Deterministic Scoring & Verification Matrix
+### Day 13: Ranked, Latest & Most-Discussed Feed APIs, Pure Deterministic Scoring & Verification Matrix
 - **Deterministic Mathematical Scoring**: Prompted the implementation of pure function `calculatePostRankScore(likes, dislikes, comments)` with `COMMENT_WEIGHT = 2`, ensuring engagement signals are computed predictably with zero side effects or database dependencies.
 - **Aggregation Pipeline & Server-Side Scoring**: Directed the construction of `buildTopPostsPipeline` utilizing MongoDB `$addFields`, `$subtract`, and `$multiply` operators to perform high-performance score calculations in-engine while filtering soft-deleted posts.
-- **Stable Multi-Tier Tie-Breaking**: Enforced multi-tier secondary sorting (`createdAt: -1, _id: -1`) guaranteeing that posts with identical rank scores or equal timestamps do not shift positions across pagination requests.
+- **Most-Discussed Feed Sorting & Compound Indexing**: Guided the implementation of `findMostDiscussedPosts` with `sort=most-discussed` ordering strictly by `commentCount DESC -> createdAt DESC -> _id DESC`. Added dedicated compound index `{ commentCount: -1, createdAt: -1, _id: -1 }` on `PostSchema` ensuring high-throughput `IXSCAN` index-backed execution.
+- **Stable Multi-Tier Tie-Breaking**: Enforced multi-tier secondary sorting (`createdAt: -1, _id: -1`) guaranteeing that posts with identical rank scores, equal comment counts, or matching timestamps do not shift positions across pagination requests.
+- **Query Plan Verification Script**: Directed the creation of `backend/src/scripts/check-post-query-plans.ts` (`npm run check:plans`) to execute `explain('executionStats')` for all three feed sorts (`latest`, `top`, `most-discussed`).
 - **Database Safety Guard on Seeding**: Prompted the creation of dedicated CLI seed and cleanup scripts (`seed:ranking`, `cleanup:ranking`) with a strict runtime check refusing execution unless connected specifically to `devpulse_day13_seed`.
-- **End-to-End Replica-Set Testing**: Directed the authoring of 9 integration tests running on `mongodb-memory-server` verifying exact output order, negative score ordering, tie resolution, and pagination stability.
+- **End-to-End Replica-Set Testing**: Directed the authoring of 12 integration tests running on `mongodb-memory-server` verifying exact output order, negative score ordering, tie resolution, and pagination stability across all 3 sort modes.
+- **Post Reaction UX Refinements**:
+  - Directed the removal of intrusive hover peek popovers and digit-click modal triggers on post reaction buttons, replacing them with clean native tooltips (`Like • X likes`).
+  - Guided the redesign of `PostReactorsSummary` into a sleek borderless frosted glass badge container (`bg-slate-100/60 dark:bg-white/[0.04] backdrop-blur-md`).
+  - Enabled direct developer profile navigation when clicking reactor names (`/developers/[id]`) with event propagation isolation.
+  - Replaced the standalone "View all" button with an interactive whole-sentence click trigger and an aligned inline chevron right icon (`FiChevronRight`).
 
 ---
 
@@ -239,7 +246,11 @@
 - **Rejected Schema Modification for Dynamic Ranking**: Strongly rejected storing computed rank scores persistently in the MongoDB `Post` document. Writing dynamic scores on every reaction/comment causes write amplification and out-of-date ranking scores when weights change. Enforced computing `rankScore` dynamically on-the-fly via the aggregation pipeline (`$addFields`) while leaving the underlying schema clean.
 - **Rejected Seeding Against Shared Development Database**: Rejected running ranking verification seeds against the primary `MONGODB_URI`. Seed datasets contain artificial dates, extreme like/dislike balances, and test authors that would pollute real developer feeds. Mandated a dedicated `RANKING_SEED_MONGODB_URI` pointing strictly to `devpulse_day13_seed` with programmatic connection name guards.
 - **Rejected In-Memory Sorting on Unpaginated Collections**: Rejected loading all posts into Node.js memory to sort by score via JavaScript `Array.prototype.sort()`. In production this causes severe memory leaks; enforced performing sorting and pagination (`$sort`, `$skip`, `$limit`) directly inside the MongoDB aggregation engine.
-- **Rejected Non-Deterministic Secondary Sorting**: Rejected single-field sorting (`{ rankScore: -1 }`). Posts with identical scores would return in arbitrary order depending on disk block layout, causing duplicate posts across pagination pages. Enforced `{ rankScore: -1, createdAt: -1, _id: -1 }` tie-breakers.
+- **Rejected Non-Deterministic Secondary Sorting**: Rejected single-field sorting (`{ rankScore: -1 }` or `{ commentCount: -1 }`). Posts with identical scores or comment counts would return in arbitrary order depending on disk block layout, causing duplicate posts across pagination pages. Enforced `{ createdAt: -1, _id: -1 }` tie-breakers across all feed sorting modes.
+- **Rejected Unindexed Sorting on `commentCount`**: Audited `findMostDiscussedPosts` and rejected running `sort({ commentCount: -1, createdAt: -1, _id: -1 })` without index support. Added the exact compound index to `PostSchema` to ensure in-memory sort buffer overflows (`Btree / COLLSCAN`) never happen in production.
+- **Rejected Hover Peek Popover on Post Reaction Action Buttons**: While useful on nested comments where space is extremely tight, on full post cards the hover peek popover was intrusive and distracting for users simply trying to like or dislike a post. Replaced with clean, non-obtrusive title tooltips.
+- **Rejected Separate "View all" Button Inside Sentence**: Having a separate "View all" button at the end of "Tom Anderson and DevPulse Lead Admin reacted to this post" looked cluttered. Unified the entire sentence into an interactive frosted glass badge with an aligned chevron icon.
+- **Rejected Event Bubbling from Reactor Profile Links to Modal**: When clicking a specific reactor's name in the summary badge, event propagation is isolated (`e.stopPropagation()`) so the user navigates directly to their profile instead of triggering the reactors modal dialog.
 
 ---
 
@@ -438,9 +449,11 @@
   - Caught an accidental replacement where `posts.service.spec.ts` had its core 14 tests overwritten by utility score tests. Restored `posts.service.spec.ts` immediately via git and cleanly separated pure ranking tests into dedicated `post-ranking.util.spec.ts`, preserving 100% test coverage across both suites.
 - **Accidental Nested Directory & Zero-Byte Fixture Cleanup**:
   - Detected and removed an empty zero-byte fixture file created in an accidentally duplicated nested path (`backend/src/posts/backend/src/posts/testing`), preventing Vitest runner from failing on empty test files.
-- **Vitest Test Suite Expansion (142 to 158 Passing Tests)**:
-  - Added 7 unit tests in `post-ranking.util.spec.ts` and 9 in-memory replica set integration tests in `post-ranking.integration.spec.ts`.
-  - Expanded total backend test coverage from 142 tests to 158 tests across 20 test files (100% green).
+- **Chevron Icon Baseline Alignment**:
+  - Fixed vertical misalignment between the sentence text and the trailing `<FiChevronRight>` icon inside `PostReactorsSummary` by using an inline-flex wrapper with matching line-height and `translate-y-px`.
+- **Vitest Test Suite Expansion (142 to 161 Passing Tests)**:
+  - Added 7 unit tests in `post-ranking.util.spec.ts` and 12 in-memory replica set integration tests in `post-ranking.integration.spec.ts` covering `sort=top`, `sort=latest`, `sort=most-discussed`, tie-breakers, and 3-page pagination stability.
+  - Expanded total backend test coverage from 142 tests to 161 tests across 20 test files (100% green).
 
 
 

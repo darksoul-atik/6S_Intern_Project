@@ -199,23 +199,29 @@ frontend/src/
   - Automatically scrolls down to the comment form and centers/focuses the `#comment-body` textarea for an immediate "ready to comment" state.
 
 ### 6. Post-Day 12 Community Refinements & Reaction Upgrades
-- **Clickable Commenter Profiles**:
-  - Clicking any commenter or replier's name or avatar navigates directly to their public profile view at `/developers/[id]`.
-  - Applied consistently across post author cards, comments, and replies.
+- **Clickable Commenter & Reactor Profiles**:
+  - Clicking any commenter, replier, or post reactor's name navigates directly to their public profile view at `/developers/[id]`.
+  - Applied across post author cards, comments, replies, and reactor summary badges with event bubbling isolation (`e.stopPropagation()`).
+- **Streamlined Post Action Bar Reactions**:
+  - Replaced intrusive hover peek popovers and digit modals on post cards with lightweight native title tooltips (`Like • X likes`).
+  - Clicking the reaction digit directly toggles the reaction, keeping post card interactions fast, reliable, and fluid.
+- **Borderless Frosted Glass Social Proof Badge (`PostReactorsSummary`)**:
+  - Renders a clean social proof line (*"Tom Anderson and DevPulse Lead Admin reacted to this post"*) in a borderless frosted glass badge container (`bg-slate-100/60 dark:bg-white/[0.04] backdrop-blur-md`).
+  - Clicking the sentence badge anywhere opens the full `ReactorsModal` (eliminating the clunky "View all" button).
+  - Aligned inline chevron right icon (`FiChevronRight`) provides a clear visual affordance for modal expansion.
+  - Reactor names inside the badge are directly clickable links to developer profiles.
+  - Optimistically updates at 0ms latency when reactions are toggled.
 - **Flattened Same-Depth Replies with Structured @Mention**:
   - Replying to an existing reply flattens into a sibling under the root comment, eliminating deep staircase nesting.
   - Automatically prefixes a structured, purple `@Username` mention link that directs to the target developer's profile.
-- **Hover Peek Popover (`ReactionPeekPopover`)**:
-  - Hovering over reaction count badges displays a lightweight, floating frosted-glass preview of the top reactors with mini-avatars and names.
+- **Comment Hover Peek Popovers (`ReactionPeekPopover`)**:
+  - Hovering over comment reaction count badges displays a lightweight, floating frosted-glass preview of the top reactors with mini-avatars and names.
   - Scales gracefully to 100+ reactions (e.g. *"...and 97 others"*), keeping the inline comment row completely clutter-free.
 - **Reactors List Modal (`ReactorsModal`)**:
-  - Clicking any reaction count or summary text opens a paginated modal with `All`, `Likes`, and `Dislikes` tabs, avatar previews, headlines, and profile links.
-- **Post Reactor Summary (`PostReactorsSummary`)**:
-  - Renders a clean social proof line (*"Alex Chen, Sarah Connor and 2 others reacted to this post"*) featuring a friendly reaction icon (`FiSmile`) resting directly above the action divider.
-  - Optimistically updates at 0ms latency when reactions are toggled without requiring page reload.
+  - Accessible full-screen dialog with `All`, `Likes`, and `Dislikes` tabs, avatar previews, headlines, and profile links.
 
 ### 7. Phase 4 Feed Discovery & Ranking Foundations (Day 13)
-- **Ranked Feed Integration Readiness**: Backend query parameter `sort=latest` and `sort=top` wired into OpenAPI contracts, prepared for tabbed feed switching in Day 14.
+- **Multi-Sort Feed Integration Readiness**: Backend query parameters `sort=latest`, `sort=top`, and `sort=most-discussed` wired into typed API client and OpenAPI contracts, prepared for tabbed feed switching in Day 14.
 - **Action Bar Alignment Polish**: Polished post card action bar flex alignments, reaction button padding, and standard word-break typography ensuring seamless scaling across mobile viewports.
 
 ---

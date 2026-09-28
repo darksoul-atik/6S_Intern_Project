@@ -37,7 +37,7 @@ DevPulse is a high-performance, engineering-first developer community platform e
 ### Phase 4: Discovery, Quality, and Applied Features (Days 13–16)
 | Day | Milestone | Focus Areas | Status |
 |:---:|---|---|:---:|
-| **Day 13** | **Ranked & Latest Feed APIs** | Pure deterministic ranking calculation (`calculatePostRankScore`), aggregation pipeline (`buildTopPostsPipeline`), `sort=top` and `sort=latest` query options on `GET /posts`, stable secondary tie-breaker sorting (`createdAt DESC`, `_id DESC`), controlled seed fixtures, verification scripts (`seed:ranking`, `cleanup:ranking`), unit & replica-set integration test matrix (158/158 tests passing). | ✅ **Completed** |
+| **Day 13** | **Ranked, Latest & Most-Discussed Feed APIs** | Pure deterministic ranking calculation (`calculatePostRankScore`), aggregation pipeline (`buildTopPostsPipeline`), `sort=top`, `sort=latest`, and `sort=most-discussed` query options on `GET /posts`, stable secondary tie-breaker sorting (`createdAt DESC`, `_id DESC`), compound index `{ commentCount: -1, createdAt: -1, _id: -1 }`, query plan explain verification (`npm run check:plans`), controlled seed fixtures, verification scripts (`seed:ranking`, `cleanup:ranking`), unit & replica-set integration test matrix (161/161 tests passing across 20 suites). | ✅ **Completed** |
 | **Day 14–16** | **Feed Tabs, Search & AI** | Feed filter tabs with URL sync, full-text search with debounce & abort signal, AI-assisted post summarizer. | ⏳ *Upcoming* |
 
 ### Phase 5: Testing, Security, Deployment, and Communication (Days 17–20)
@@ -1247,45 +1247,58 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
    - Page smoothly scrolls down to the comment box and automatically focuses the `#comment-body` textarea with active cursor, ready for immediate typing.
 
 ### 9. Post-Day 12 Community Refinements & Reactions Transparency Verification Flow
-1. **Hover Peek Popover Interaction**:
-   - Hover over the Like or Dislike reaction button on any post, comment, or nested reply.
+1. **Comment Hover Peek Popovers (`ReactionPeekPopover`)**:
+   - Hover over the Like or Dislike reaction button on any comment or nested reply.
    - After a 200ms debounce, observe the floating frosted glass popover displaying the top 1–3 reactors with mini-avatars and full names.
    - Move the cursor away; verify the popover dismisses cleanly after a 180ms buffer without flickering.
-2. **High-Volume Reaction Scaling (100+ Reactions UX)**:
-   - For items with high engagement (e.g., 100+ likes), verify the popover shows the top 3 reactors followed by a `+{count} others` pill and a highlighted `"View all {total} →"` link.
-   - Verify comment cards and action rows maintain strict pixel boundaries with zero overflow or wrapping.
-3. **Click-to-Open Reactors Modal (`ReactorsModal`)**:
-   - Click any reaction count button or click `"View all {count} →"` inside the peek popover.
+2. **Streamlined Post Action Bar Reactions**:
+   - Post action bar Like and Dislike buttons feature clean, lightweight title tooltips (`Like • X likes`), keeping the post card uncluttered without intrusive peek popovers.
+   - Clicking the reaction digit toggles the reaction directly, preserving seamless mobile and desktop ergonomics.
+3. **Borderless Frosted Glass Social Proof Badge (`PostReactorsSummary`)**:
+   - Positioned directly above the post action divider, rendering inside a sleek borderless frosted glass badge (`bg-slate-100/60 dark:bg-white/[0.04] backdrop-blur-md`).
+   - Reactor names (e.g. "Tom Anderson", "DevPulse Lead Admin") are directly interactive links that navigate to their developer profile (`/developers/[id]`) with event bubbling isolated.
+   - Clicking anywhere on the sentence badge opens the full reactors modal (`ReactorsModal`).
+   - An inline right chevron icon (`FiChevronRight`) is vertically aligned with the text baseline as a visual affordance.
+   - Updates optimistically in 0ms latency when reactions are toggled.
+4. **Click-to-Open Reactors Modal (`ReactorsModal`)**:
+   - Click the post reactors summary badge or click `"View all {count} →"` inside comment peek popovers.
    - Verify the full-screen accessible modal dialog opens over a frosted backdrop (`backdrop-blur-md`).
    - Switch between **All**, **Likes**, and **Dislikes** tabs to filter reactors with live counts.
    - Click outside or press `Escape` to close the modal.
-4. **Clickable Commenter Profiles (`/developers/[id]`)**:
+5. **Clickable Commenter Profiles (`/developers/[id]`)**:
    - Click on any commenter's avatar or display name in the comments or replies section.
    - Verify seamless client navigation to `/developers/[id]` displaying their full public profile, skills, and work history.
-5. **Flattened Same-Depth Replies & Structured `@Mention`**:
+6. **Flattened Same-Depth Replies & Structured `@Mention`**:
    - Click **"Reply"** on an existing nested reply.
    - Observe the reply input opening with `@Username` pre-filled.
    - Submit the reply: verify it appears at depth 1 under the root comment (no infinite staircase indentation).
    - Verify the recipient's name is rendered as an interactive purple `@Username` link directing to their developer profile.
-6. **Optimistic Post Reactor Social Proof Line (`PostReactorsSummary`)**:
-   - Observe the social proof summary line positioned directly above the post action divider with the welcoming `FiSmile` icon.
-   - Click Like or Dislike: verify the reactor text (e.g. *"You and 2 others reacted to this post"*) updates optimistically in 0ms without requiring a page reload.
 
-### 10. Day 13 Ranked and Latest Feed APIs Verification Flow
+### 10. Day 13 Ranked, Latest & Most-Discussed Feed APIs Verification Flow
 1. **Latest Chronological Feed Verification (`GET /posts?sort=latest`)**:
    - Send `GET http://localhost:5000/posts?sort=latest&page=1&limit=5`.
    - Verify posts return sorted in strictly descending order by `createdAt` with secondary tie-breaker `_id: -1`.
 2. **Ranked Top Feed Verification (`GET /posts?sort=top`)**:
    - Send `GET http://localhost:5000/posts?sort=top&page=1&limit=5`.
    - Verify posts return ordered by computed `rankScore = (likes - dislikes) + (comments * 2)` descending.
-   - Verify each item in `data.items` includes `rankScore: number` alongside populated author information (`name`, `headline`).
-3. **Controlled Seed Dataset Verification**:
+   - Verify each item includes `rankScore: number` alongside populated author information (`name`, `headline`).
+   - Tie-breaking: when rank scores match, ordered by `createdAt DESC`, then `_id DESC`.
+3. **Most-Discussed Feed Verification (`GET /posts?sort=most-discussed`)**:
+   - Send `GET http://localhost:5000/posts?sort=most-discussed&page=1&limit=5`.
+   - Verify posts return ordered strictly by `commentCount DESC` with tie-breaker `createdAt DESC`, then `_id DESC`.
+   - Supported by MongoDB compound index: `{ commentCount: -1, createdAt: -1, _id: -1 }`.
+4. **Query Plan Explain Verification (`npm run check:plans`)**:
+   - In `backend/`, run `npm run check:plans`.
+   - Verifies the compound index on `{ commentCount: -1, createdAt: -1, _id: -1 }` produces an `IXSCAN` query plan for `most-discussed`.
+   - Verifies `latest` uses `{ createdAt: -1, _id: -1 }` index scan.
+   - Verifies `top` executes the server-side aggregation pipeline cleanly.
+5. **Controlled Seed Dataset Verification**:
    - In `backend/.env`, set `RANKING_SEED_MONGODB_URI` pointing to `devpulse_day13_seed`.
    - Run `npm run seed:ranking`: verify 10 controlled posts (`A`–`J`) with known engagement and tie-breaker criteria are created.
    - Run `npm run cleanup:ranking`: verify all seeded posts and author records are cleanly unmounted.
-4. **Automated Vitest Test Matrix Verification**:
+6. **Automated Vitest Test Matrix Verification**:
    - In `backend/`, run `npm test`.
-   - Verify 20 test files pass and all **158 unit and integration tests** execute with 100% green status.
+   - Verify 20 test files pass and all **161 unit and integration tests** execute with 100% green status.
 
 
 

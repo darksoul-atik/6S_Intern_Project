@@ -71,7 +71,7 @@ npm run seed:admin
 # Start development server (watch mode)
 npm run start:dev
 
-# Run automated Vitest test suite (86 unit & integration tests)
+# Run automated Vitest test suite (161 unit & integration tests across 20 suites)
 npm run test
 ```
 
@@ -128,12 +128,16 @@ Interactive OpenAPI Swagger documentation is available at:
 
 ---
 
-### 7. Ranked & Latest Feeds (Day 13)
+### 7. Ranked, Latest & Most-Discussed Feeds (Day 13)
 - **`GET /posts?sort=latest`**: Default chronological feed sorted by `{ createdAt: -1, _id: -1 }`.
 - **`GET /posts?sort=top`**: Deterministic ranked feed computing `rankScore` via aggregation pipeline:
   $$\text{rankScore} = (\text{likes} - \text{dislikes}) + (\text{commentCount} \times \text{COMMENT\_WEIGHT})$$
   with `COMMENT_WEIGHT = 2`. Secondary tie-breaker sorts by `{ rankScore: -1, createdAt: -1, _id: -1 }` guaranteeing zero item shifting or page order drift.
-- **Validation & OpenAPI**: Query parameter validation via `GetPostsQueryDto` (`@IsIn(['top', 'latest'])`, `@Min(1)`, `@Max(100)`).
+- **`GET /posts?sort=most-discussed`**: Discussion-first feed sorted strictly by comment engagement:
+  $$\{ \text{commentCount}: -1, \text{createdAt}: -1, \text{_id}: -1 \}$$
+  Supported by dedicated compound index `{ commentCount: -1, createdAt: -1, _id: -1 }` for high-throughput execution without in-memory sort limits.
+- **Validation & OpenAPI**: Query parameter validation via `GetPostsQueryDto` (`@IsIn(['top', 'latest', 'most-discussed'])`, `@Min(1)`, `@Max(100)`).
+- **Query Plan Verification Script**: `npm run check:plans` executes MongoDB `explain("executionStats")` across all three feed sorting modes, confirming index utilization (`IXSCAN`).
 - **Controlled Seed Fixtures & Safety Isolation**: `npm run seed:ranking` and `npm run cleanup:ranking` guarded by strict database name checking (`devpulse_day13_seed`).
 
 ## 🔄 Working Flow as of Day 13
@@ -202,21 +206,28 @@ Interactive OpenAPI Swagger documentation is available at:
    }
 ```
 
-### 3. Feed Pagination & Infinite Scroll Query
+### 3. Feed Pagination & Multi-Sort Query Execution
 
 ```
-1. Client GET /posts?page=2&limit=10&status=active
+1. Client GET /posts?page=2&limit=10&sort=top|latest|most-discussed
                  │
                  ▼
-2. PostsService.findAllPosts executes:
-   ├── Filter: { deletedAt: { $exists: false } }
-   ├── Compound Index Scan: { createdAt: -1, _id: -1 }
-   ├── Lean Projection: authorId -> name, headline, avatarUrl
-   ├── Pagination: .skip((page - 1) * limit).limit(limit)
-   └── Total Count: countDocuments()
+2. PostsService.findAllPosts branches by sort mode:
+   ├── sort=latest:
+   │   └── find({ deletedAt: { $exists: false } }).sort({ createdAt: -1, _id: -1 }) [IXSCAN]
+   ├── sort=most-discussed:
+   │   └── find({ deletedAt: { $exists: false } }).sort({ commentCount: -1, createdAt: -1, _id: -1 }) [IXSCAN]
+   └── sort=top:
+       └── aggregate([ { $match }, { $addFields: { rankScore } }, { $sort: { rankScore: -1, createdAt: -1, _id: -1 } }, ... ])
                  │
                  ▼
-3. Returns { posts, total, page, limit, totalPages }
+3. Pagination & Projection:
+   ├── Lean Author Projection: authorId -> name, headline, avatarUrl
+   ├── Pagination Window: .skip((page - 1) * limit).limit(limit)
+   └── Total Count: countDocuments() or aggregation facet
+                 │
+                 ▼
+4. Returns { posts, total, page, limit, totalPages }
 ```
 
 ### 4. Concurrency-Safe Reaction State Machine Flow
@@ -257,7 +268,7 @@ Interactive OpenAPI Swagger documentation is available at:
 DevPulse backend maintains a 100% pass rate across unit, integration, and guard test suites powered by **Vitest**:
 
 ```bash
-# Run all 20 test suites (158 tests)
+# Run all 20 test suites (161 tests)
 npx vitest run
 
 # Run with watch mode
@@ -269,7 +280,7 @@ npx vitest run --coverage
 
 ### Test Coverage Highlights:
 - **`post-ranking.util.spec.ts` (7 tests)**: Pure deterministic rank scoring calculations, likes/dislikes cancellation, negative score handling, comment weighting ($+2$), and zero engagement fallback.
-- **`post-ranking.integration.spec.ts` (9 tests)**: End-to-end integration tests on an in-memory replica set verifying controlled top order, latest chronological order, score tie-breakers, pagination order stability (zero duplicates across pages), soft-delete exclusions, and empty feed states.
+- **`post-ranking.integration.spec.ts` (12 tests)**: End-to-end integration tests on an in-memory replica set verifying controlled top order, latest chronological order, most-discussed order, tie-breaking by `createdAt` and `_id`, pagination order stability across all 3 sort modes, soft-delete exclusions, and empty feed states.
 - **`reactions.service.spec.ts` (22 tests)**: Toggle creation, toggle off, switch between like/dislike, post/comment target validation, soft-deleted post rejection, user reaction queries, paginated reactor listings.
 - **`reactions.concurrency.spec.ts` (4 tests)**: Concurrent toggle stress tests, duplicate race condition mitigation, and counter synchronization under parallel load.
 - **`comments.service.spec.ts` (20 tests)**: Top-level creation, reply creation with root-flattening & mentioned user derivation, tree construction with normalized mentions, reply/thread cascade deletion, counter integrity.
