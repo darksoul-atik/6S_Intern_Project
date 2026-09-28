@@ -1,133 +1,215 @@
-import * as dotenv from 'dotenv';
+import 'dotenv/config';
 import mongoose from 'mongoose';
-import { resolve } from 'node:path';
 
-dotenv.config({
-  path: resolve(process.cwd(), '.env'),
-});
+import { COMMENT_WEIGHT } from '../posts/posts.constants.js';
 
-async function checkPostQueryPlans(): Promise<void> {
+async function main(): Promise<void> {
   const mongoUri = process.env.MONGODB_URI;
 
   if (!mongoUri) {
-    throw new Error('MONGODB_URI is not defined');
+    throw new Error('MONGODB_URI is not configured');
   }
 
   await mongoose.connect(mongoUri);
 
-  const db = mongoose.connection.db;
+  try {
+    const db = mongoose.connection.db;
 
-  if (!db) {
-    throw new Error('MongoDB connection is not available');
-  }
+    if (!db) {
+      throw new Error('MongoDB connection is not available');
+    }
 
-  const posts = db.collection('posts');
+    const posts = db.collection('posts');
 
-  console.log('\n=== POST INDEXES ===\n');
+    /*
+    |--------------------------------------------------------------------------
+    | Existing Post Indexes
+    |--------------------------------------------------------------------------
+    */
 
-  const indexes = await posts.indexes();
+    const indexes = await posts.indexes();
 
-  console.dir(indexes, {
-    depth: null,
-  });
-
-  console.log('\n=== LATEST QUERY EXPLAIN ===\n');
-
-  const latestExplain = await db.command({
-    explain: {
-      find: 'posts',
-      filter: {
-        deletedAt: {
-          $exists: false,
-        },
-      },
-      sort: {
-        createdAt: -1,
-        _id: -1,
-      },
-      limit: 10,
-    },
-    verbosity: 'executionStats',
-  });
-
-  console.dir(
-    {
-      winningPlan: latestExplain.queryPlanner?.winningPlan,
-      executionStats: latestExplain.executionStats,
-    },
-    {
+    console.log('\n================ POST INDEXES ================\n');
+    console.dir(indexes, {
       depth: null,
-    },
-  );
+      colors: true,
+    });
 
-  console.log('\n=== TOP QUERY EXPLAIN ===\n');
+    /*
+    |--------------------------------------------------------------------------
+    | Latest Feed
+    |--------------------------------------------------------------------------
+    |
+    | createdAt DESC
+    | -> _id DESC
+    |--------------------------------------------------------------------------
+    */
 
-  const topExplain = await db.command({
-    explain: {
-      aggregate: 'posts',
-      pipeline: [
-        {
-          $match: {
-            deletedAt: {
-              $exists: false,
+    const latestExplain = await db.command({
+      explain: {
+        find: 'posts',
+
+        filter: {
+          deletedAt: {
+            $exists: false,
+          },
+        },
+
+        sort: {
+          createdAt: -1,
+          _id: -1,
+        },
+
+        limit: 10,
+      },
+
+      verbosity: 'executionStats',
+    });
+
+    console.log('\n================ LATEST EXPLAIN ================\n');
+
+    console.dir(latestExplain, {
+      depth: null,
+      colors: true,
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Top Feed
+    |--------------------------------------------------------------------------
+    |
+    | rankScore =
+    | (like - dislike)
+    | +
+    | (commentCount * COMMENT_WEIGHT)
+    |
+    | rankScore is calculated at query time,
+    | so there is intentionally no rankScore index.
+    |--------------------------------------------------------------------------
+    */
+
+    const topExplain = await db.command({
+      explain: {
+        aggregate: 'posts',
+
+        pipeline: [
+          {
+            $match: {
+              deletedAt: {
+                $exists: false,
+              },
             },
           },
-        },
-        {
-          $addFields: {
-            rankScore: {
-              $add: [
-                {
-                  $subtract: [
-                    {
-                      $ifNull: ['$reactionCounts.like', 0],
-                    },
-                    {
-                      $ifNull: ['$reactionCounts.dislike', 0],
-                    },
-                  ],
-                },
-                {
-                  $multiply: [
-                    {
-                      $ifNull: ['$commentCount', 0],
-                    },
-                    2,
-                  ],
-                },
-              ],
+
+          {
+            $addFields: {
+              rankScore: {
+                $add: [
+                  {
+                    $subtract: [
+                      {
+                        $ifNull: ['$reactionCounts.like', 0],
+                      },
+                      {
+                        $ifNull: ['$reactionCounts.dislike', 0],
+                      },
+                    ],
+                  },
+
+                  {
+                    $multiply: [
+                      {
+                        $ifNull: ['$commentCount', 0],
+                      },
+                      COMMENT_WEIGHT,
+                    ],
+                  },
+                ],
+              },
             },
           },
-        },
-        {
-          $sort: {
-            rankScore: -1,
-            createdAt: -1,
-            _id: -1,
+
+          {
+            $sort: {
+              rankScore: -1,
+              createdAt: -1,
+              _id: -1,
+            },
+          },
+
+          {
+            $limit: 10,
+          },
+        ],
+
+        cursor: {},
+      },
+
+      verbosity: 'executionStats',
+    });
+
+    console.log('\n================ TOP EXPLAIN ================\n');
+
+    console.dir(topExplain, {
+      depth: null,
+      colors: true,
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Most Discussed Feed
+    |--------------------------------------------------------------------------
+    |
+    | commentCount DESC
+    | -> createdAt DESC
+    | -> _id DESC
+    |
+    | Expected compound index:
+    |
+    | {
+    |   commentCount: -1,
+    |   createdAt: -1,
+    |   _id: -1
+    | }
+    |--------------------------------------------------------------------------
+    */
+
+    const mostDiscussedExplain = await db.command({
+      explain: {
+        find: 'posts',
+
+        filter: {
+          deletedAt: {
+            $exists: false,
           },
         },
-        {
-          $limit: 10,
-        },
-      ],
-      cursor: {},
-    },
-    verbosity: 'executionStats',
-  });
 
-  console.dir(topExplain, {
-    depth: null,
-  });
+        sort: {
+          commentCount: -1,
+          createdAt: -1,
+          _id: -1,
+        },
+
+        limit: 10,
+      },
+
+      verbosity: 'executionStats',
+    });
+
+    console.log('\n================ MOST DISCUSSED EXPLAIN ================\n');
+
+    console.dir(mostDiscussedExplain, {
+      depth: null,
+      colors: true,
+    });
+  } finally {
+    await mongoose.disconnect();
+  }
 }
 
-checkPostQueryPlans()
-  .then(async () => {
-    await mongoose.disconnect();
-  })
-  .catch(async (error) => {
-    console.error(error);
+main().catch((error: unknown) => {
+  console.error('\nQuery-plan verification failed:\n');
+  console.error(error);
 
-    await mongoose.disconnect();
-
-    process.exitCode = 1;
-  });
+  process.exitCode = 1;
+});
