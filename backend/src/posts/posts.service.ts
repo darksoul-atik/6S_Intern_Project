@@ -372,7 +372,7 @@ export class PostsService {
        * It is not persisted to MongoDB.
        */
       posts.push({
-        ...(post.toJSON() as Record<string, unknown>),
+        ...(post.toJSON() as unknown as Record<string, unknown>),
         rankScore: rankedRow.rankScore,
       });
     }
@@ -696,10 +696,14 @@ export class PostsService {
       .updateOne(
         {
           _id: postId,
-          deletedAt: { $exists: false },
+          deletedAt: {
+            $exists: false,
+          },
         },
         {
-          $inc: { commentCount: 1 },
+          $inc: {
+            commentCount: 1,
+          },
         },
         {
           session,
@@ -739,10 +743,14 @@ export class PostsService {
       .updateOne(
         {
           _id: postId,
-          deletedAt: { $exists: false },
+          deletedAt: {
+            $exists: false,
+          },
         },
         {
-          $inc: { commentCount: -amount },
+          $inc: {
+            commentCount: -amount,
+          },
         },
         {
           session,

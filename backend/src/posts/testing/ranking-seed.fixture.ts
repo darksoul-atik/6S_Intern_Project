@@ -144,7 +144,7 @@ export const RANKING_SEED_POSTS = [
     _id: new Types.ObjectId('67000000000000000000000a'),
     label: 'J',
     title: 'Ranking Seed Post J',
-    body: 'Soft-deleted post that must never appear in either feed.',
+    body: 'Soft-deleted post that must never appear in any feed.',
     authorId: RANKING_SEED_AUTHOR_ID,
     reactionCounts: {
       like: 100,
@@ -162,8 +162,10 @@ export const RANKING_SEED_POSTS = [
 | Independently calculated expected results
 |--------------------------------------------------------------------------
 |
-| Do NOT generate these arrays with calculatePostRankScore().
-| They are the hand-worked oracle used to verify production ranking logic.
+| Do NOT generate these arrays using the production ranking/sorting logic.
+|
+| These values are the hand-worked oracle used to verify the real
+| MongoDB implementation.
 |--------------------------------------------------------------------------
 */
 
@@ -189,6 +191,18 @@ export const EXPECTED_LATEST_ORDER = [
   'G',
   'I',
   'A',
+] as const;
+
+export const EXPECTED_MOST_DISCUSSED_ORDER = [
+  'I',
+  'B',
+  'D',
+  'A',
+  'H',
+  'C',
+  'F',
+  'G',
+  'E',
 ] as const;
 
 export const EXPECTED_RANK_SCORES = {

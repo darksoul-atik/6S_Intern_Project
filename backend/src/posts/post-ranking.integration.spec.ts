@@ -12,6 +12,7 @@ import type { UsersService } from '../users/users.service.js';
 
 import {
   EXPECTED_LATEST_ORDER,
+  EXPECTED_MOST_DISCUSSED_ORDER,
   EXPECTED_RANK_SCORES,
   EXPECTED_TOP_ORDER,
   RANKING_SEED_AUTHOR_ID,
@@ -185,7 +186,7 @@ describe('Post ranking integration', () => {
 
   /*
   |--------------------------------------------------------------------------
-  | Tie Breakers
+  | Top Tie Breakers
   |--------------------------------------------------------------------------
   */
 
@@ -200,16 +201,8 @@ describe('Post ranking integration', () => {
 
     const labels = getLabels(result.posts);
 
-    /*
-     * B and I both score 12.
-     * B is newer, so B must come first.
-     */
     expect(labels.indexOf('B')).toBeLessThan(labels.indexOf('I'));
 
-    /*
-     * H, C, and D all score 8.
-     * H is newer than C and D.
-     */
     expect(labels.indexOf('H')).toBeLessThan(labels.indexOf('D'));
 
     expect(labels.indexOf('H')).toBeLessThan(labels.indexOf('C'));
@@ -226,17 +219,6 @@ describe('Post ranking integration', () => {
 
     const labels = getLabels(result.posts);
 
-    /*
-     * C and D:
-     *
-     * score = 8
-     * createdAt = identical
-     *
-     * D has the larger ObjectId:
-     * ...004 > ...003
-     *
-     * Therefore D must come first.
-     */
     expect(labels.indexOf('D')).toBeLessThan(labels.indexOf('C'));
   });
 
@@ -290,6 +272,66 @@ describe('Post ranking integration', () => {
 
   /*
   |--------------------------------------------------------------------------
+  | Most Discussed Order
+  |--------------------------------------------------------------------------
+  */
+
+  it('should return the exact expected Most Discussed order', async () => {
+    await seedControlledRankingData();
+
+    const result = await service.findAllPosts({
+      page: 1,
+      limit: 20,
+      sort: 'most-discussed',
+    });
+
+    expect(getLabels(result.posts)).toEqual([...EXPECTED_MOST_DISCUSSED_ORDER]);
+
+    expect(result.total).toBe(9);
+    expect(result.page).toBe(1);
+    expect(result.totalPages).toBe(1);
+
+    expect(getLabels(result.posts)).not.toContain('J');
+  });
+
+  /*
+  |--------------------------------------------------------------------------
+  | Most Discussed Tie Breakers
+  |--------------------------------------------------------------------------
+  */
+
+  it('should use createdAt when commentCount is tied', async () => {
+    await seedControlledRankingData();
+
+    const result = await service.findAllPosts({
+      page: 1,
+      limit: 20,
+      sort: 'most-discussed',
+    });
+
+    const labels = getLabels(result.posts);
+
+    /*
+     * D and A both have 3 comments.
+     * D is newer.
+     */
+    expect(labels.indexOf('D')).toBeLessThan(labels.indexOf('A'));
+
+    /*
+     * H and C both have 2 comments.
+     * H is newer.
+     */
+    expect(labels.indexOf('H')).toBeLessThan(labels.indexOf('C'));
+
+    /*
+     * F and G both have 1 comment.
+     * F is newer.
+     */
+    expect(labels.indexOf('F')).toBeLessThan(labels.indexOf('G'));
+  });
+
+  /*
+  |--------------------------------------------------------------------------
   | Empty Feed
   |--------------------------------------------------------------------------
   */
@@ -307,6 +349,12 @@ describe('Post ranking integration', () => {
       sort: 'latest',
     });
 
+    const mostDiscussedResult = await service.findAllPosts({
+      page: 1,
+      limit: 10,
+      sort: 'most-discussed',
+    });
+
     expect(topResult).toMatchObject({
       posts: [],
       total: 0,
@@ -316,6 +364,14 @@ describe('Post ranking integration', () => {
     });
 
     expect(latestResult).toMatchObject({
+      posts: [],
+      total: 0,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    });
+
+    expect(mostDiscussedResult).toMatchObject({
       posts: [],
       total: 0,
       page: 1,
@@ -428,5 +484,58 @@ describe('Post ranking integration', () => {
     });
 
     expect(getLabels(repeatedPage1.posts)).toEqual(['H', 'F', 'E']);
+  });
+
+  /*
+  |--------------------------------------------------------------------------
+  | Most Discussed Pagination Stability
+  |--------------------------------------------------------------------------
+  */
+
+  it('should keep Most Discussed pagination stable when data does not change', async () => {
+    await seedControlledRankingData();
+
+    const page1 = await service.findAllPosts({
+      page: 1,
+      limit: 3,
+      sort: 'most-discussed',
+    });
+
+    const page2 = await service.findAllPosts({
+      page: 2,
+      limit: 3,
+      sort: 'most-discussed',
+    });
+
+    const page3 = await service.findAllPosts({
+      page: 3,
+      limit: 3,
+      sort: 'most-discussed',
+    });
+
+    expect(getLabels(page1.posts)).toEqual(['I', 'B', 'D']);
+    expect(getLabels(page2.posts)).toEqual(['A', 'H', 'C']);
+    expect(getLabels(page3.posts)).toEqual(['F', 'G', 'E']);
+
+    expect(page1.total).toBe(9);
+    expect(page1.totalPages).toBe(3);
+
+    const combinedLabels = [
+      ...getLabels(page1.posts),
+      ...getLabels(page2.posts),
+      ...getLabels(page3.posts),
+    ];
+
+    expect(combinedLabels).toEqual([...EXPECTED_MOST_DISCUSSED_ORDER]);
+
+    expect(new Set(combinedLabels).size).toBe(9);
+
+    const repeatedPage1 = await service.findAllPosts({
+      page: 1,
+      limit: 3,
+      sort: 'most-discussed',
+    });
+
+    expect(getLabels(repeatedPage1.posts)).toEqual(['I', 'B', 'D']);
   });
 });
