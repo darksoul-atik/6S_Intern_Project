@@ -178,13 +178,20 @@ export class PostsService {
   | List ACTIVE Posts
   |--------------------------------------------------------------------------
   |
+  | Supports three deterministic feed sorts:
+  |
   | latest:
   | createdAt DESC -> _id DESC
   |
   | top:
   | rankScore DESC -> createdAt DESC -> _id DESC
   |
-  | Soft-deleted Posts are excluded from both feeds.
+  | most-discussed:
+  | commentCount DESC -> createdAt DESC -> _id DESC
+  |
+  | If sort is omitted, latest is used.
+  |
+  | Soft-deleted posts are excluded from every feed.
   |--------------------------------------------------------------------------
   */
 
@@ -195,10 +202,25 @@ export class PostsService {
   }): Promise<PaginatedPostsResult> {
     const sort = query.sort ?? 'latest';
 
+    /*
+     * Top uses the ranking aggregation because
+     * rankScore is calculated at query time.
+     */
     if (sort === 'top') {
       return this.findTopPosts(query.page, query.limit);
     }
 
+    /*
+     * Most Discussed uses the stored commentCount
+     * field, so it can use a normal indexed query.
+     */
+    if (sort === 'most-discussed') {
+      return this.findMostDiscussedPosts(query.page, query.limit);
+    }
+
+    /*
+     * Default / Latest feed.
+     */
     const activePostFilter = {
       deletedAt: {
         $exists: false,
@@ -234,10 +256,23 @@ export class PostsService {
   | List TOP Posts
   |--------------------------------------------------------------------------
   |
-  | The MongoDB aggregation decides the ranking order.
+  | Formula:
   |
-  | After ranking, Posts are loaded again so the existing
-  | author population behavior remains unchanged.
+  | rankScore =
+  | (likes - dislikes)
+  | +
+  | (commentCount * COMMENT_WEIGHT)
+  |
+  | COMMENT_WEIGHT = 2
+  |
+  | Order:
+  |
+  | rankScore DESC
+  | -> createdAt DESC
+  | -> _id DESC
+  |
+  | rankScore is calculated by MongoDB.
+  | It is NOT stored on the Post document.
   |--------------------------------------------------------------------------
   */
 
@@ -251,6 +286,10 @@ export class PostsService {
       },
     };
 
+    /*
+     * Run the count and ranking aggregation
+     * at the same time.
+     */
     const [total, rankedRows] = await Promise.all([
       this.postModel.countDocuments(activePostFilter).exec(),
 
@@ -262,6 +301,10 @@ export class PostsService {
         .exec(),
     ]);
 
+    /*
+     * Preserve the normal pagination response
+     * when there are no ranked results.
+     */
     if (rankedRows.length === 0) {
       return {
         posts: [],
@@ -272,6 +315,13 @@ export class PostsService {
       };
     }
 
+    /*
+     * The aggregation decides the actual ranking.
+     *
+     * Extract the ranked IDs so the Posts can then
+     * be loaded normally with the existing author
+     * populate behavior.
+     */
     const rankedIds = rankedRows.map((post) => post._id);
 
     const postDocuments = await this.postModel
@@ -286,12 +336,28 @@ export class PostsService {
       .populate(POPULATE_POST_LIST_AUTHOR)
       .exec();
 
+    /*
+     * $in does not guarantee the same ordering
+     * as rankedIds.
+     *
+     * Create an ID lookup so the exact aggregation
+     * order can be rebuilt below.
+     */
     const postsById = new Map(
       postDocuments.map((post) => [post._id.toString(), post]),
     );
 
     const posts: RankedPostListItem[] = [];
 
+    /*
+     * Iterate over rankedRows, NOT postDocuments.
+     *
+     * This preserves:
+     *
+     * rankScore DESC
+     * -> createdAt DESC
+     * -> _id DESC
+     */
     for (const rankedRow of rankedRows) {
       const post = postsById.get(rankedRow._id.toString());
 
@@ -299,11 +365,69 @@ export class PostsService {
         continue;
       }
 
+      /*
+       * rankScore is included in Top responses
+       * for verification/debugging.
+       *
+       * It is not persisted to MongoDB.
+       */
       posts.push({
-        ...(post.toJSON() as unknown as Record<string, unknown>),
+        ...(post.toJSON() as Record<string, unknown>),
         rankScore: rankedRow.rankScore,
       });
     }
+
+    return {
+      posts,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+    };
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | List MOST DISCUSSED Posts
+  |--------------------------------------------------------------------------
+  |
+  | Order:
+  |
+  | commentCount DESC
+  | -> createdAt DESC
+  | -> _id DESC
+  |
+  | commentCount is already stored on each Post,
+  | so unlike rankScore this sort can be supported
+  | by a MongoDB compound index.
+  |--------------------------------------------------------------------------
+  */
+
+  private async findMostDiscussedPosts(
+    page: number,
+    limit: number,
+  ): Promise<PaginatedPostsResult> {
+    const activePostFilter = {
+      deletedAt: {
+        $exists: false,
+      },
+    };
+
+    const [total, posts] = await Promise.all([
+      this.postModel.countDocuments(activePostFilter).exec(),
+
+      this.postModel
+        .find(activePostFilter)
+        .sort({
+          commentCount: -1,
+          createdAt: -1,
+          _id: -1,
+        })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate(POPULATE_POST_LIST_AUTHOR)
+        .exec(),
+    ]);
 
     return {
       posts,
@@ -552,6 +676,14 @@ export class PostsService {
   |--------------------------------------------------------------------------
   | Increment Comment Count
   |--------------------------------------------------------------------------
+  |
+  | Used when:
+  | - a top-level comment is created
+  | - a direct reply is created
+  | - a reply-to-reply is flattened under the root
+  |
+  | Most Discussed depends directly on this counter.
+  |--------------------------------------------------------------------------
   */
 
   async incrementCommentCount(
@@ -583,6 +715,16 @@ export class PostsService {
   /*
   |--------------------------------------------------------------------------
   | Decrement Comment Count
+  |--------------------------------------------------------------------------
+  |
+  | amount defaults to 1.
+  |
+  | When a top-level comment is deleted together
+  | with its flat replies, amount may be greater
+  | than 1.
+  |
+  | Most Discussed automatically reflects the
+  | updated commentCount on the next request.
   |--------------------------------------------------------------------------
   */
 
