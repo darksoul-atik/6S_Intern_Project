@@ -226,12 +226,12 @@ export function PostCard({
         -------------------------------- */}
         <div className="mt-5 flex-1">
           <Link href={`/posts/${post.id}`} className="block">
-            <h2 className="font-manrope text-base sm:text-lg md:text-xl font-bold tracking-tight text-slate-900 break-words">
+            <h2 className="font-manrope text-base sm:text-lg md:text-xl font-bold tracking-tight text-slate-900 wrap-break-words">
               {post.title}
             </h2>
           </Link>
 
-          <p className="mt-2 line-clamp-3 whitespace-pre-line text-xs sm:text-sm leading-6 text-slate-700 font-sans break-words">
+          <p className="mt-2 line-clamp-3 whitespace-pre-line text-xs sm:text-sm leading-6 text-slate-700 font-sans wrap-break-words">
             {post.body}
           </p>
         </div>
@@ -247,73 +247,73 @@ export function PostCard({
           />
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-          {/* Frosted Glass Reaction & Comment Counters + Share */}
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            {/* Likes & Dislikes */}
-            <ReactionButtons
-              targetType="post"
-              targetId={post.id}
-              counts={post.reactionCounts}
-              currentReaction={currentReaction}
-            />
+            {/* Frosted Glass Reaction & Comment Counters + Share */}
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              {/* Likes & Dislikes */}
+              <ReactionButtons
+                targetType="post"
+                targetId={post.id}
+                counts={post.reactionCounts}
+                currentReaction={currentReaction}
+              />
 
-            {/* Comment Link */}
-            <Link
-              href={`/posts/${post.id}?focus=comment#comments`}
-              className="group/comment inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 hover:bg-sky-50/90 hover:border-sky-300 hover:text-sky-700 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md transition-all active:scale-95"
-              title="Leave a comment"
-              aria-label={`${post.commentCount} comments. Click to view and comment.`}
-            >
-              <FiMessageCircle className="h-3.5 w-3.5 text-sky-500 transition-transform group-hover/comment:scale-110" />
-              <span className="font-bold text-slate-900 group-hover/comment:text-sky-950">
-                {post.commentCount}
-              </span>
-              <span className="hidden sm:inline text-slate-600 font-medium group-hover/comment:text-sky-800">
-                {post.commentCount === 1 ? "Comment" : "Comments"}
-              </span>
-            </Link>
+              {/* Comment Link */}
+              <Link
+                href={`/posts/${post.id}?focus=comment#comments`}
+                className="group/comment inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 hover:bg-sky-50/90 hover:border-sky-300 hover:text-sky-700 px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope text-slate-700 shadow-2xs backdrop-blur-md transition-all active:scale-95"
+                title="Leave a comment"
+                aria-label={`${post.commentCount} comments. Click to view and comment.`}
+              >
+                <FiMessageCircle className="h-3.5 w-3.5 text-sky-500 transition-transform group-hover/comment:scale-110" />
+                <span className="font-bold text-slate-900 group-hover/comment:text-sky-950">
+                  {post.commentCount}
+                </span>
+                <span className="hidden sm:inline text-slate-600 font-medium group-hover/comment:text-sky-800">
+                  {post.commentCount === 1 ? "Comment" : "Comments"}
+                </span>
+              </Link>
 
-            {/* Share */}
-            <button
-              type="button"
-              onClick={handleShare}
-              title={copied ? "Copied!" : "Share post URL"}
-              aria-label="Share post"
-              className={`group/share inline-flex cursor-pointer items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all ${
-                copied
-                  ? "border-emerald-300 bg-emerald-50/90 text-emerald-700"
-                  : "border-slate-200/90 bg-slate-50/80 text-slate-700 hover:bg-slate-100 hover:border-slate-300"
-              }`}
-            >
-              {copied ? (
-                <>
-                  <FiCheck className="h-3.5 w-3.5 text-emerald-600" />
-                  <span className="hidden sm:inline font-bold text-emerald-700">
-                    Copied!
-                  </span>
-                </>
-              ) : (
-                <>
-                  <FiShare2 className="h-3.5 w-3.5 text-violet-600 transition-colors group-hover/share:text-violet-700" />
-                  <span className="hidden sm:inline font-medium text-slate-700">
-                    Share
-                  </span>
-                </>
-              )}
-            </button>
+              {/* Share */}
+              <button
+                type="button"
+                onClick={handleShare}
+                title={copied ? "Copied!" : "Share post URL"}
+                aria-label="Share post"
+                className={`group/share inline-flex cursor-pointer items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 py-1.5 text-xs font-semibold font-manrope shadow-2xs backdrop-blur-md transition-all ${
+                  copied
+                    ? "border-emerald-300 bg-emerald-50/90 text-emerald-700"
+                    : "border-slate-200/90 bg-slate-50/80 text-slate-700 hover:bg-slate-100 hover:border-slate-300"
+                }`}
+              >
+                {copied ? (
+                  <>
+                    <FiCheck className="h-3.5 w-3.5 text-emerald-600" />
+                    <span className="hidden sm:inline font-bold text-emerald-700">
+                      Copied!
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <FiShare2 className="h-3.5 w-3.5 text-violet-600 transition-colors group-hover/share:text-violet-700" />
+                    <span className="hidden sm:inline font-medium text-slate-700">
+                      Share
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Read Post Button */}
+            <div className="flex w-full sm:w-auto justify-end ml-auto">
+              <Link
+                href={`/posts/${post.id}`}
+                className="group/read inline-flex items-center space-x-1.5 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-3.5 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
+              >
+                <span>Read Post</span>
+                <FiArrowRight className="h-3.5 w-3.5 text-indigo-400 group-hover/read:text-purple-300 transition-transform group-hover/read:translate-x-0.5" />
+              </Link>
+            </div>
           </div>
-
-          {/* Read Post Button */}
-          <div className="flex w-full sm:w-auto justify-end ml-auto">
-            <Link
-              href={`/posts/${post.id}`}
-              className="group/read inline-flex items-center space-x-1.5 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-3.5 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
-            >
-              <span>Read Post</span>
-              <FiArrowRight className="h-3.5 w-3.5 text-indigo-400 group-hover/read:text-purple-300 transition-transform group-hover/read:translate-x-0.5" />
-            </Link>
-          </div>
-        </div>
         </div>
       </div>
     </article>

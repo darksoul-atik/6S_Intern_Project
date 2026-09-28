@@ -1,3 +1,5 @@
+export const COMMENT_WEIGHT = 2 as const;
+
 /*
 |--------------------------------------------------------------------------
 | Post Author Summary Projections
