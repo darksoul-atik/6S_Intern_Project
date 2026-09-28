@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { FiLoader, FiThumbsDown, FiThumbsUp } from "react-icons/fi";
+import { FiArrowRight, FiLoader, FiThumbsDown, FiThumbsUp } from "react-icons/fi";
 
 import { useReactors } from "../queries/reaction-queries";
 import type { ReactionTargetType, ReactionType } from "../types/reaction";
@@ -105,28 +106,31 @@ export function ReactionPeekPopover({
               {reactors.map((reactor) => {
                 const avatarSrc = resolveAvatarUrl(reactor.avatarUrl);
                 return (
-                  <li
-                    key={reactor.userId}
-                    className="flex items-center gap-2 overflow-hidden"
-                  >
-                    <div className="h-5 w-5 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
-                      {avatarSrc ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={avatarSrc}
-                          alt={reactor.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-indigo-600 to-emerald-500 text-[10px] font-bold text-white">
-                          {getInitials(reactor.name)}
-                        </div>
-                      )}
-                    </div>
+                  <li key={reactor.userId}>
+                    <Link
+                      href={`/developers/${reactor.userId}`}
+                      className="group flex items-center gap-2 overflow-hidden hover:opacity-80 transition-opacity"
+                      title={`View ${reactor.name}'s profile`}
+                    >
+                      <div className="h-5 w-5 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
+                        {avatarSrc ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={avatarSrc}
+                            alt={reactor.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-indigo-600 to-emerald-500 text-[10px] font-bold text-white">
+                            {getInitials(reactor.name)}
+                          </div>
+                        )}
+                      </div>
 
-                    <span className="truncate text-[11px] sm:text-xs font-medium text-slate-700">
-                      {reactor.name}
-                    </span>
+                      <span className="truncate text-[11px] sm:text-xs font-medium text-slate-700 group-hover:text-indigo-600 group-hover:underline">
+                        {reactor.name}
+                      </span>
+                    </Link>
                   </li>
                 );
               })}
@@ -147,9 +151,10 @@ export function ReactionPeekPopover({
               e.stopPropagation();
               onOpenModal();
             }}
-            className="mt-2 block w-full rounded-lg bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 py-1 text-center text-[11px] font-bold text-slate-600 transition-colors cursor-pointer"
+            className="mt-2 inline-flex items-center justify-center gap-1.5 w-full rounded-lg bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 py-1 text-center text-[11px] font-bold text-slate-600 transition-colors cursor-pointer"
           >
-            View all {count} →
+            <span>View all {count}</span>
+            <FiArrowRight className="h-3 w-3" />
           </button>
         </motion.div>
       )}

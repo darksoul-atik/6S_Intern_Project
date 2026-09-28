@@ -282,23 +282,41 @@ export function ReactionButtons({
     ? "border-slate-200/80 bg-slate-50/70 text-slate-600 hover:bg-slate-100 hover:text-slate-900 hover:border-slate-300"
     : "border-slate-200/90 bg-slate-50/80 text-slate-700 hover:bg-slate-100 hover:border-slate-300";
 
+  const showPeekPopover = targetType !== "post";
+
   const getButtonTitle = (type: ReactionType, isActive: boolean) => {
+    const count = type === "like" ? currentCounts.like : currentCounts.dislike;
+    const countText = `${count} ${
+      type === "like"
+        ? count === 1
+          ? "like"
+          : "likes"
+        : count === 1
+        ? "dislike"
+        : "dislikes"
+    }`;
+
     if (!user) {
-      return "Log in to react";
+      return `Log in to ${type} • ${countText}`;
     }
 
     if (isReactionsLoading && currentReaction === null) {
       return "Loading reaction...";
     }
 
-    if (type === "like") {
-      return isActive ? "Liked" : "Like";
-    }
+    const actionText =
+      type === "like"
+        ? isActive
+          ? "Liked"
+          : "Like"
+        : isActive
+        ? "Disliked"
+        : "Dislike";
 
-    return isActive ? "Disliked" : "Dislike";
+    return `${actionText} • ${countText}`;
   };
 
-    return (
+  return (
     <>
       <div
         className={`inline-flex items-center ${
@@ -307,8 +325,8 @@ export function ReactionButtons({
       >
         <div
           className="relative inline-flex"
-          onMouseEnter={() => handleHoverEnter("like")}
-          onMouseLeave={handleHoverLeave}
+          onMouseEnter={showPeekPopover ? () => handleHoverEnter("like") : undefined}
+          onMouseLeave={showPeekPopover ? handleHoverLeave : undefined}
         >
           <button
             type="button"
@@ -330,25 +348,9 @@ export function ReactionButtons({
             />
 
             <span
-              role="button"
-              tabIndex={0}
-              onClick={(e) => {
-                e.stopPropagation();
-                setModalType("like");
-                setIsModalOpen(true);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setModalType("like");
-                  setIsModalOpen(true);
-                }
-              }}
-              title="View who liked"
-              aria-label={`View ${currentCounts.like} users who liked`}
-              className={`font-bold tabular-nums cursor-pointer rounded px-0.5 transition hover:underline hover:scale-110 active:scale-95 ${
-                isLikeActive ? "text-indigo-900" : "text-slate-900 hover:text-indigo-600"
+              title={`${currentCounts.like} ${currentCounts.like === 1 ? "like" : "likes"}`}
+              className={`font-bold tabular-nums select-none ${
+                isLikeActive ? "text-indigo-900" : "text-slate-900"
               }`}
             >
               {currentCounts.like}
@@ -365,28 +367,30 @@ export function ReactionButtons({
             )}
           </button>
 
-          <ReactionPeekPopover
-            targetType={targetType}
-            targetId={targetId}
-            type="like"
-            count={currentCounts.like}
-            isOpen={hoveredType === "like"}
-            onOpenModal={() => {
-              setModalType("like");
-              setIsModalOpen(true);
-            }}
-            onMouseEnter={() => {
-              if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-              setHoveredType("like");
-            }}
-            onMouseLeave={handleHoverLeave}
-          />
+          {showPeekPopover && (
+            <ReactionPeekPopover
+              targetType={targetType}
+              targetId={targetId}
+              type="like"
+              count={currentCounts.like}
+              isOpen={hoveredType === "like"}
+              onOpenModal={() => {
+                setModalType("like");
+                setIsModalOpen(true);
+              }}
+              onMouseEnter={() => {
+                if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                setHoveredType("like");
+              }}
+              onMouseLeave={handleHoverLeave}
+            />
+          )}
         </div>
 
         <div
           className="relative inline-flex"
-          onMouseEnter={() => handleHoverEnter("dislike")}
-          onMouseLeave={handleHoverLeave}
+          onMouseEnter={showPeekPopover ? () => handleHoverEnter("dislike") : undefined}
+          onMouseLeave={showPeekPopover ? handleHoverLeave : undefined}
         >
           <button
             type="button"
@@ -408,25 +412,9 @@ export function ReactionButtons({
             />
 
             <span
-              role="button"
-              tabIndex={0}
-              onClick={(e) => {
-                e.stopPropagation();
-                setModalType("dislike");
-                setIsModalOpen(true);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setModalType("dislike");
-                  setIsModalOpen(true);
-                }
-              }}
-              title="View who disliked"
-              aria-label={`View ${currentCounts.dislike} users who disliked`}
-              className={`font-bold tabular-nums cursor-pointer rounded px-0.5 transition hover:underline hover:scale-110 active:scale-95 ${
-                isDislikeActive ? "text-rose-900" : "text-slate-900 hover:text-rose-600"
+              title={`${currentCounts.dislike} ${currentCounts.dislike === 1 ? "dislike" : "dislikes"}`}
+              className={`font-bold tabular-nums select-none ${
+                isDislikeActive ? "text-rose-900" : "text-slate-900"
               }`}
             >
               {currentCounts.dislike}
@@ -443,32 +431,36 @@ export function ReactionButtons({
             )}
           </button>
 
-          <ReactionPeekPopover
-            targetType={targetType}
-            targetId={targetId}
-            type="dislike"
-            count={currentCounts.dislike}
-            isOpen={hoveredType === "dislike"}
-            onOpenModal={() => {
-              setModalType("dislike");
-              setIsModalOpen(true);
-            }}
-            onMouseEnter={() => {
-              if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-              setHoveredType("dislike");
-            }}
-            onMouseLeave={handleHoverLeave}
-          />
+          {showPeekPopover && (
+            <ReactionPeekPopover
+              targetType={targetType}
+              targetId={targetId}
+              type="dislike"
+              count={currentCounts.dislike}
+              isOpen={hoveredType === "dislike"}
+              onOpenModal={() => {
+                setModalType("dislike");
+                setIsModalOpen(true);
+              }}
+              onMouseEnter={() => {
+                if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                setHoveredType("dislike");
+              }}
+              onMouseLeave={handleHoverLeave}
+            />
+          )}
         </div>
       </div>
 
-      <ReactorsModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        targetType={targetType}
-        targetId={targetId}
-        initialType={modalType}
-      />
+      {showPeekPopover && (
+        <ReactorsModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          targetType={targetType}
+          targetId={targetId}
+          initialType={modalType}
+        />
+      )}
     </>
   );
 }
