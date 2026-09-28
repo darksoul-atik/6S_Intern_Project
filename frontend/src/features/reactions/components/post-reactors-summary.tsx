@@ -99,13 +99,20 @@ export function PostReactorsSummary({
     const firstReactor = items[0];
     const secondReactor = items[1];
 
+    const renderEndIcon = () => (
+      <FiChevronRight className="h-3 w-3 text-slate-400 group-hover/badge:text-indigo-600 group-hover/badge:translate-x-0.5 transition-all shrink-0 self-center" />
+    );
+
     // If only 1 reactor item is available
     if (!secondReactor || items.length === 1) {
       if (total <= 1) {
         return (
           <div className="inline-flex items-center gap-1.5 flex-wrap">
             {renderReactorLink(firstReactor)}
-            <span className="text-slate-500">reacted to this post</span>
+            <span className="inline-flex items-center gap-1 text-slate-500">
+              <span>reacted to this post</span>
+              {renderEndIcon()}
+            </span>
           </div>
         );
       }
@@ -118,7 +125,10 @@ export function PostReactorsSummary({
           <span className="font-semibold text-slate-800">
             {othersCount} {othersCount === 1 ? "other" : "others"}
           </span>
-          <span className="text-slate-500">reacted to this post</span>
+          <span className="inline-flex items-center gap-1 text-slate-500">
+            <span>reacted to this post</span>
+            {renderEndIcon()}
+          </span>
         </div>
       );
     }
@@ -130,7 +140,10 @@ export function PostReactorsSummary({
           {renderReactorLink(firstReactor)}
           <span className="text-slate-500">and</span>
           {renderReactorLink(secondReactor)}
-          <span className="text-slate-500">reacted to this post</span>
+          <span className="inline-flex items-center gap-1 text-slate-500">
+            <span>reacted to this post</span>
+            {renderEndIcon()}
+          </span>
         </div>
       );
     }
@@ -145,7 +158,10 @@ export function PostReactorsSummary({
         <span className="font-semibold text-slate-800">
           {remaining} {remaining === 1 ? "other" : "others"}
         </span>
-        <span className="text-slate-500">reacted to this post</span>
+        <span className="inline-flex items-center gap-1 text-slate-500">
+          <span>reacted to this post</span>
+          {renderEndIcon()}
+        </span>
       </div>
     );
   };
@@ -174,8 +190,6 @@ export function PostReactorsSummary({
           <div className="leading-tight flex items-center">
             {renderSummaryContent()}
           </div>
-
-          <FiChevronRight className="h-3 w-3 text-slate-400 group-hover/badge:text-indigo-600 group-hover/badge:translate-x-0.5 transition-all shrink-0 ml-0.5" />
         </div>
       </div>
 
