@@ -300,7 +300,7 @@ export class PostsService {
       }
 
       posts.push({
-        ...(post.toJSON() as Record<string, unknown>),
+        ...(post.toJSON() as unknown as Record<string, unknown>),
         rankScore: rankedRow.rankScore,
       });
     }

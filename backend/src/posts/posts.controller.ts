@@ -22,6 +22,7 @@ import {
 import { PostsService } from './posts.service.js';
 
 import { CreatePostDto } from './dto/create-post.dto.js';
+import { GetPostsQueryDto } from './dto/get-posts-query.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
@@ -77,6 +78,14 @@ export class PostsController {
   |
   | Public endpoint.
   |
+  | sort=latest
+  | createdAt DESC -> _id DESC
+  |
+  | sort=top
+  | rankScore DESC -> createdAt DESC -> _id DESC
+  |
+  | If sort is omitted, latest is used.
+  |
   | Soft-deleted Posts are automatically excluded
   | by PostsService.
   |--------------------------------------------------------------------------
@@ -86,7 +95,7 @@ export class PostsController {
   @ApiOperation({
     summary: 'Get paginated posts',
     description:
-      'Returns active posts ordered from newest to oldest with pagination metadata and safe public author information.',
+      'Returns active posts using either latest or top ordering. The default sort is latest.',
   })
   @ApiQuery({
     name: 'page',
@@ -100,20 +109,27 @@ export class PostsController {
     example: 10,
     description: 'Number of posts per page. Maximum value is 100.',
   })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    enum: ['top', 'latest'],
+    example: 'latest',
+    description:
+      'Feed ordering. "latest" sorts by createdAt and _id. "top" sorts by rankScore, createdAt, and _id.',
+  })
   @ApiResponse({
     status: 200,
     description: 'Paginated posts retrieved successfully',
   })
-  async getAllPosts(
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10',
-  ) {
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
-
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid query parameter',
+  })
+  async getAllPosts(@Query() query: GetPostsQueryDto) {
     return this.postsService.findAllPosts({
-      page: pageNum,
-      limit: limitNum,
+      page: query.page,
+      limit: query.limit,
+      sort: query.sort,
     });
   }
 
