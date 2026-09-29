@@ -7,7 +7,7 @@ export const FEED_SORTS = ["top", "latest", "most-discussed"] as const;
 
 export type FeedSort = (typeof FEED_SORTS)[number];
 
-const DEFAULT_FEED_SORT: FeedSort = "latest";
+const DEFAULT_FEED_SORT: FeedSort = "top";
 
 function isFeedSort(value: string | null): value is FeedSort {
   return FEED_SORTS.includes(value as FeedSort);

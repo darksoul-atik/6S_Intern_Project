@@ -38,7 +38,8 @@ DevPulse is a high-performance, engineering-first developer community platform e
 | Day | Milestone | Focus Areas | Status |
 |:---:|---|---|:---:|
 | **Day 13** | **Ranked, Latest & Most-Discussed Feed APIs** | Pure deterministic ranking calculation (`calculatePostRankScore`), aggregation pipeline (`buildTopPostsPipeline`), `sort=top`, `sort=latest`, and `sort=most-discussed` query options on `GET /posts`, stable secondary tie-breaker sorting (`createdAt DESC`, `_id DESC`), compound index `{ commentCount: -1, createdAt: -1, _id: -1 }`, query plan explain verification (`npm run check:plans`), controlled seed fixtures, verification scripts (`seed:ranking`, `cleanup:ranking`), unit & replica-set integration test matrix (161/161 tests passing across 20 suites). | ✅ **Completed** |
-| **Day 14–16** | **Feed Tabs, Search & AI** | Feed filter tabs with URL sync, full-text search with debounce & abort signal, AI-assisted post summarizer. | ⏳ *Upcoming* |
+| **Day 14** | **Feed Filter Tabs with Bidirectional URL Sync** | Interactive `FeedTabs` component (`Top Ranked`, `Latest`, `Most Discussed`), bidirectional URL query sync (`?sort=`), Next.js App Router `useFeedSort` hook, isolated TanStack Query cache partitioning (`postKeys.feed(sort, limit)`), CSR bailout protection via `<Suspense>` boundary in `app/posts/page.tsx`, responsive mobile ergonomics (down to 320px). | ✅ **Completed** |
+| **Day 15–16** | **Search Engine & AI-Assisted Summarization** | Full-text search with debounce & abort signal, AI-assisted post summarizer. | ⏳ *Upcoming* |
 
 ### Phase 5: Testing, Security, Deployment, and Communication (Days 17–20)
 | Day | Focus Areas | Status |
@@ -1300,6 +1301,31 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
 6. **Automated Vitest Test Matrix Verification**:
    - In `backend/`, run `npm test`.
    - Verify 20 test files pass and all **161 unit and integration tests** execute with 100% green status.
+
+### 11. Day 14 Community Feed Tabs & Multi-Sort Verification Flow
+1. **Interactive Feed Tabs Switching (`FeedTabs`)**:
+   - Navigate to `http://localhost:3000/posts`.
+   - By default, the **"Latest"** tab is active and highlighted, displaying posts chronologically descending (`createdAt DESC`).
+   - Click the **"Top Ranked"** tab: URL immediately updates to `/posts?sort=top`. Feed seamlessly switches to posts sorted by computed `rankScore = (likes - dislikes) + 2*comments` descending.
+   - Click the **"Most Discussed"** tab: URL immediately updates to `/posts?sort=most-discussed`. Feed seamlessly switches to posts sorted by `commentCount DESC`.
+2. **Direct Link & Bookmark Support**:
+   - Open a fresh browser window and navigate directly to `http://localhost:3000/posts?sort=top`.
+   - Verify that the page loads with the **"Top Ranked"** tab pre-selected and displays high-engagement posts immediately.
+   - Test navigating to `http://localhost:3000/posts?sort=most-discussed`: verify that the **"Most Discussed"** tab is active and shows posts with highest comment counts.
+   - Test an invalid sort parameter like `/posts?sort=xyz`: verify it automatically normalizes and redirects to `?sort=latest`.
+3. **Browser History Navigation**:
+   - Starting from `/posts?sort=latest`, click **"Top Ranked"**, then click **"Most Discussed"**.
+   - Click the browser **Back** button: active tab and feed immediately revert to **"Top Ranked"**.
+   - Click the browser **Back** button again: active tab and feed revert to **"Latest"**.
+   - Click the browser **Forward** button: restores the next tab and feed state without full page reloads.
+4. **TanStack Query Cache Segregation**:
+   - Scroll down to fetch page 2 on the **"Top Ranked"** tab.
+   - Switch to **"Latest"**, then switch back to **"Top Ranked"**.
+   - Verify that the previously fetched pages and scroll position are preserved immediately from cache with zero duplicate requests.
+5. **Mobile Responsiveness (down to 320px)**:
+   - In browser DevTools, switch device toolbar to 320px (e.g. mobile viewport).
+   - Verify that the tab bar buttons (`Top Ranked`, `Latest`, `Most Discussed`) maintain comfortable tap targets, clear active underlines, and zero horizontal screen overflow.
+
 
 
 

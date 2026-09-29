@@ -146,6 +146,13 @@
   - Enabled direct developer profile navigation when clicking reactor names (`/developers/[id]`) with event propagation isolation.
   - Replaced the standalone "View all" button with an interactive whole-sentence click trigger and an aligned inline chevron right icon (`FiChevronRight`).
 
+### Day 14: Feed Filter Tabs with Bidirectional URL Sync & Multi-Sort Feed Integration
+- **Interactive Feed Filter Tabs Component**: Prompted the implementation of `FeedTabs` (`frontend/src/features/posts/components/feed-tabs.tsx`) providing clean semantic tabs (`role="tablist"`, `aria-selected`) with user-friendly labels (`Top Ranked`, `Latest`, `Most Discussed`) and active indicator styling.
+- **Bidirectional URL Query Synchronization**: Directed the authoring of `useFeedSort` hook (`frontend/src/features/posts/hooks/use-feed-sort.ts`) using Next.js App Router hooks (`useSearchParams`, `useRouter`, `usePathname`). Selecting a tab immediately updates the URL (`?sort=top`, `?sort=latest`, `?sort=most-discussed`) without full page reloads, preserving browser back/forward history and shareable direct link bookmarks.
+- **Cache Partitioning & Segregated Infinite Scroll**: Guided the multi-sort extension of TanStack Query factory `postKeys.feed(sort, limit)` and `useInfinitePosts(sort, limit)`. Each sorting mode maintains its own isolated query cache, ensuring that switching tabs does not discard prefetched posts and that pagination cursors remain completely segregated.
+- **Next.js 16 CSR Bailout Protection**: Directed the extraction of `PostsFeedContainer` wrapped inside `<Suspense fallback={<PostFeedSkeleton />}>` in `app/posts/page.tsx`, eliminating Next.js build-time prerendering bailout errors caused by client-side `useSearchParams()` consumption.
+- **Out-of-Band Community Seeding**: Prompted the authoring of an ephemeral seed script executed outside git tracking (`scratch/`) that populated realistic developer users with Unsplash avatars, technical posts, threaded replies, and authentic reactions, providing live verification across all three sort criteria.
+
 ---
 
 ## What I Reviewed or Rejected
@@ -251,6 +258,12 @@
 - **Rejected Hover Peek Popover on Post Reaction Action Buttons**: While useful on nested comments where space is extremely tight, on full post cards the hover peek popover was intrusive and distracting for users simply trying to like or dislike a post. Replaced with clean, non-obtrusive title tooltips.
 - **Rejected Separate "View all" Button Inside Sentence**: Having a separate "View all" button at the end of "Tom Anderson and DevPulse Lead Admin reacted to this post" looked cluttered. Unified the entire sentence into an interactive frosted glass badge with an aligned chevron icon.
 - **Rejected Event Bubbling from Reactor Profile Links to Modal**: When clicking a specific reactor's name in the summary badge, event propagation is isolated (`e.stopPropagation()`) so the user navigates directly to their profile instead of triggering the reactors modal dialog.
+
+### Day 14
+- **Rejected Full Page Reloads on Tab Navigation**: Strongly rejected using raw `<a>` anchor tags or unoptimized router pushes that re-trigger full page tree renders. Enforced client-side state transitions with Next.js `router.push()` / `router.replace()` preserving existing scroll coordinates and component mount state.
+- **Rejected Forcing Query Parameter on Default Route**: Reviewed URL normalization and rejected aggressively forcing `?sort=latest` onto the clean `/posts` URL on initial visit. Kept the clean root URL `/posts` while serving the Latest feed by default, only rewriting the URL when invalid or unrecognized sort parameters are encountered.
+- **Rejected Repository Contamination with Verification Fixtures**: Strongly rejected creating temporary seed files or committed mock scripts inside the production codebase. Authored all seed and inspection routines inside ephemeral scratch directories outside git tracking, leaving the working tree completely clean.
+- **Rejected Monolithic Feed Page Assembly**: Rejected writing tab switching and feed queries directly into the top-level `posts/page.tsx`. Decomposed concerns cleanly into `useFeedSort` (logic), `FeedTabs` (presentation), and `PostsFeedContainer` (Suspense-wrapped boundary).
 
 ---
 
@@ -454,6 +467,19 @@
 - **Vitest Test Suite Expansion (142 to 161 Passing Tests)**:
   - Added 7 unit tests in `post-ranking.util.spec.ts` and 12 in-memory replica set integration tests in `post-ranking.integration.spec.ts` covering `sort=top`, `sort=latest`, `sort=most-discussed`, tie-breakers, and 3-page pagination stability.
   - Expanded total backend test coverage from 142 tests to 161 tests across 20 test files (100% green).
+
+### Day 14
+- **Next.js 16 CSR Bailout (`missing-suspense-with-csr-bailout`)**:
+  - Diagnosed `next build` failure during static page generation: `useSearchParams() should be wrapped in a suspense boundary at page "/posts"`.
+  - Resolved by isolating `useFeedSort()` and the feed renderer into `<PostsFeedContainer />` and wrapping it in `<Suspense fallback={<PostFeedSkeleton />}>`. All 20 routes generated cleanly with 0 errors.
+- **Query Key Factory Polymorphic Backward-Compatibility**:
+  - Identified contract breakages where existing callers invoked `useInfinitePosts(POSTS_PER_PAGE)` passing a number, while the new implementation expected `(sort, limit)`.
+  - Implemented polymorphic argument detection in `postKeys.feed(sortOrLimit, limitOrSort)` and `useInfinitePosts`, supporting both signatures transparently and preventing type errors in legacy test cases and feeds.
+- **Paginated Response Schema Alignment**:
+  - Caught TypeScript error in `useInfinitePosts` pagination callback attempting to access `lastPage.meta.currentPage`. Aligned pagination logic to match `PaginatedPostsResponse` schema: `lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined`.
+- **Backend / Frontend Dev Server Startup Race Condition**:
+  - Diagnosed `ECONNREFUSED` in Next.js BFF proxy when making requests to `http://localhost:5000` during rapid `npm run dev` startup. Verified process status, port bindings (`5000` and `3000`), and proxy health, confirming automatic recovery once the NestJS daemon initialized.
+
 
 
 

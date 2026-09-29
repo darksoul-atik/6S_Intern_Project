@@ -18,7 +18,7 @@ import type {
 export async function getPostsPage(
   page: number,
   limit: number = 10,
-  sort: FeedSort = "latest",
+  sort: FeedSort = "top",
 ): Promise<ApiResponse<PaginatedPostsResponse>> {
   const res = await apiClient.get<ApiResponse<PaginatedPostsResponse>>(
     "/posts",

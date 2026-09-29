@@ -68,7 +68,7 @@ function PostFeedSkeleton() {
   );
 }
 
-export function PostFeed({ sort = "latest" }: PostFeedProps = {}) {
+export function PostFeed({ sort = "top" }: PostFeedProps = {}) {
   /*
   |--------------------------------------------------------------------------
   | Infinite feed

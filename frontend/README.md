@@ -70,9 +70,10 @@ frontend/src/
 │   │   ├── types/                 # auth.ts
 │   │   └── utils/                 # auth-error.ts
 │   │
-│   ├── posts/                     # Posts & Community Feed domain (Day 7 & 8)
+│   ├── posts/                     # Posts & Community Feed domain (Day 7, 8 & 14)
 │   │   ├── components/            # post-card.tsx, post-feed.tsx, post-details.tsx,
-│   │   │                          # post-form.tsx, delete-post-modal.tsx
+│   │   │                          # feed-tabs.tsx, post-form.tsx, delete-post-modal.tsx
+│   │   ├── hooks/                 # use-feed-sort.ts (bidirectional URL & sort state)
 │   │   ├── mutations/             # useCreatePostMutation, useUpdatePostMutation,
 │   │   │                          # useSoftDeletePostMutation, useRestorePostMutation
 │   │   ├── queries/               # useInfinitePosts, usePost
@@ -135,7 +136,7 @@ frontend/src/
 
 ---
 
-## 🔄 Working Flow as of Day 12
+## 🔄 Working Flow as of Day 14
 
 ### 1. Community Feed & Infinite Scroll (`/posts`)
 1. User navigates to `/posts`.
@@ -223,6 +224,28 @@ frontend/src/
 ### 7. Phase 4 Feed Discovery & Ranking Foundations (Day 13)
 - **Multi-Sort Feed Integration Readiness**: Backend query parameters `sort=latest`, `sort=top`, and `sort=most-discussed` wired into typed API client and OpenAPI contracts, prepared for tabbed feed switching in Day 14.
 - **Action Bar Alignment Polish**: Polished post card action bar flex alignments, reaction button padding, and standard word-break typography ensuring seamless scaling across mobile viewports.
+
+### 8. Phase 4 Community Feed Filter Tabs, URL Synchronization & Multi-Sort Integration (Day 14 Completed)
+- **Interactive Feed Filter Tabs (`FeedTabs`)**:
+  - Mounted atop `/posts` in `frontend/src/features/posts/components/feed-tabs.tsx`.
+  - Semantic tablist (`role="tablist"`, `aria-selected`) with three distinct sorting views:
+    - **Top Ranked**: Displays posts ordered by computed rank score `(likes - dislikes) + (comments * 2)` with secondary tie-breakers (`createdAt DESC, _id DESC`).
+    - **Latest**: Displays posts chronologically by publication time (`createdAt DESC, _id DESC`). Default view on `/posts`.
+    - **Most Discussed**: Displays posts ordered by conversation volume (`commentCount DESC, createdAt DESC, _id DESC`).
+- **Bidirectional URL Query Synchronization (`useFeedSort`)**:
+  - Encapsulated in `frontend/src/features/posts/hooks/use-feed-sort.ts` leveraging Next.js App Router (`useSearchParams`, `useRouter`, `usePathname`).
+  - Toggling tabs updates the browser URL (`?sort=top`, `?sort=latest`, `?sort=most-discussed`) without full page reloads.
+  - Automatically restores active tab on page refresh, direct link navigation, or browser back/forward history navigation.
+  - Normalizes unrecognized or invalid sort query parameters back to `latest`.
+- **TanStack Query Cache Segregation**:
+  - Query keys parameterized by sort mode: `postKeys.feed(sort, limit) = ['posts', 'feed', sort, { limit }]`.
+  - Switching tabs instantly restores previously cached pages without refetching or discarding loaded posts.
+  - Infinite scroll cursors (`pageParam`) and pagination boundaries operate completely independently per tab.
+- **Next.js 16 CSR Bailout Protection with Suspense**:
+  - Wrapped dynamic feed container `<PostsFeedContainer />` inside `<Suspense fallback={<PostFeedSkeleton />}>` in `app/posts/page.tsx`.
+  - Eliminates client-side prerender bailouts during static Next.js compilation, enabling 100% clean production builds across all 20 routes.
+- **Mobile Responsive Ergonomics**:
+  - Fluid flex-row tab layout with touch-friendly tap targets and zero horizontal overflow down to 320px screen widths.
 
 ---
 

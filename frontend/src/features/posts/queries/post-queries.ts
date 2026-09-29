@@ -18,7 +18,7 @@ export const postKeys = {
         ? sortOrLimit
         : typeof limitOrSort === 'string'
           ? limitOrSort
-          : 'latest';
+          : 'top';
     const limit: number =
       typeof sortOrLimit === 'number'
         ? sortOrLimit
@@ -40,7 +40,7 @@ export const postKeys = {
 export async function fetchPostsPage(
   page: number,
   limit: number = 10,
-  sort: FeedSort = 'latest',
+  sort: FeedSort = 'top',
 ): Promise<PaginatedPostsResponse> {
   const res = await getPostsPage(page, limit, sort);
   if (!res.data) {
@@ -50,11 +50,11 @@ export async function fetchPostsPage(
 }
 
 export function useInfinitePosts(
-  sortOrLimit: FeedSort | number = 'latest',
+  sortOrLimit: FeedSort | number = 'top',
   maybeLimit: number = 10,
 ) {
   const sort: FeedSort =
-    typeof sortOrLimit === 'string' ? sortOrLimit : 'latest';
+    typeof sortOrLimit === 'string' ? sortOrLimit : 'top';
   const limit: number =
     typeof sortOrLimit === 'number' ? sortOrLimit : maybeLimit;
 
