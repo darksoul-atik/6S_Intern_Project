@@ -4,7 +4,7 @@ import { useFeedSort, type FeedSort } from "../hooks/use-feed-sort";
 
 const tabs: { label: string; value: FeedSort }[] = [
   {
-    label: "Top",
+    label: "Top Ranked",
     value: "top",
   },
   {
