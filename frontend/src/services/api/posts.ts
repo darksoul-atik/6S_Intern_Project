@@ -1,12 +1,13 @@
-import { apiClient } from '@/lib/axios/client';
-import type { ApiResponse } from '@/types/api';
+import { apiClient } from "@/lib/axios/client";
+import type { ApiResponse } from "@/types/api";
+import type { FeedSort } from "@/features/posts/hooks/use-feed-sort";
 import type {
   Post,
   PaginatedPostsResponse,
   CreatePostPayload,
   UpdatePostPayload,
   DeletePostResult,
-} from '@/features/posts/types/post';
+} from "@/features/posts/types/post";
 
 /*
 |--------------------------------------------------------------------------
@@ -17,13 +18,19 @@ import type {
 export async function getPostsPage(
   page: number,
   limit: number = 10,
+  sort: FeedSort = "latest",
 ): Promise<ApiResponse<PaginatedPostsResponse>> {
-  const res = await apiClient.get<ApiResponse<PaginatedPostsResponse>>('/posts', {
-    params: {
-      page,
-      limit,
+  const res = await apiClient.get<ApiResponse<PaginatedPostsResponse>>(
+    "/posts",
+    {
+      params: {
+        page,
+        limit,
+        sort,
+      },
     },
-  });
+  );
+
   return res.data;
 }
 
@@ -35,7 +42,7 @@ export async function getPostById(id: string): Promise<ApiResponse<Post>> {
 export async function createPost(
   payload: CreatePostPayload,
 ): Promise<ApiResponse<Post>> {
-  const res = await apiClient.post<ApiResponse<Post>>('/posts', payload);
+  const res = await apiClient.post<ApiResponse<Post>>("/posts", payload);
   return res.data;
 }
 
@@ -50,6 +57,9 @@ export async function updatePost(
 export async function softDeletePost(
   id: string,
 ): Promise<ApiResponse<DeletePostResult>> {
-  const res = await apiClient.delete<ApiResponse<DeletePostResult>>(`/posts/${id}`);
+  const res = await apiClient.delete<ApiResponse<DeletePostResult>>(
+    `/posts/${id}`,
+  );
+
   return res.data;
 }
