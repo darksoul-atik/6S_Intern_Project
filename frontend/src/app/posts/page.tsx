@@ -1,6 +1,26 @@
+"use client";
+
+import { Suspense } from "react";
 import Link from "next/link";
 import { FiArrowLeft, FiPlus } from "react-icons/fi";
+
+import { FeedTabs } from "@/features/posts/components/feed-tabs";
 import { PostFeed } from "@/features/posts/components/post-feed";
+import { useFeedSort } from "@/features/posts/hooks/use-feed-sort";
+
+function PostsFeedContainer() {
+  const { sort } = useFeedSort();
+
+  return (
+    <>
+      {/* Feed Sort Tabs */}
+      <FeedTabs />
+
+      {/* Feed */}
+      <PostFeed sort={sort} />
+    </>
+  );
+}
 
 export default function PostsPage() {
   return (
@@ -60,7 +80,17 @@ export default function PostsPage() {
             </p>
           </div>
 
-          <PostFeed />
+          {/* Suspense boundary for useSearchParams CSR bailout protection */}
+          <Suspense
+            fallback={
+              <div className="space-y-6 animate-pulse">
+                <div className="h-10 w-64 rounded-xl bg-slate-200/60" />
+                <div className="h-48 rounded-3xl bg-slate-200/40" />
+              </div>
+            }
+          >
+            <PostsFeedContainer />
+          </Suspense>
         </div>
       </main>
     </div>
