@@ -10,15 +10,19 @@ import {
 } from "react-icons/fi";
 
 import { DeletePostModal } from "./delete-post-modal";
-
 import { PostCard } from "./post-card";
 
 import type { Post } from "../types/post";
+import type { FeedSort } from "../hooks/use-feed-sort";
 import { useInfinitePosts } from "../queries/post-queries";
 import { useSoftDeletePostMutation } from "../mutations/post-mutations";
 import { useUserReactions } from "@/features/reactions/queries/reaction-queries";
 
 const POSTS_PER_PAGE = 10;
+
+type PostFeedProps = {
+  sort?: FeedSort;
+};
 
 /*
 |--------------------------------------------------------------------------
@@ -64,7 +68,7 @@ function PostFeedSkeleton() {
   );
 }
 
-export function PostFeed() {
+export function PostFeed({ sort = "latest" }: PostFeedProps = {}) {
   /*
   |--------------------------------------------------------------------------
   | Infinite feed
@@ -81,7 +85,7 @@ export function PostFeed() {
     isFetchingNextPage,
     isFetchNextPageError,
     refetch,
-  } = useInfinitePosts(POSTS_PER_PAGE);
+  } = useInfinitePosts(sort, POSTS_PER_PAGE);
 
   const { data: userPostReactions = {} } = useUserReactions("post");
 
@@ -170,7 +174,6 @@ export function PostFeed() {
       },
       {
         rootMargin: "300px 0px",
-
         threshold: 0,
       },
     );
@@ -307,7 +310,8 @@ export function PostFeed() {
         </h2>
 
         <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-700 font-sans">
-          The DevPulse feed is empty right now. Be the first developer to share an update, architecture insight, or question!
+          The DevPulse feed is empty right now. Be the first developer to share
+          an update, architecture insight, or question!
         </p>
       </div>
     );
@@ -333,6 +337,7 @@ export function PostFeed() {
             }
           />
         ))}
+
         {/* Next page loading */}
         {isFetchingNextPage && (
           <div
@@ -343,6 +348,7 @@ export function PostFeed() {
             <span>Loading more posts...</span>
           </div>
         )}
+
         {/* Next page error */}
         {isFetchNextPageError && (
           <div
@@ -367,6 +373,7 @@ export function PostFeed() {
             </button>
           </div>
         )}
+
         {/* End */}
         {!hasNextPage && !isFetchingNextPage && !isFetchNextPageError && (
           <div
@@ -377,6 +384,7 @@ export function PostFeed() {
             <span>You&apos;re all caught up.</span>
           </div>
         )}
+
         {/* Observer */}
         {hasNextPage && !isFetchNextPageError && (
           <div ref={loadMoreRef} className="h-10" aria-hidden="true" />
