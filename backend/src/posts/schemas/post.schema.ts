@@ -165,17 +165,6 @@ export const PostSchema = SchemaFactory.createForClass(Post);
 |--------------------------------------------------------------------------
 | Main / Latest Feed Index
 |--------------------------------------------------------------------------
-|
-| Used for:
-|
-| GET /posts
-| GET /posts?sort=latest
-|
-| Order:
-|
-| createdAt DESC
-| -> _id DESC
-|--------------------------------------------------------------------------
 */
 
 PostSchema.index({
@@ -187,13 +176,6 @@ PostSchema.index({
 |--------------------------------------------------------------------------
 | Soft-delete Cleanup Index
 |--------------------------------------------------------------------------
-|
-| Used by the scheduled cleanup job.
-|
-| The job queries posts where:
-|
-| deletedAt <= fiveDaysAgo
-|--------------------------------------------------------------------------
 */
 
 PostSchema.index({
@@ -204,21 +186,6 @@ PostSchema.index({
 |--------------------------------------------------------------------------
 | Most Discussed Feed Index
 |--------------------------------------------------------------------------
-|
-| Used for:
-|
-| GET /posts?sort=most-discussed
-|
-| Order:
-|
-| commentCount DESC
-| -> createdAt DESC
-| -> _id DESC
-|
-| Unlike Top rankScore, commentCount is stored
-| directly on the Post document, so MongoDB
-| can index this ordering.
-|--------------------------------------------------------------------------
 */
 
 PostSchema.index({
@@ -226,3 +193,30 @@ PostSchema.index({
   createdAt: -1,
   _id: -1,
 });
+
+/*
+|--------------------------------------------------------------------------
+| Full-text Search Index
+|--------------------------------------------------------------------------
+|
+| Searches both post title and body.
+|
+| Title has a higher weight because a search term appearing
+| in the title is usually more relevant than the same term
+| appearing only in the body.
+|--------------------------------------------------------------------------
+*/
+
+PostSchema.index(
+  {
+    title: 'text',
+    body: 'text',
+  },
+  {
+    weights: {
+      title: 5,
+      body: 1,
+    },
+    name: 'post_text_search',
+  },
+);
