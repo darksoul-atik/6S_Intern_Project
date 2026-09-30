@@ -23,6 +23,7 @@ import { PostsService } from './posts.service.js';
 
 import { CreatePostDto } from './dto/create-post.dto.js';
 import { GetPostsQueryDto } from './dto/get-posts-query.dto.js';
+import { SearchPostsQueryDto } from './dto/search-posts-query.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
@@ -133,6 +134,58 @@ export class PostsController {
       page: query.page,
       limit: query.limit,
       sort: query.sort,
+    });
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Search Posts
+  |--------------------------------------------------------------------------
+  |
+  | Public endpoint.
+  |
+  | Full-text search across post title and body.
+  | Soft-deleted posts are excluded.
+  |--------------------------------------------------------------------------
+  */
+
+  @Get('search')
+  @ApiOperation({
+    summary: 'Search posts',
+    description:
+      'Performs full-text search across active post titles and bodies. Results are ordered by text relevance.',
+  })
+  @ApiQuery({
+    name: 'q',
+    required: true,
+    example: 'react authentication',
+    description: 'Search term. Must contain between 2 and 200 characters.',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    example: 1,
+    description: 'Page number. Minimum value is 1.',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    example: 10,
+    description: 'Number of search results per page. Maximum value is 50.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Search results retrieved successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid search query, page, or limit',
+  })
+  async searchPosts(@Query() query: SearchPostsQueryDto) {
+    return this.postsService.searchPosts({
+      q: query.q,
+      page: query.page,
+      limit: query.limit,
     });
   }
 
