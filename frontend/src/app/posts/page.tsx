@@ -1,28 +1,40 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { FiArrowLeft, FiPlus } from "react-icons/fi";
 
 import { FeedSortDropdown } from "@/features/posts/components/feed-sort-dropdown";
 import { PostFeed } from "@/features/posts/components/post-feed";
+import { PostSearch } from "@/features/posts/components/post-search";
 import { useFeedSort } from "@/features/posts/hooks/use-feed-sort";
 
 function PostsFeedContainer() {
   const { sort } = useFeedSort();
 
+  const [isSearchActive, setIsSearchActive] = useState(false);
+
   return (
     <div className="space-y-6">
-      {/* Feed Sorting Controls */}
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 font-manrope">
-          Discussions
-        </h2>
-        <FeedSortDropdown />
-      </div>
+      {/* Search */}
+      <PostSearch onSearchActiveChange={setIsSearchActive} />
 
-      {/* Feed */}
-      <PostFeed sort={sort} />
+      {/* Normal Feed */}
+      {!isSearchActive && (
+        <>
+          {/* Feed Sorting Controls */}
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 font-manrope">
+              Discussions
+            </h2>
+
+            <FeedSortDropdown />
+          </div>
+
+          {/* Feed */}
+          <PostFeed sort={sort} />
+        </>
+      )}
     </div>
   );
 }
@@ -85,14 +97,17 @@ export default function PostsPage() {
             </p>
           </div>
 
-          {/* Suspense boundary for useSearchParams CSR bailout protection */}
+          {/* Feed + Search */}
           <Suspense
             fallback={
               <div className="space-y-6 animate-pulse">
+                <div className="h-12 rounded-2xl bg-slate-200/70" />
+
                 <div className="flex items-center justify-between">
                   <div className="h-3.5 w-20 rounded bg-slate-200/70" />
                   <div className="h-8 w-32 rounded-xl bg-slate-200/80" />
                 </div>
+
                 <div className="h-48 rounded-3xl bg-slate-200/40" />
               </div>
             }
