@@ -38,8 +38,9 @@ DevPulse is a high-performance, engineering-first developer community platform e
 | Day | Milestone | Focus Areas | Status |
 |:---:|---|---|:---:|
 | **Day 13** | **Ranked, Latest & Most-Discussed Feed APIs** | Pure deterministic ranking calculation (`calculatePostRankScore`), aggregation pipeline (`buildTopPostsPipeline`), `sort=top`, `sort=latest`, and `sort=most-discussed` query options on `GET /posts`, stable secondary tie-breaker sorting (`createdAt DESC`, `_id DESC`), compound index `{ commentCount: -1, createdAt: -1, _id: -1 }`, query plan explain verification (`npm run check:plans`), controlled seed fixtures, verification scripts (`seed:ranking`, `cleanup:ranking`), unit & replica-set integration test matrix (161/161 tests passing across 20 suites). | ✅ **Completed** |
-| **Day 14** | **Feed Filter Tabs with Bidirectional URL Sync** | Interactive `FeedTabs` component (`Top Ranked`, `Latest`, `Most Discussed`), bidirectional URL query sync (`?sort=`), Next.js App Router `useFeedSort` hook, isolated TanStack Query cache partitioning (`postKeys.feed(sort, limit)`), CSR bailout protection via `<Suspense>` boundary in `app/posts/page.tsx`, responsive mobile ergonomics (down to 320px). | ✅ **Completed** |
-| **Day 15–16** | **Search Engine & AI-Assisted Summarization** | Full-text search with debounce & abort signal, AI-assisted post summarizer. | ⏳ *Upcoming* |
+| **Day 14** | **Feed Filter Tabs & Glass Sort Dropdown** | Interactive `FeedTabs` and glass sort dropdown defaulting to `Top Ranked`, bidirectional URL query sync (`?sort=`), Next.js App Router `useFeedSort` hook, isolated TanStack Query cache partitioning (`postKeys.feed(sort, limit)`), CSR bailout protection via `<Suspense>` boundary in `app/posts/page.tsx`, responsive mobile ergonomics. | ✅ **Completed** |
+| **Day 15** | **Full-Text Post Search Engine & Debounced Query Pipeline** | Indexed full-text search (`title: 5, body: 1`), `GET /posts/search` with `SearchPostsQueryDto`, text relevance scoring (`$meta: 'textScore'`), 300ms debounced search bar (`PostSearch`), `AbortController` cancellation, and zero-flicker feed integration. | ✅ **Completed** |
+| **Day 16** | **AI-Assisted Post Summarization** | Automatic technical summaries, key takeaways extraction, and LLM-assisted post compression. | ⏳ *Upcoming* |
 
 ### Phase 5: Testing, Security, Deployment, and Communication (Days 17–20)
 | Day | Focus Areas | Status |
@@ -1326,6 +1327,32 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
    - In browser DevTools, switch device toolbar to 320px (e.g. mobile viewport).
    - Verify that the tab bar buttons (`Top Ranked`, `Latest`, `Most Discussed`) maintain comfortable tap targets, clear active underlines, and zero horizontal screen overflow.
 
-
-
-
+### 12. Day 15 Full-Text Post Search Engine & Debounced Query Pipeline Verification Flow
+1. **Backend Full-Text Search Endpoint (`GET /posts/search?q=...`)**:
+   - Send `GET http://localhost:5000/posts/search?q=NestJS&page=1&limit=5`.
+   - Verify `200 OK` response with pagination envelope `{ posts: [...], total, page, limit, totalPages }`.
+   - Verify search results return active posts matching text terms, ordered primarily by text relevance score (`$meta: 'textScore'`), with secondary tie-breaker `createdAt DESC, _id DESC`.
+   - Verify weighted scoring prioritized title matches (weight 5) over body matches (weight 1).
+   - Verify soft-deleted posts (`deletedAt != null`) are completely excluded from search results.
+2. **Query DTO Sanitization & Validation (`SearchPostsQueryDto`)**:
+   - Test whitespace query: `GET /posts/search?q=%20%20%20%20` returns `400 Bad Request` (`Search query must not be empty`).
+   - Test missing query: `GET /posts/search` returns `400 Bad Request` (`q should not be empty`).
+   - Test query length > 100 characters: returns `400 Bad Request` (`q must be shorter than or equal to 100 characters`).
+   - Test negative or out-of-range pagination: `page=0` or `limit=101` returns `400 Bad Request`.
+3. **Debounced Search Bar UI (`PostSearch`)**:
+   - Navigate to `http://localhost:3000/posts`.
+   - Notice the frosted glass search input positioned seamlessly above the feed filter tabs.
+   - Type a search query (e.g., `Postgres` or `ORM`): observe the 300ms debounce buffer in action.
+   - While debouncing/fetching, an animated inline spinner displays inside the right of the search input.
+   - When results arrive, the feed seamlessly switches from the standard chronological/ranked feed to the search results view with zero page reload or screen jitter.
+4. **Single Clean Dismissal / Clear Button**:
+   - With text entered in the search bar, notice a single custom clear button (`FiX`) on the right.
+   - Native browser/WebKit search cancel decorations are hidden (`[&::-webkit-search-cancel-button]:hidden`), preventing dual/overlapping "X" buttons.
+   - Click the clear button or press `Escape`: input clears immediately, search state deactivates, and the feed instantly restores the previously active sort tab (`Top Ranked`, `Latest`, or `Most Discussed`).
+5. **Network Request Cancellation via `AbortSignal`**:
+   - In browser DevTools Network tab, type rapidly into the search input.
+   - Observe previous in-flight search requests being canceled (`canceled` / `status: canceled`) as new keystrokes are registered.
+   - Next.js Route Handler BFF proxy (`app/api/posts/search/route.ts`) cleanly forwards `request.signal` to NestJS, conserving server and network bandwidth.
+6. **Automated Vitest Test Matrix Verification**:
+   - In `backend/`, run `npm test`.
+   - Verify all **22 test suites and 176 unit and integration tests** pass with 100% green status, including `search-posts-query.dto.spec.ts` (9 tests) and `post-search.integration.spec.ts` (6 tests).

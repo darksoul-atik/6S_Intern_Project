@@ -4,7 +4,7 @@
 
 ---
 
-## 🏛️ System Architecture Overview (As of Day 14)
+## 🏛️ System Architecture Overview (As of Day 15)
 
 The DevPulse backend is engineered as a modular, domain-driven NestJS service adhering to enterprise security standards, strict data encapsulation, and predictable REST conventions:
 
@@ -71,7 +71,7 @@ npm run seed:admin
 # Start development server (watch mode)
 npm run start:dev
 
-# Run automated Vitest test suite (161 unit & integration tests across 20 suites)
+# Run automated Vitest test suite (176 unit & integration tests across 22 suites)
 npm run test
 ```
 
@@ -96,9 +96,10 @@ Interactive OpenAPI Swagger documentation is available at:
 - **Portfolio Projects (`POST /profile/me/projects`, `PATCH /projects/:id`, `DELETE /projects/:id`)**: Showcase projects with title, description, tags, demo URL, and repo URL.
 - **Avatar Media (`POST /users/:id/avatar`, `GET /users/:id/avatar`, `DELETE /users/:id/avatar`)**: Binary image upload and streaming with `ProfileOwnerOrAdminGuard`.
 
-### 3. `PostsModule` (`/posts`) — *Day 7 & 8 Deliverables*
+### 3. `PostsModule` (`/posts`) — *Day 7, 8 & 15 Deliverables*
 - **`POST /posts`**: Create engineering posts. Author is derived strictly from verified JWT claims (`@CurrentUser()`). Automatically increments author's `postsCount`.
-- **`GET /posts?page=1&limit=10&status=active`**: High-performance paginated feed sorted newest-first (`createdAt: -1, _id: -1`). Returns metadata (`total`, `page`, `limit`, `totalPages`) supporting infinite scroll.
+- **`GET /posts?page=1&limit=10&sort=latest|top|most-discussed`**: High-performance paginated feed with multi-sort options. Returns metadata (`total`, `page`, `limit`, `totalPages`) supporting infinite scroll.
+- **`GET /posts/search?q=query&page=1&limit=10`**: High-performance full-text search engine. Queries MongoDB `$text` index with weighted fields (`title: 5, body: 1`), orders primarily by relevance (`$meta: 'textScore'`) with tie-breakers (`createdAt: -1, _id: -1`), and filters soft-deleted posts.
 - **`GET /posts/:id`**: Single post lookup with pre-validation of 24-character hexadecimal ObjectId to eliminate Mongoose CastError 500s.
 - **`PATCH /posts/:id`**: Update title and body, strictly guarded by `PostOwnerOrAdminGuard`.
 - **`DELETE /posts/:id`**: Soft-delete lifecycle initiation. Sets `deletedAt = now` and `deletedBy = user`, decrements author's `postsCount`, and starts the 5-day recovery window.
@@ -139,6 +140,14 @@ Interactive OpenAPI Swagger documentation is available at:
 - **Validation & OpenAPI**: Query parameter validation via `GetPostsQueryDto` (`@IsIn(['top', 'latest', 'most-discussed'])`, `@Min(1)`, `@Max(100)`).
 - **Query Plan Verification Script**: `npm run check:plans` executes MongoDB `explain("executionStats")` across all three feed sorting modes, confirming index utilization (`IXSCAN`).
 - **Controlled Seed Fixtures & Safety Isolation**: `npm run seed:ranking`, `npm run verify:seed`, and `npm run cleanup:ranking` guarded by strict database name checking (`devpulse_day13_seed`).
+
+---
+
+### 8. Full-Text Search Engine & Debounced Pipeline (Day 15)
+- **Compound Text Index**: Mongoose schema index `{ title: 'text', body: 'text' }` with weights `{ title: 5, body: 1 }`.
+- **Relevance Scoring & Sorting**: Queries `$text: { $search: q }`, project `{ score: { $meta: 'textScore' } }`, and sorts by `{ score: { $meta: 'textScore' }, createdAt: -1, _id: -1 }`.
+- **Validation & Trimming**: `SearchPostsQueryDto` applies `@Transform` whitespace trimming, minimum length 1, maximum length 100, and pagination clamping.
+- **Author Projection & Soft-Delete Filtering**: Populates lean author attributes (`name`, `headline`, `avatarUrl`) and excludes soft-deleted posts (`deletedAt: null`).
 
 ## 🔄 Working Flow as of Day 13
 
@@ -268,7 +277,7 @@ Interactive OpenAPI Swagger documentation is available at:
 DevPulse backend maintains a 100% pass rate across unit, integration, and guard test suites powered by **Vitest**:
 
 ```bash
-# Run all 20 test suites (161 tests)
+# Run all 22 test suites (176 tests)
 npx vitest run
 
 # Run with watch mode
@@ -279,6 +288,8 @@ npx vitest run --coverage
 ```
 
 ### Test Coverage Highlights:
+- **`search-posts-query.dto.spec.ts` (9 tests)**: DTO transformation and validation tests covering query trimming, empty string rejection, max-length boundaries, and pagination clamping.
+- **`post-search.integration.spec.ts` (6 tests)**: In-memory MongoDB replica set integration tests verifying weighted search relevance (`title = 5, body = 1`), relevance score sorting, secondary tie-breakers (`createdAt DESC, _id DESC`), soft-deleted post exclusion, pagination across search results, and empty result handling.
 - **`post-ranking.util.spec.ts` (7 tests)**: Pure deterministic rank scoring calculations, likes/dislikes cancellation, negative score handling, comment weighting ($+2$), and zero engagement fallback.
 - **`post-ranking.integration.spec.ts` (12 tests)**: End-to-end integration tests on an in-memory replica set verifying controlled top order, latest chronological order, most-discussed order, tie-breaking by `createdAt` and `_id`, pagination order stability across all 3 sort modes, soft-delete exclusions, and empty feed states.
 - **`reactions.service.spec.ts` (22 tests)**: Toggle creation, toggle off, switch between like/dislike, post/comment target validation, soft-deleted post rejection, user reaction queries, paginated reactor listings.

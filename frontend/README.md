@@ -70,13 +70,13 @@ frontend/src/
 │   │   ├── types/                 # auth.ts
 │   │   └── utils/                 # auth-error.ts
 │   │
-│   ├── posts/                     # Posts & Community Feed domain (Day 7, 8 & 14)
+│   ├── posts/                     # Posts & Community Feed domain (Day 7, 8, 14 & 15)
 │   │   ├── components/            # post-card.tsx, post-feed.tsx, post-details.tsx,
-│   │   │                          # feed-tabs.tsx, post-form.tsx, delete-post-modal.tsx
-│   │   ├── hooks/                 # use-feed-sort.ts (bidirectional URL & sort state)
+│   │   │                          # feed-tabs.tsx, post-search.tsx, post-form.tsx, delete-post-modal.tsx
+│   │   ├── hooks/                 # use-feed-sort.ts, use-debounce.ts
 │   │   ├── mutations/             # useCreatePostMutation, useUpdatePostMutation,
 │   │   │                          # useSoftDeletePostMutation, useRestorePostMutation
-│   │   ├── queries/               # useInfinitePosts, usePost
+│   │   ├── queries/               # useInfinitePosts, usePost, usePostSearch
 │   │   ├── schemas/               # post-schema.ts (Zod)
 │   │   └── types/                 # post.ts
 │   │
@@ -113,7 +113,7 @@ frontend/src/
 │
 ├── services/api/                  # Pure Axios API functions (NO React dependencies)
 │   ├── auth.ts                    # loginUser, signupUser, logoutUser, getCurrentUser
-│   ├── posts.ts                   # getPosts, getPostById, createPost, updatePost, softDeletePost
+│   ├── posts.ts                   # getPosts, getPostById, createPost, updatePost, softDeletePost, searchPosts
 │   ├── comments.ts                # getCommentsByPost, createComment, createReply, deleteComment
 │   ├── reactions.ts               # toggleReaction, getUserReactions
 │   ├── users.ts                   # getUserProfile, updateUserProfile, uploadAvatar, deleteAvatar
@@ -136,7 +136,7 @@ frontend/src/
 
 ---
 
-## 🔄 Working Flow as of Day 14
+## 🔄 Working Flow as of Day 15
 
 ### 1. Community Feed & Infinite Scroll (`/posts`)
 1. User navigates to `/posts`.
@@ -246,6 +246,24 @@ frontend/src/
   - Eliminates client-side prerender bailouts during static Next.js compilation, enabling 100% clean production builds across all 20 routes.
 - **Mobile Responsive Ergonomics**:
   - Fluid flex-row tab layout with touch-friendly tap targets and zero horizontal overflow down to 320px screen widths.
+
+### 9. Phase 4 Full-Text Post Search Engine, 300ms Debouncing & AbortSignal Pipeline (Day 15 Completed)
+- **Debounced Frosted Search Bar (`PostSearch`)**:
+  - Mounted directly above feed filter tabs in `frontend/src/features/posts/components/post-search.tsx`.
+  - Modern frosted glass aesthetic (`border-slate-200 bg-white shadow-sm focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100`).
+  - Single unified dismissal button (`FiX`) with WebKit search cancel decorations suppressed (`[&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden`) to prevent double "X" cancel buttons.
+  - Inline loading spinner indicator providing real-time feedback during network fetching and debouncing.
+- **Pure Debounce Hook (`useDebounce`)**:
+  - Encapsulated in `frontend/src/features/posts/hooks/use-debounce.ts` with a 300ms buffer, preventing rapid keystrokes from spamming server resources.
+- **TanStack Query Search Hook (`usePostSearch`)**:
+  - Encapsulated in `frontend/src/features/posts/queries/post-queries.ts` using deterministic query keys `postKeys.search(query, page, limit)`.
+  - Gated by `enabled: Boolean(debouncedQuery.trim())` so empty queries consume zero network bandwidth.
+- **`AbortSignal` Cancellation Through BFF Proxy**:
+  - Axios API client accepts `signal?: AbortSignal` which TanStack Query automatically passes into query functions.
+  - Next.js Route Handler BFF proxy (`app/api/posts/search/route.ts`) extracts `request.signal` and forwards it to the NestJS backend, aborting obsolete in-flight requests whenever users continue typing.
+- **Zero-Flicker Feed Mode Swap**:
+  - When an active search term is detected, `/posts` seamlessly hides the infinite feed and renders search results sorted by MongoDB text relevance.
+  - Clearing the search input immediately restores the previous feed sort tab (`Top Ranked`, `Latest`, or `Most Discussed`) without full page reloads or layout jumping.
 
 ---
 

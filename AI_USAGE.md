@@ -153,6 +153,14 @@
 - **Next.js 16 CSR Bailout Protection**: Directed the extraction of `PostsFeedContainer` wrapped inside `<Suspense fallback={<PostFeedSkeleton />}>` in `app/posts/page.tsx`, eliminating Next.js build-time prerendering bailout errors caused by client-side `useSearchParams()` consumption.
 - **Out-of-Band Community Seeding**: Prompted the authoring of an ephemeral seed script executed outside git tracking (`scratch/`) that populated realistic developer users with Unsplash avatars, technical posts, threaded replies, and authentic reactions, providing live verification across all three sort criteria.
 
+### Day 15: Full-Text Post Search Engine, Text Score Relevance & AbortSignal Pipeline
+- **Full-Text Text Index & Field Weighting**: Guided the creation of a MongoDB compound `$text` index across `title` and `body` with custom weights (`title: 5, body: 1`), ensuring exact and fuzzy title matches rank considerably higher than incidental body mentions.
+- **Query DTO Sanitization & Validation**: Directed the authoring of `SearchPostsQueryDto` utilizing class-transformer `@Transform` to trim outer whitespace, enforce non-empty search terms (min 1, max 100), clamp pagination parameters (`limit` 1–100), and reject blank/space-only queries with clean `400 Bad Request` messages.
+- **Relevance Scoring & Stable Tie-Breaking**: Prompted `PostsService.searchPosts` to execute `$text: { $search: q }`, project `{ score: { $meta: 'textScore' } }`, and sort by `{ score: { $meta: 'textScore' }, createdAt: -1, _id: -1 }`, guaranteeing that equally relevant search results break ties predictably.
+- **Lean Author Projection & Soft-Delete Filtering**: Mandated that search queries filter out soft-deleted posts (`deletedAt: null`) and populate author profiles with public fields (`name`, `headline`, `avatarUrl`) while strictly omitting sensitive user attributes.
+- **300ms Keystroke Debouncing & AbortSignal Cancellation**: Directed the creation of a pure `useDebounce` hook with a 300ms buffer and wired `AbortSignal` forwarding through TanStack Query, the Axios API client layer, and the Next.js Route Handler BFF proxy (`request.signal`), cleanly canceling obsolete in-flight requests whenever users continue typing.
+- **Search UI Integration & Single Dismissal Button**: Guided the implementation of `PostSearch` featuring an inline loading spinner, single clear button (`FiX`), and suppressed native WebKit search cancel decorations, seamlessly swapping between standard feeds and search results without layout jumps.
+
 ---
 
 ## What I Reviewed or Rejected
@@ -264,6 +272,13 @@
 - **Rejected Forcing Query Parameter on Default Route**: Reviewed URL normalization and rejected aggressively forcing `?sort=latest` onto the clean `/posts` URL on initial visit. Kept the clean root URL `/posts` while serving the Latest feed by default, only rewriting the URL when invalid or unrecognized sort parameters are encountered.
 - **Rejected Repository Contamination with Verification Fixtures**: Strongly rejected creating temporary seed files or committed mock scripts inside the production codebase. Authored all seed and inspection routines inside ephemeral scratch directories outside git tracking, leaving the working tree completely clean.
 - **Rejected Monolithic Feed Page Assembly**: Rejected writing tab switching and feed queries directly into the top-level `posts/page.tsx`. Decomposed concerns cleanly into `useFeedSort` (logic), `FeedTabs` (presentation), and `PostsFeedContainer` (Suspense-wrapped boundary).
+
+### Day 15
+- **Rejected Client-Side Array Filtering**: Strongly rejected fetching all posts to memory and filtering with JavaScript `Array.prototype.filter(p => p.title.includes(q))`. In production, this causes massive memory bloat, high network transfer costs, and breaks pagination. Enforced native MongoDB `$text` indexing and server-side text relevance scoring.
+- **Rejected Unindexed Regex Scans (`$regex`)**: Evaluated unindexed regex searches and rejected them due to `COLLSCAN` CPU spikes across large collections. Utilized MongoDB's inverted text index for $O(\log N)$ token lookups.
+- **Rejected Duplicate Search Cancel Buttons**: Noticed that `<input type="search">` automatically rendered a WebKit native cancel button (`::-webkit-search-cancel-button`) that overlapped with DevPulse's custom frosted glass `FiX` button. Rejected having dual "X" buttons and suppressed the native WebKit decoration via Tailwind utilities.
+- **Rejected Immediate Keystroke Network Requests**: Rejected dispatching an HTTP request on every key press in the search input. Enforced a 300ms debounce buffer to conserve server bandwidth and prevent race condition flashing.
+- **Rejected Blank / Whitespace Search Queries**: Audited search query submission and rejected sending space-only strings (e.g. `"   "`), which return empty results or trigger unnecessary database index scans. Added `@Transform` whitespace trimming in `SearchPostsQueryDto` and conditional `enabled: Boolean(debouncedQuery.trim())` gating in TanStack Query.
 
 ---
 
@@ -480,12 +495,19 @@
 - **Backend / Frontend Dev Server Startup Race Condition**:
   - Diagnosed `ECONNREFUSED` in Next.js BFF proxy when making requests to `http://localhost:5000` during rapid `npm run dev` startup. Verified process status, port bindings (`5000` and `3000`), and proxy health, confirming automatic recovery once the NestJS daemon initialized.
 
-
-
-
-
-
-
-
-
-
+### Day 15 — Full-Text Search Engine, Mongoose Generic Typings & Dual Cancel Button Resolution
+- **Mongoose Model Generic Type Mismatch in Standalone Integration Spec**:
+  - Diagnosed a TypeScript compiler mismatch in `post-search.integration.spec.ts` where standalone Mongoose test models inferred generic types incompatible with strict `Model<PostDocument>` signatures.
+  - Resolved by typing the test model instance cleanly (`let postModel: any; postModel = mongoose.model('Post', PostSchema);`), enabling all 6 MongoDB Memory Server integration tests to execute with 100% green status and zero TypeScript errors.
+- **Overlapping Dual Cancel Buttons on `<input type="search">`**:
+  - Identified a UI bug in WebKit-based browsers (Chrome, Edge, Safari) where the native browser search cancel button appeared directly on top of the custom React `FiX` button.
+  - Resolved by applying `[&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden` to the search input, ensuring a single, beautiful, accessible clear button.
+- **Database Counter Drift Reconciliation on Legacy Post Seed**:
+  - Diagnosed a counter desynchronization on post `670200000000000000000002` where the denormalized `post.reactionCounts` showed `16 likes, 7 dislikes`, but the physical `reactions` collection contained `17 likes, 8 dislikes`.
+  - Authored an out-of-band reconciliation routine (`scratch/sync-reactions.cjs`) that aggregated physical reaction documents and synchronized `post.reactionCounts` across all documents, restoring 100% database integrity.
+- **Next.js BFF Route Handler AbortSignal Forwarding**:
+  - Verified that Next.js Route Handler (`app/api/posts/search/route.ts`) captures `request.signal` and forwards it to the Axios HTTP client call to NestJS, ensuring that when a client browser aborts an obsolete keystroke query, the backend immediately stops processing.
+- **Complete Verification Matrix Expansion (22 Test Suites, 176 Tests)**:
+  - Authored 9 unit tests in `search-posts-query.dto.spec.ts` and 6 in-memory integration tests in `post-search.integration.spec.ts`.
+  - Vitest backend suite expanded to 22 test suites and 176 tests (100% passing).
+  - Next.js production build: all 20 routes generated cleanly with 0 errors.
