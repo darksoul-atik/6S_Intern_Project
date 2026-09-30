@@ -44,6 +44,7 @@ async function proxyPostsRequest(
       headers,
       body,
       cache: "no-store",
+      signal: request.signal,
     });
 
     const data = await backendResponse.json().catch(() => ({}));
