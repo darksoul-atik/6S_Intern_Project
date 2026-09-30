@@ -276,6 +276,70 @@ export class PostsService {
   |--------------------------------------------------------------------------
   */
 
+  /*
+  |--------------------------------------------------------------------------
+  | Search ACTIVE Posts
+  |--------------------------------------------------------------------------
+  |
+  | Full-text search across title and body.
+  |
+  | Order:
+  | text relevance DESC
+  | -> createdAt DESC
+  | -> _id DESC
+  |
+  | Soft-deleted posts are excluded.
+  |--------------------------------------------------------------------------
+  */
+
+  async searchPosts(query: {
+    q: string;
+    page: number;
+    limit: number;
+  }): Promise<PaginatedPostsResult> {
+    const filter = {
+      $text: {
+        $search: query.q,
+      },
+      deletedAt: {
+        $exists: false,
+      },
+    };
+
+    const [total, posts] = await Promise.all([
+      this.postModel.countDocuments(filter).exec(),
+
+      this.postModel
+        .find(filter, {
+          score: {
+            $meta: 'textScore',
+          },
+        })
+        .sort({
+          score: {
+            $meta: 'textScore',
+          },
+          createdAt: -1,
+          _id: -1,
+        })
+        .skip((query.page - 1) * query.limit)
+        .limit(query.limit)
+        .populate({
+          path: 'authorId',
+          select: 'name headline',
+        })
+        .exec(),
+    ]);
+
+    return {
+      posts,
+      total,
+      page: query.page,
+      limit: query.limit,
+      totalPages: Math.ceil(total / query.limit) || 1,
+    };
+  }
+
   private async findTopPosts(
     page: number,
     limit: number,
