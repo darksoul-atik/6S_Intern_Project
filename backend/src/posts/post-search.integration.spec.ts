@@ -1,12 +1,12 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import mongoose, { Model, Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { PostSchema, type PostDocument } from './schemas/post.schema.js';
+import { PostSchema } from './schemas/post.schema.js';
 
 describe('Post full-text search integration', () => {
   let mongoServer: MongoMemoryServer;
-  let postModel: Model<PostDocument>;
+  let postModel: any;
 
   const authorId = new Types.ObjectId();
 
@@ -15,7 +15,7 @@ describe('Post full-text search integration', () => {
 
     await mongoose.connect(mongoServer.getUri());
 
-    postModel = mongoose.model<PostDocument>('Post', PostSchema);
+    postModel = mongoose.model('Post', PostSchema);
 
     // Text indexes must exist before $text queries can run.
     await postModel.syncIndexes();
