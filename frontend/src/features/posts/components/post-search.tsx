@@ -169,12 +169,6 @@ export function PostSearch({ onSearchActiveChange }: PostSearchProps) {
           )}
         </div>
 
-        {/* Initial state */}
-        {!isSearchActive && (
-          <div className="rounded-2xl border border-slate-200 bg-white/80 px-5 py-4 text-sm text-slate-600">
-            Search posts by title or content.
-          </div>
-        )}
 
         {/* Too-short search */}
         {isSearchActive && normalizedTerm.length < 2 && (
