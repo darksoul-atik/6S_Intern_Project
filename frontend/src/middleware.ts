@@ -83,6 +83,10 @@ function isProtectedPostPath(pathname: string): boolean {
   return /^\/posts\/[^/]+\/edit\/?$/.test(pathname);
 }
 
+function isProtectedDeveloperPath(pathname: string): boolean {
+  return /^\/developers\/[^/]+\/edit\/?$/.test(pathname);
+}
+
 /**
  * DevPulse Protected Route & Auth Middleware
  *
@@ -93,11 +97,13 @@ function isProtectedPostPath(pathname: string): boolean {
  * /admin
  * /posts/new
  * /posts/:id/edit
+ * /developers/:id/edit
  *
  * Public:
  *
  * /posts
  * /posts/:id
+ * /developers/:id
  *
  * Authenticated users visiting /login or /signup
  * are redirected to /dashboard.
@@ -117,7 +123,8 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/profile") ||
     pathname.startsWith("/admin") ||
-    isProtectedPostPath(pathname);
+    isProtectedPostPath(pathname) ||
+    isProtectedDeveloperPath(pathname);
 
   /*
   |--------------------------------------------------------------------------

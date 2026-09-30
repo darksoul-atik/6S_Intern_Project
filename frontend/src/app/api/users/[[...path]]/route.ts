@@ -89,6 +89,13 @@ export async function PATCH(
   return handleProxy(req, params, "PATCH");
 }
 
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ path?: string[] }> },
+) {
+  return handleProxy(req, params, "PUT");
+}
+
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ path?: string[] }> },

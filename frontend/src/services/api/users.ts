@@ -69,8 +69,10 @@ export async function deleteUserAvatar(
 
 export async function addUserSkill(
   skill: string,
+  targetId: string = 'me',
 ): Promise<ApiResponse<UserProfile>> {
-  const res = await apiClient.post<ApiResponse<UserProfile>>('/users/me/skills', {
+  const endpoint = targetId === 'me' ? '/users/me/skills' : `/users/${targetId}/skills`;
+  const res = await apiClient.post<ApiResponse<UserProfile>>(endpoint, {
     skill,
   });
   return res.data;
@@ -78,69 +80,82 @@ export async function addUserSkill(
 
 export async function removeUserSkill(
   skill: string,
+  targetId: string = 'me',
 ): Promise<ApiResponse<UserProfile>> {
-  const res = await apiClient.delete<ApiResponse<UserProfile>>(
-    `/users/me/skills/${encodeURIComponent(skill)}`,
-  );
+  const endpoint =
+    targetId === 'me'
+      ? `/users/me/skills/${encodeURIComponent(skill)}`
+      : `/users/${targetId}/skills/${encodeURIComponent(skill)}`;
+  const res = await apiClient.delete<ApiResponse<UserProfile>>(endpoint);
   return res.data;
 }
 
 export async function addUserExperience(
   payload: ExperiencePayload,
+  targetId: string = 'me',
 ): Promise<ApiResponse<UserProfile>> {
-  const res = await apiClient.post<ApiResponse<UserProfile>>(
-    '/users/me/experiences',
-    payload,
-  );
+  const endpoint =
+    targetId === 'me' ? '/users/me/experiences' : `/users/${targetId}/experiences`;
+  const res = await apiClient.post<ApiResponse<UserProfile>>(endpoint, payload);
   return res.data;
 }
 
 export async function updateUserExperience(
   id: string,
   payload: ExperiencePayload,
+  targetId: string = 'me',
 ): Promise<ApiResponse<UserProfile>> {
-  const res = await apiClient.patch<ApiResponse<UserProfile>>(
-    `/users/me/experiences/${id}`,
-    payload,
-  );
+  const endpoint =
+    targetId === 'me'
+      ? `/users/me/experiences/${id}`
+      : `/users/${targetId}/experiences/${id}`;
+  const res = await apiClient.patch<ApiResponse<UserProfile>>(endpoint, payload);
   return res.data;
 }
 
 export async function deleteUserExperience(
   id: string,
+  targetId: string = 'me',
 ): Promise<ApiResponse<UserProfile>> {
-  const res = await apiClient.delete<ApiResponse<UserProfile>>(
-    `/users/me/experiences/${id}`,
-  );
+  const endpoint =
+    targetId === 'me'
+      ? `/users/me/experiences/${id}`
+      : `/users/${targetId}/experiences/${id}`;
+  const res = await apiClient.delete<ApiResponse<UserProfile>>(endpoint);
   return res.data;
 }
 
 export async function createPortfolioProject(
   payload: CreatePortfolioProjectPayload,
+  targetId: string = 'me',
 ): Promise<ApiResponse<UserProfile>> {
-  const res = await apiClient.post<ApiResponse<UserProfile>>(
-    '/profile/me/projects',
-    payload,
-  );
+  const endpoint =
+    targetId === 'me' ? '/profile/me/projects' : `/users/${targetId}/projects`;
+  const res = await apiClient.post<ApiResponse<UserProfile>>(endpoint, payload);
   return res.data;
 }
 
 export async function updatePortfolioProject(
   projectId: string,
   payload: UpdatePortfolioProjectPayload,
+  targetId: string = 'me',
 ): Promise<ApiResponse<UserProfile>> {
-  const res = await apiClient.patch<ApiResponse<UserProfile>>(
-    `/profile/me/projects/${projectId}`,
-    payload,
-  );
+  const endpoint =
+    targetId === 'me'
+      ? `/profile/me/projects/${projectId}`
+      : `/users/${targetId}/projects/${projectId}`;
+  const res = await apiClient.patch<ApiResponse<UserProfile>>(endpoint, payload);
   return res.data;
 }
 
 export async function deletePortfolioProject(
   projectId: string,
+  targetId: string = 'me',
 ): Promise<ApiResponse<UserProfile>> {
-  const res = await apiClient.delete<ApiResponse<UserProfile>>(
-    `/profile/me/projects/${projectId}`,
-  );
+  const endpoint =
+    targetId === 'me'
+      ? `/profile/me/projects/${projectId}`
+      : `/users/${targetId}/projects/${projectId}`;
+  const res = await apiClient.delete<ApiResponse<UserProfile>>(endpoint);
   return res.data;
 }

@@ -5,6 +5,7 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   PROFILE: '/profile',
   PROFILE_EDIT: '/profile/edit',
+  USER_PROFILE_EDIT: (id: string) => `/profile/${id}/edit`,
   DEVELOPER_PROFILE: (id: string) => `/developers/${id}`,
   POSTS: '/posts',
   POST_CREATE: '/posts/new',

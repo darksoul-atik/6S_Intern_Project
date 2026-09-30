@@ -181,6 +181,9 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
    */
   const canEdit = Boolean(isOwner || isAdmin);
 
+  const editHref =
+    isOwner && isOwn ? "/profile/edit" : `/profile/${profileId}/edit`;
+
   /*
   |--------------------------------------------------------------------------
   | Share Handler
@@ -467,7 +470,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
 
               {canEdit && (
                 <Link
-                  href="/profile/edit"
+                  href={editHref}
                   id="edit-profile-btn"
                   className="inline-flex items-center space-x-1.5 sm:space-x-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-3 sm:px-4 py-2 text-xs font-semibold font-manrope shadow-md hover:shadow-lg hover:border-indigo-500/40 transition-all cursor-pointer"
                 >
@@ -729,7 +732,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
 
                     {canEdit && (
                       <Link
-                        href="/profile/edit"
+                        href={editHref}
                         className="inline-block text-indigo-600 hover:underline font-semibold"
                       >
                         + Add Skills in Edit
@@ -809,7 +812,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
 
                     {canEdit && (
                       <Link
-                        href="/profile/edit"
+                        href={editHref}
                         className="inline-block text-emerald-600 hover:underline font-semibold"
                       >
                         + Add Work Experience in Edit
@@ -953,7 +956,7 @@ export function ProfileView({ targetId = "me" }: ProfileViewProps) {
 
                 {canEdit && (
                   <Link
-                    href="/profile/edit"
+                    href={editHref}
                     className="inline-block text-indigo-600 hover:underline font-semibold"
                   >
                     + Add Portfolio Project in Edit

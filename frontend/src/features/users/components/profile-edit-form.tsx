@@ -115,7 +115,11 @@ function profileToFormValues(profile: UserProfile): ProfileFormValues {
   };
 }
 
-export function ProfileEditForm() {
+export interface ProfileEditFormProps {
+  targetId?: string;
+}
+
+export function ProfileEditForm({ targetId = "me" }: ProfileEditFormProps) {
   const { user: currentUser, isLoading: authLoading } = useAuth();
 
   /*
@@ -136,7 +140,19 @@ export function ProfileEditForm() {
      * fetch fresh canonical profile data.
      */
     refetch: refetchProfile,
-  } = useUserProfile("me");
+  } = useUserProfile(targetId);
+
+  const isOwn =
+    !targetId ||
+    targetId === "me" ||
+    Boolean(
+      currentUser?.id &&
+        profile &&
+        (currentUser.id === profile.id || currentUser.id === profile._id),
+    );
+
+  const isAdmin = currentUser?.role === "admin";
+  const canEdit = isOwn || isAdmin;
 
   const error = queryError
     ? queryError instanceof ApiError
@@ -150,23 +166,26 @@ export function ProfileEditForm() {
   |--------------------------------------------------------------------------
   */
 
-  const updateProfileMutation = useUpdateProfileMutation("me");
+  const updateProfileMutation = useUpdateProfileMutation(targetId);
 
-  const createPortfolioProjectMutation = useCreatePortfolioProjectMutation();
+  const createPortfolioProjectMutation =
+    useCreatePortfolioProjectMutation(targetId);
 
-  const updatePortfolioProjectMutation = useUpdatePortfolioProjectMutation();
+  const updatePortfolioProjectMutation =
+    useUpdatePortfolioProjectMutation(targetId);
 
-  const deletePortfolioProjectMutation = useDeletePortfolioProjectMutation();
+  const deletePortfolioProjectMutation =
+    useDeletePortfolioProjectMutation(targetId);
 
-  const addSkillMutation = useAddSkillMutation();
+  const addSkillMutation = useAddSkillMutation(targetId);
 
-  const removeSkillMutation = useRemoveSkillMutation();
+  const removeSkillMutation = useRemoveSkillMutation(targetId);
 
-  const addExperienceMutation = useAddExperienceMutation();
+  const addExperienceMutation = useAddExperienceMutation(targetId);
 
-  const updateExperienceMutation = useUpdateExperienceMutation();
+  const updateExperienceMutation = useUpdateExperienceMutation(targetId);
 
-  const deleteExperienceMutation = useDeleteExperienceMutation();
+  const deleteExperienceMutation = useDeleteExperienceMutation(targetId);
 
   const portfolioSaving =
     createPortfolioProjectMutation.isPending ||
@@ -882,6 +901,39 @@ export function ProfileEditForm() {
 
   /*
   |--------------------------------------------------------------------------
+  | Permission Check
+  |--------------------------------------------------------------------------
+  */
+
+  if (!canEdit) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 font-sans">
+        <div className="max-w-md w-full rounded-3xl border border-slate-200/80 bg-white/90 p-8 text-center backdrop-blur-2xl shadow-xl space-y-4">
+          <div className="h-14 w-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto text-xl font-bold font-mono">
+            <FiShield className="h-7 w-7 text-amber-600" />
+          </div>
+
+          <h2 className="text-xl font-bold font-manrope text-slate-900">
+            Permission Denied
+          </h2>
+
+          <p className="text-xs text-slate-600 font-sans">
+            You do not have permission to edit this developer profile. Only the account owner or an administrator can modify these details.
+          </p>
+
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center space-x-2 rounded-xl border border-white/10 bg-[#090d16] hover:bg-[#121827] text-white px-5 py-2.5 text-xs font-semibold font-manrope transition-all shadow-md"
+          >
+            <span>Return to Dashboard</span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  /*
+  |--------------------------------------------------------------------------
   | Query Error
   |--------------------------------------------------------------------------
   */
@@ -944,12 +996,12 @@ export function ProfileEditForm() {
           {/* Navigation */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Link
-              href="/profile"
+              href={isOwn ? "/profile" : `/developers/${profile?.id || targetId}`}
               className="inline-flex items-center space-x-1.5 sm:space-x-2 text-xs font-semibold font-manrope text-slate-600 hover:text-slate-900 bg-white/70 hover:bg-white border border-slate-200/70 rounded-xl px-3 sm:px-3.5 py-2 backdrop-blur-md shadow-xs transition-all"
             >
               <FiArrowLeft className="h-3.5 w-3.5" />
 
-              <span>Back to Profile</span>
+              <span>{isOwn ? "Back to Profile" : "Back to Developer"}</span>
             </Link>
 
             <Link
@@ -974,17 +1026,26 @@ export function ProfileEditForm() {
           >
             <div>
               <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold font-manrope text-slate-900">
-                Edit Developer Profile
+                {isOwn
+                  ? "Edit Developer Profile"
+                  : `Edit Profile: ${profile.name || "Developer"}`}
               </h1>
 
               <p className="text-xs sm:text-sm text-slate-600 mt-1 font-sans">
-                Update your avatar, display name, professional headline,
-                biography, portfolio, skills, and experience.
+                {isOwn
+                  ? "Update your avatar, display name, professional headline, biography, portfolio, skills, and experience."
+                  : `Editing developer profile as system administrator.`}
               </p>
             </div>
 
             <div className="flex items-center space-x-2 shrink-0">
-              {currentUser?.role === "admin" ? (
+              {!isOwn && currentUser?.role === "admin" ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-manrope bg-amber-50/90 text-amber-800 border border-amber-200/90 shadow-2xs">
+                  <FiShield className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+
+                  <span>Admin Mode</span>
+                </span>
+              ) : currentUser?.role === "admin" ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold font-manrope bg-purple-50/90 text-purple-700 border border-purple-200/90 shadow-2xs">
                   <FiShield className="h-3.5 w-3.5 text-purple-600 shrink-0" />
 
