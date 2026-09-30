@@ -11,6 +11,18 @@ import type {
 
 /*
 |--------------------------------------------------------------------------
+| Search Types
+|--------------------------------------------------------------------------
+*/
+
+export type SearchPostsParams = {
+  q: string;
+  page?: number;
+  limit?: number;
+};
+
+/*
+|--------------------------------------------------------------------------
 | Posts API Service
 |--------------------------------------------------------------------------
 */
@@ -34,8 +46,28 @@ export async function getPostsPage(
   return res.data;
 }
 
+export async function searchPosts(
+  params: SearchPostsParams,
+  signal?: AbortSignal,
+): Promise<ApiResponse<PaginatedPostsResponse>> {
+  const res = await apiClient.get<ApiResponse<PaginatedPostsResponse>>(
+    "/posts/search",
+    {
+      params: {
+        q: params.q,
+        page: params.page ?? 1,
+        limit: params.limit ?? 10,
+      },
+      signal,
+    },
+  );
+
+  return res.data;
+}
+
 export async function getPostById(id: string): Promise<ApiResponse<Post>> {
   const res = await apiClient.get<ApiResponse<Post>>(`/posts/${id}`);
+
   return res.data;
 }
 
@@ -43,6 +75,7 @@ export async function createPost(
   payload: CreatePostPayload,
 ): Promise<ApiResponse<Post>> {
   const res = await apiClient.post<ApiResponse<Post>>("/posts", payload);
+
   return res.data;
 }
 
@@ -51,6 +84,7 @@ export async function updatePost(
   payload: UpdatePostPayload,
 ): Promise<ApiResponse<Post>> {
   const res = await apiClient.patch<ApiResponse<Post>>(`/posts/${id}`, payload);
+
   return res.data;
 }
 
