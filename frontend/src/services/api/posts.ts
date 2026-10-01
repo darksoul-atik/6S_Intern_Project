@@ -23,6 +23,17 @@ export type SearchPostsParams = {
 
 /*
 |--------------------------------------------------------------------------
+| Summarization Types
+|--------------------------------------------------------------------------
+*/
+
+export type PostSummary = {
+  summary: string;
+  tags: string[];
+};
+
+/*
+|--------------------------------------------------------------------------
 | Posts API Service
 |--------------------------------------------------------------------------
 */
@@ -93,6 +104,16 @@ export async function softDeletePost(
 ): Promise<ApiResponse<DeletePostResult>> {
   const res = await apiClient.delete<ApiResponse<DeletePostResult>>(
     `/posts/${id}`,
+  );
+
+  return res.data;
+}
+
+export async function summarizePost(
+  id: string,
+): Promise<ApiResponse<PostSummary>> {
+  const res = await apiClient.post<ApiResponse<PostSummary>>(
+    `/posts/${id}/summarize`,
   );
 
   return res.data;
