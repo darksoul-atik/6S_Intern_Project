@@ -70,12 +70,12 @@ frontend/src/
 │   │   ├── types/                 # auth.ts
 │   │   └── utils/                 # auth-error.ts
 │   │
-│   ├── posts/                     # Posts & Community Feed domain (Day 7, 8, 14 & 15)
+│   ├── posts/                     # Posts & Community Feed domain (Day 7, 8, 14, 15 & 16)
 │   │   ├── components/            # post-card.tsx, post-feed.tsx, post-details.tsx,
-│   │   │                          # feed-tabs.tsx, post-search.tsx, post-form.tsx, delete-post-modal.tsx
+│   │   │                          # post-summary-panel.tsx, feed-tabs.tsx, post-search.tsx, post-form.tsx, delete-post-modal.tsx
 │   │   ├── hooks/                 # use-feed-sort.ts, use-debounce.ts
 │   │   ├── mutations/             # useCreatePostMutation, useUpdatePostMutation,
-│   │   │                          # useSoftDeletePostMutation, useRestorePostMutation
+│   │   │                          # useSoftDeletePostMutation, useRestorePostMutation, useSummarizePostMutation
 │   │   ├── queries/               # useInfinitePosts, usePost, usePostSearch
 │   │   ├── schemas/               # post-schema.ts (Zod)
 │   │   └── types/                 # post.ts
@@ -113,7 +113,7 @@ frontend/src/
 │
 ├── services/api/                  # Pure Axios API functions (NO React dependencies)
 │   ├── auth.ts                    # loginUser, signupUser, logoutUser, getCurrentUser
-│   ├── posts.ts                   # getPosts, getPostById, createPost, updatePost, softDeletePost, searchPosts
+│   ├── posts.ts                   # getPosts, getPostById, createPost, updatePost, softDeletePost, searchPosts, summarizePost
 │   ├── comments.ts                # getCommentsByPost, createComment, createReply, deleteComment
 │   ├── reactions.ts               # toggleReaction, getUserReactions
 │   ├── users.ts                   # getUserProfile, updateUserProfile, uploadAvatar, deleteAvatar
@@ -136,7 +136,7 @@ frontend/src/
 
 ---
 
-## 🔄 Working Flow as of Day 15
+## 🔄 Working Flow as of Day 16
 
 ### 1. Community Feed & Infinite Scroll (`/posts`)
 1. User navigates to `/posts`.
@@ -264,6 +264,31 @@ frontend/src/
 - **Zero-Flicker Feed Mode Swap**:
   - When an active search term is detected, `/posts` seamlessly hides the infinite feed and renders search results sorted by MongoDB text relevance.
   - Clearing the search input immediately restores the previous feed sort tab (`Top Ranked`, `Latest`, or `Most Discussed`) without full page reloads or layout jumping.
+
+### 10. Phase 4 AI-Assisted Post Summarizer Interface (Day 16 Completed)
+- **Post Summary Panel (`PostSummaryPanel`)**:
+  - Mounted directly beneath the post body in `PostDetails` (`frontend/src/features/posts/components/post-summary-panel.tsx`).
+  - Displays dynamic technical highlights: plain-text summary and key skill tags extracted by LLM (Groq SDK / Mock fallback).
+- **Logged-Out Authentication Prompt & Redirect**:
+  - Unauthenticated visitors see an actionable card: *"Log in to generate an AI summary"*.
+  - Clicking navigates directly to `/login?redirect=/posts/[id]` with full path preservation, guaranteeing that users return back to the exact post view upon successful login.
+- **In-Flight Concurrency Guard**:
+  - Clicking "Generate Summary" enters an atomic pending state (`isPending`).
+  - The button is disabled and displays an inline spinner, preventing duplicate concurrent clicks or race conditions.
+- **Stable Skeleton Loading**:
+  - During AI summarization, displays a fluid 3-line shimmer skeleton placeholder preventing layout shifting.
+- **Safe Plain-Text Rendering**:
+  - Summary text is rendered strictly as plain text nodes (no `dangerouslySetInnerHTML` or raw markdown parser), eliminating prompt injection and XSS vulnerabilities.
+- **Domain-Mapped Error Handling & Inline Retry**:
+  - HTTP error statuses are mapped to clear developer-friendly copy:
+    - `429`: *"Rate limit reached. Please wait a moment."*
+    - `502`: *"Received an invalid response from the AI model."*
+    - `503`: *"Summarizer service is temporarily unavailable."*
+    - `504`: *"Summarization request timed out. Please try again."*
+  - Prominent "Try Again" button allows 1-click retry.
+- **BFF Route Proxy & TanStack Mutation**:
+  - Next.js Route Handler `POST /api/posts/[id]/summarize` injects the `devpulse_token` cookie into an upstream Bearer token header.
+  - Encapsulated in `useSummarizePostMutation` (`frontend/src/features/posts/mutations/post-mutations.ts`).
 
 ---
 

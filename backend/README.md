@@ -4,7 +4,7 @@
 
 ---
 
-## 🏛️ System Architecture Overview (As of Day 15)
+## 🏛️ System Architecture Overview (As of Day 16)
 
 The DevPulse backend is engineered as a modular, domain-driven NestJS service adhering to enterprise security standards, strict data encapsulation, and predictable REST conventions:
 
@@ -71,7 +71,7 @@ npm run seed:admin
 # Start development server (watch mode)
 npm run start:dev
 
-# Run automated Vitest test suite (176 unit & integration tests across 22 suites)
+# Run automated Vitest test suite (200 unit & integration tests across 27 suites)
 npm run test
 ```
 
@@ -96,11 +96,12 @@ Interactive OpenAPI Swagger documentation is available at:
 - **Portfolio Projects (`POST /profile/me/projects`, `PATCH /projects/:id`, `DELETE /projects/:id`)**: Showcase projects with title, description, tags, demo URL, and repo URL.
 - **Avatar Media (`POST /users/:id/avatar`, `GET /users/:id/avatar`, `DELETE /users/:id/avatar`)**: Binary image upload and streaming with `ProfileOwnerOrAdminGuard`.
 
-### 3. `PostsModule` (`/posts`) — *Day 7, 8 & 15 Deliverables*
+### 3. `PostsModule` (`/posts`) — *Day 7, 8, 15 & 16 Deliverables*
 - **`POST /posts`**: Create engineering posts. Author is derived strictly from verified JWT claims (`@CurrentUser()`). Automatically increments author's `postsCount`.
 - **`GET /posts?page=1&limit=10&sort=latest|top|most-discussed`**: High-performance paginated feed with multi-sort options. Returns metadata (`total`, `page`, `limit`, `totalPages`) supporting infinite scroll.
 - **`GET /posts/search?q=query&page=1&limit=10`**: High-performance full-text search engine. Queries MongoDB `$text` index with weighted fields (`title: 5, body: 1`), orders primarily by relevance (`$meta: 'textScore'`) with tie-breakers (`createdAt: -1, _id: -1`), and filters soft-deleted posts.
 - **`GET /posts/:id`**: Single post lookup with pre-validation of 24-character hexadecimal ObjectId to eliminate Mongoose CastError 500s.
+- **`POST /posts/:id/summarize`**: Generates on-demand AI summary and technical tags for active posts. Guarded by `JwtAuthGuard`. Computed dynamically and not persisted in MongoDB.
 - **`PATCH /posts/:id`**: Update title and body, strictly guarded by `PostOwnerOrAdminGuard`.
 - **`DELETE /posts/:id`**: Soft-delete lifecycle initiation. Sets `deletedAt = now` and `deletedBy = user`, decrements author's `postsCount`, and starts the 5-day recovery window.
 - **`POST /posts/:id/restore`**: Restores soft-deleted posts within 5 days, resetting `deletedAt` and incrementing author's `postsCount`.
@@ -176,7 +177,7 @@ The summarizer explicitly handles boundary conditions for extreme post lengths:
 
 ---
 
-## 🔄 Working Flow as of Day 13
+## 🔄 Working Flow as of Day 16
 
 ### 1. Threaded Comments & Replies Lifecycle
 
@@ -297,6 +298,51 @@ The summarizer explicitly handles boundary conditions for extreme post lengths:
 4. Returns updated reactionCounts and active userReaction state ('like' | 'dislike' | null)
 ```
 
+### 5. On-Demand AI Post Summarization Lifecycle (Day 16)
+
+```
+1. Client POST /posts/:id/summarize with Bearer Token (Any Authenticated User)
+                 │
+                 ▼
+2. JwtAuthGuard authenticates JWT -> extracts { userId }
+                 │
+                 ▼
+3. PostsController delegates to PostsService.summarizePost(id)
+                 │
+                 ▼
+4. PostsService:
+   ├── Verifies active post exists via findActivePostByIdOrThrow(postId)
+   │   └── Soft-deleted or missing posts reject with 404 Not Found
+   └── Passes only { title: post.title, body: post.body } to SummarizerService
+                 │
+                 ▼
+5. SummarizerService:
+   ├── Initiates 8,000ms race timeout (Promise.race)
+   ├── Dispatches payload to active SUMMARIZER_PROVIDER:
+   │   ├── Groq Provider (if GROQ_API_KEY set):
+   │   │   ├── Truncates body to 12,000 chars (MAX_BODY_LENGTH)
+   │   │   ├── Calls Groq API in JSON mode (openai/gpt-oss-20b)
+   │   │   └── Catches 429 -> SummarizerRateLimitError
+   │   └── Mock Provider (if GROQ_API_KEY absent):
+   │       ├── Extracts lead sentences (bounded to 280 chars with '…')
+   │       └── Scans keyword dictionary across 12 tech domains
+   │
+   ├── Validates output shape via isSummarizerResult guard:
+   │   ├── summary: string (non-empty, max 1,000 chars)
+   │   └── tags: string[] (max 10 tags, unique, max 50 chars each)
+   │   └── Fails -> throws SummarizerMalformedOutputError (502 Bad Gateway)
+   │
+   └── Catches domain errors & maps to HTTP status:
+       ├── SummarizerTimeoutError (>8s) -> 504 Gateway Timeout
+       ├── SummarizerMalformedOutputError -> 502 Bad Gateway
+       ├── SummarizerRateLimitError -> 429 Too Many Requests
+       └── SummarizerUnavailableError -> 503 Service Unavailable
+                 │
+                 ▼
+6. Returns on-demand summary result { summary: string, tags: string[] }
+   (Result is NEVER persisted to MongoDB)
+```
+
 ---
 
 ## 🧪 Automated Testing
@@ -304,7 +350,7 @@ The summarizer explicitly handles boundary conditions for extreme post lengths:
 DevPulse backend maintains a 100% pass rate across unit, integration, and guard test suites powered by **Vitest**:
 
 ```bash
-# Run all 22 test suites (176 tests)
+# Run all 27 test suites (200 tests)
 npx vitest run
 
 # Run with watch mode
@@ -315,6 +361,11 @@ npx vitest run --coverage
 ```
 
 ### Test Coverage Highlights:
+- **`groq-summarizer.provider.spec.ts` (4 tests)**: Tests short posts, long post truncation at 12,000 characters, 429 rate limit error mapping, and 503 provider unavailability error handling.
+- **`mock-summarizer.provider.spec.ts` (4 tests)**: Tests single-sentence short posts, empty body fallback message, long post 280-character bounding with ellipsis (`…`), and domain keyword tag extraction.
+- **`summarizer.service.spec.ts` (5 tests)**: Tests valid results, malformed schema rejection with 502, 503 service unavailable, 429 rate limit, and 8-second timeout with 504.
+- **`post-summarization.integration.spec.ts` (5 tests)**: In-memory MongoDB integration tests verifying active post summarization, 404 for missing post, 404 for invalid ObjectId, 404 for soft-deleted post, and error propagation.
+- **`posts.controller.spec.ts` (3 tests)**: Summarization delegation, `JwtAuthGuard` protection verification, and controller error propagation.
 - **`search-posts-query.dto.spec.ts` (9 tests)**: DTO transformation and validation tests covering query trimming, empty string rejection, max-length boundaries, and pagination clamping.
 - **`post-search.integration.spec.ts` (6 tests)**: In-memory MongoDB replica set integration tests verifying weighted search relevance (`title = 5, body = 1`), relevance score sorting, secondary tie-breakers (`createdAt DESC, _id DESC`), soft-deleted post exclusion, pagination across search results, and empty result handling.
 - **`post-ranking.util.spec.ts` (7 tests)**: Pure deterministic rank scoring calculations, likes/dislikes cancellation, negative score handling, comment weighting ($+2$), and zero engagement fallback.
