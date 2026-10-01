@@ -6,9 +6,11 @@ import {
   SUMMARIZER_PROVIDER,
   type SummarizerProvider,
 } from './providers/summarizer-provider.interface.js';
+import { SummarizerService } from './summarizer.service.js';
 
 @Module({
   providers: [
+    SummarizerService,
     {
       provide: SUMMARIZER_PROVIDER,
       inject: [ConfigService],
@@ -27,6 +29,6 @@ import {
       },
     },
   ],
-  exports: [SUMMARIZER_PROVIDER],
+  exports: [SummarizerService],
 })
 export class SummarizerModule {}

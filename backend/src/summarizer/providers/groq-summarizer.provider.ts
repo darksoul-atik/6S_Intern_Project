@@ -1,4 +1,8 @@
 import Groq from 'groq-sdk';
+import {
+  SummarizerRateLimitError,
+  SummarizerUnavailableError,
+} from '../errors/summarizer.errors.js';
 import type {
   SummarizerInput,
   SummarizerProvider,
@@ -38,35 +42,56 @@ export class GroqSummarizerProvider implements SummarizerProvider {
   async summarize(input: SummarizerInput): Promise<unknown> {
     const body = input.body.slice(0, MAX_BODY_LENGTH);
 
-    const completion = await this.client.chat.completions.create({
-      model: this.model,
-      temperature: 0,
-      response_format: {
-        type: 'json_object',
-      },
-      messages: [
-        {
-          role: 'system',
-          content: SYSTEM_PROMPT,
-        },
-        {
-          role: 'user',
-          content: this.createUserPrompt(input.title, body),
-        },
-      ],
-    });
-
-    const content = completion.choices[0]?.message?.content;
-
-    if (!content) {
-      return null;
-    }
-
     try {
-      return JSON.parse(content) as unknown;
-    } catch {
-      return content;
+      const completion = await this.client.chat.completions.create({
+        model: this.model,
+        temperature: 0,
+        response_format: {
+          type: 'json_object',
+        },
+        messages: [
+          {
+            role: 'system',
+            content: SYSTEM_PROMPT,
+          },
+          {
+            role: 'user',
+            content: this.createUserPrompt(input.title, body),
+          },
+        ],
+      });
+
+      const content = completion.choices[0]?.message?.content;
+
+      if (!content) {
+        return null;
+      }
+
+      try {
+        return JSON.parse(content) as unknown;
+      } catch {
+        return content;
+      }
+    } catch (error: unknown) {
+      if (this.getStatusCode(error) === 429) {
+        throw new SummarizerRateLimitError();
+      }
+
+      throw new SummarizerUnavailableError();
     }
+  }
+
+  private getStatusCode(error: unknown): number | undefined {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'status' in error &&
+      typeof error.status === 'number'
+    ) {
+      return error.status;
+    }
+
+    return undefined;
   }
 
   private createUserPrompt(title: string, body: string): string {
