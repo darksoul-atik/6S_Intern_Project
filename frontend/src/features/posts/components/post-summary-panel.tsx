@@ -1,51 +1,80 @@
 "use client";
 
+import { usePathname, useRouter } from "next/navigation";
 import axios from "axios";
-import { FiAlertCircle, FiRefreshCw, FiZap } from "react-icons/fi";
+import { FiAlertCircle, FiLogIn, FiRefreshCw, FiZap } from "react-icons/fi";
 
+import { useAuth } from "@/context/AuthContext";
+import { ApiError } from "@/types/api";
 import { useSummarizePostMutation } from "../mutations/post-mutations";
 
 type PostSummaryPanelProps = {
   postId: string;
 };
 
-function getSummaryErrorMessage(error: unknown): string {
+function getSummaryErrorStatus(error: unknown): number | undefined {
+  if (error instanceof ApiError) {
+    return error.statusCode;
+  }
   if (axios.isAxiosError(error)) {
-    const status = error.response?.status;
+    return error.response?.status;
+  }
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "statusCode" in error &&
+    typeof (error as { statusCode: unknown }).statusCode === "number"
+  ) {
+    return (error as { statusCode: number }).statusCode;
+  }
+  return undefined;
+}
 
-    if (status === 429) {
-      return "The AI service is receiving too many requests. Please try again later.";
-    }
+function getSummaryErrorMessage(error: unknown): string {
+  const status = getSummaryErrorStatus(error);
 
-    if (status === 502) {
-      return "The AI returned an invalid response. Please try again.";
-    }
-
-    if (status === 503) {
-      return "The AI service is currently unavailable. Please try again later.";
-    }
-
-    if (status === 504) {
-      return "The AI service took too long to respond. Please try again.";
-    }
-
-    if (status === 401) {
-      return "Please log in to summarize this post.";
-    }
-
-    if (status === 404) {
-      return "This post is no longer available.";
-    }
+  if (status === 429) {
+    return "AI provider rate limit reached. Please try again later.";
   }
 
-  return "Unable to generate a summary. Please try again.";
+  if (status === 502) {
+    return "AI returned an invalid response. Please try again.";
+  }
+
+  if (status === 503) {
+    return "AI service is currently unavailable. Please try again later.";
+  }
+
+  if (status === 504) {
+    return "AI request timed out. Please try again.";
+  }
+
+  if (status === 404) {
+    return "This post is no longer available.";
+  }
+
+  if (status === 401) {
+    return "Authentication required. Please log in to summarize this post.";
+  }
+
+  return "Unable to generate summary. Please try again.";
 }
 
 export function PostSummaryPanel({ postId }: PostSummaryPanelProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user } = useAuth();
   const summarizeMutation = useSummarizePostMutation();
 
   function handleSummarize() {
+    // Prevent duplicate in-flight requests
     if (summarizeMutation.isPending) {
+      return;
+    }
+
+    // Immediately redirect logged-out users to login preserving current post url
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
       return;
     }
 
@@ -53,60 +82,93 @@ export function PostSummaryPanel({ postId }: PostSummaryPanelProps) {
   }
 
   const summary = summarizeMutation.data;
+  const errorStatus = summarizeMutation.error
+    ? getSummaryErrorStatus(summarizeMutation.error)
+    : undefined;
+  const isRetryable = errorStatus !== 404;
 
   return (
     <section
-      className="rounded-2xl border border-slate-200 bg-white p-5"
+      className="rounded-2xl border border-slate-200/90 bg-slate-50/60 p-5 sm:p-6 shadow-2xs backdrop-blur-xs transition-all"
       aria-labelledby="ai-summary-heading"
     >
       <div className="flex flex-col gap-4">
+        {/* Header row: title and trigger button */}
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <FiZap className="h-4 w-4 text-indigo-600" aria-hidden="true" />
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 shadow-2xs">
+                <FiZap className="h-4 w-4" aria-hidden="true" />
+              </span>
 
               <h2
                 id="ai-summary-heading"
-                className="text-sm font-semibold text-slate-900"
+                className="font-manrope text-sm font-bold tracking-tight text-slate-900"
               >
                 AI Summary
               </h2>
+
+              {summary && (
+                <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200/60">
+                  Ready
+                </span>
+              )}
             </div>
 
-            {!summary && !summarizeMutation.isError && (
-              <p className="mt-1 text-sm text-slate-500">
-                Generate a quick summary and technical skill tags for this post.
+            {!summary && !summarizeMutation.isPending && !summarizeMutation.isError && (
+              <p className="mt-1.5 text-xs sm:text-sm text-slate-500">
+                Generate a concise synopsis and extract technical skill tags for this discussion.
               </p>
             )}
           </div>
 
+          {/* Summarize button: shown only before a summary is successfully generated */}
           {!summary && !summarizeMutation.isError && (
             <button
               type="button"
               onClick={handleSummarize}
               disabled={summarizeMutation.isPending}
-              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+              aria-busy={summarizeMutation.isPending}
+              className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition-all hover:bg-indigo-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20"
             >
-              <FiZap className="h-4 w-4" aria-hidden="true" />
-
-              {summarizeMutation.isPending ? "Summarizing..." : "Summarize"}
+              {summarizeMutation.isPending ? (
+                <>
+                  <FiRefreshCw className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                  <span>Summarizing...</span>
+                </>
+              ) : (
+                <>
+                  <FiZap className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Summarize</span>
+                </>
+              )}
             </button>
           )}
         </div>
 
+        {/* Loading / Pending state with stable layout */}
         {summarizeMutation.isPending && (
           <div
-            className="rounded-xl bg-slate-50 p-4"
+            className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-3"
             role="status"
             aria-live="polite"
           >
-            <p className="text-sm text-slate-600">Generating summary...</p>
+            <div className="flex items-center gap-2 text-xs font-semibold text-indigo-700">
+              <FiRefreshCw className="h-3.5 w-3.5 animate-spin text-indigo-600" aria-hidden="true" />
+              <span>Analyzing post and synthesizing technical key takeaways...</span>
+            </div>
+            <div className="space-y-2 animate-pulse" aria-hidden="true">
+              <div className="h-3.5 w-full rounded-md bg-indigo-200/50" />
+              <div className="h-3.5 w-5/6 rounded-md bg-indigo-200/40" />
+              <div className="h-3.5 w-3/4 rounded-md bg-indigo-200/30" />
+            </div>
           </div>
         )}
 
+        {/* Error state with retry / login actions */}
         {summarizeMutation.isError && (
           <div
-            className="rounded-xl border border-red-200 bg-red-50 p-4"
+            className="rounded-xl border border-red-200 bg-red-50/80 p-4"
             role="alert"
           >
             <div className="flex items-start gap-3">
@@ -115,42 +177,57 @@ export function PostSummaryPanel({ postId }: PostSummaryPanelProps) {
                 aria-hidden="true"
               />
 
-              <div className="min-w-0">
-                <p className="text-sm text-red-700">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-red-800">
                   {getSummaryErrorMessage(summarizeMutation.error)}
                 </p>
 
-                <button
-                  type="button"
-                  onClick={handleSummarize}
-                  disabled={summarizeMutation.isPending}
-                  className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-red-700 hover:text-red-800 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <FiRefreshCw className="h-4 w-4" aria-hidden="true" />
-                  Retry
-                </button>
+                {errorStatus === 401 ? (
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/login?redirect=${encodeURIComponent(pathname)}`)}
+                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-bold text-red-700 shadow-2xs hover:bg-red-50 focus:outline-hidden focus:ring-2 focus:ring-red-500/20"
+                  >
+                    <FiLogIn className="h-3.5 w-3.5" aria-hidden="true" />
+                    Log in
+                  </button>
+                ) : isRetryable ? (
+                  <button
+                    type="button"
+                    onClick={handleSummarize}
+                    disabled={summarizeMutation.isPending}
+                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-bold text-red-700 shadow-2xs hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-hidden focus:ring-2 focus:ring-red-500/20"
+                  >
+                    <FiRefreshCw
+                      className={`h-3.5 w-3.5 ${summarizeMutation.isPending ? "animate-spin" : ""}`}
+                      aria-hidden="true"
+                    />
+                    {summarizeMutation.isPending ? "Retrying..." : "Retry"}
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
         )}
 
+        {/* Success state: plain text summary & technical skill badges */}
         {summary && (
-          <div className="space-y-4" aria-live="polite">
-            <p className="text-sm leading-6 text-slate-700">
+          <div className="space-y-4 pt-1" aria-live="polite">
+            <p className="text-[14px] sm:text-[15px] leading-relaxed text-slate-800 font-sans whitespace-pre-line">
               {summary.summary}
             </p>
 
             {summary.tags.length > 0 && (
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Technical skills
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono">
+                  Technical Skills
                 </p>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {summary.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700"
+                      className="inline-flex items-center rounded-lg border border-indigo-200/80 bg-indigo-50/80 px-2.5 py-1 text-xs font-semibold font-manrope text-indigo-700 shadow-2xs"
                     >
                       {tag}
                     </span>
