@@ -11,12 +11,10 @@ import { PostCleanupTask } from './tasks/post-cleanup.task.js';
 
 import { UsersModule } from '../users/users.module.js';
 import { AuthModule } from '../auth/auth.module.js';
+import { SummarizerModule } from '../summarizer/summarizer.module.js';
 
 @Module({
   imports: [
-    /*
-     * Registers the Post Mongoose model.
-     */
     MongooseModule.forFeature([
       {
         name: Post.name,
@@ -24,45 +22,17 @@ import { AuthModule } from '../auth/auth.module.js';
       },
     ]),
 
-    /*
-     * PostsService uses UsersService for:
-     *
-     * create       → postsCount +1
-     * soft delete  → postsCount -1
-     * restore      → postsCount +1
-     */
     UsersModule,
 
-    /*
-     * Reuse the existing authentication setup
-     * and guards.
-     */
     AuthModule,
+
+    SummarizerModule,
   ],
 
   controllers: [PostsController],
 
-  providers: [
-    PostsService,
+  providers: [PostsService, PostOwnerOrAdminGuard, PostCleanupTask],
 
-    /*
-     * Author/admin authorization.
-     */
-    PostOwnerOrAdminGuard,
-
-    /*
-     * Hourly scheduled cleanup task.
-     *
-     * Once registered as a Nest provider,
-     * its @Cron() method becomes active.
-     */
-    PostCleanupTask,
-  ],
-
-  /*
-   * PostsService will be useful later for
-   * comments, reactions, ranking and summarization.
-   */
   exports: [PostsService, MongooseModule],
 })
 export class PostsModule {}

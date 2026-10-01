@@ -2,6 +2,8 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Optional,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Types, type ClientSession, type Model } from 'mongoose';
@@ -13,6 +15,7 @@ import type { PostSort } from './dto/get-posts-query.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
 
 import { UsersService } from '../users/users.service.js';
+import { SummarizerService } from '../summarizer/summarizer.service.js';
 import {
   POPULATE_POST_LIST_AUTHOR,
   POPULATE_POST_DETAIL_AUTHOR,
@@ -45,6 +48,9 @@ export class PostsService {
     private readonly postModel: Model<PostDocument>,
 
     private readonly usersService: UsersService,
+
+    @Optional()
+    private readonly summarizerService?: SummarizerService,
   ) {}
 
   /*
@@ -514,6 +520,33 @@ export class PostsService {
     await post.populate(POPULATE_POST_DETAIL_AUTHOR);
 
     return post;
+  }
+
+  /*
+   * |--------------------------------------------------------------------------
+   * | Summarize ACTIVE Post
+   * |--------------------------------------------------------------------------
+   *
+   * Generates an on-demand summary and technical tags.
+   *
+   * Only the post title and body are sent to the summarizer.
+   * The generated result is not stored in MongoDB.
+   * |--------------------------------------------------------------------------
+   */
+
+  async summarizePost(postId: string) {
+    if (!this.summarizerService) {
+      throw new ServiceUnavailableException(
+        'Summarizer service is not available',
+      );
+    }
+
+    const post = await this.findActivePostByIdOrThrow(postId);
+
+    return this.summarizerService.summarize({
+      title: post.title,
+      body: post.body,
+    });
   }
 
   /*

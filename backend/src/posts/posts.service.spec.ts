@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { PostsService } from './posts.service.js';
 import type { UsersService } from '../users/users.service.js';
+import type { SummarizerService } from '../summarizer/summarizer.service.js';
 
 describe('PostsService', () => {
   let service: PostsService;
@@ -320,6 +325,73 @@ describe('PostsService', () => {
 
       expect(count).toBe(5);
       expect(mockPostModel.deleteMany).toHaveBeenCalled();
+    });
+  });
+
+  describe('summarizePost', () => {
+    const postId = '66e138fc29094e137127e4e0';
+
+    it('should summarize an active post using the summarizer service', async () => {
+      const mockPost = {
+        _id: postId,
+        title: 'Microservices with NestJS',
+        body: 'Here is an in-depth breakdown of architecture patterns.',
+      };
+
+      mockPostModel.findOne.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(mockPost),
+      });
+
+      const mockSummarizer = {
+        summarize: vi.fn().mockResolvedValue({
+          summary: 'In-depth breakdown of NestJS microservices patterns.',
+          tags: ['NestJS', 'Architecture'],
+        }),
+      } as unknown as SummarizerService;
+
+      const serviceWithSummarizer = new PostsService(
+        mockPostModel as any,
+        mockUsersService as UsersService,
+        mockSummarizer,
+      );
+
+      const result = await serviceWithSummarizer.summarizePost(postId);
+
+      expect(result).toEqual({
+        summary: 'In-depth breakdown of NestJS microservices patterns.',
+        tags: ['NestJS', 'Architecture'],
+      });
+      expect(mockSummarizer.summarize).toHaveBeenCalledWith({
+        title: mockPost.title,
+        body: mockPost.body,
+      });
+    });
+
+    it('should throw ServiceUnavailableException if summarizer service is not provided', async () => {
+      await expect(service.summarizePost(postId)).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+    });
+
+    it('should throw NotFoundException if post is not found or soft-deleted', async () => {
+      mockPostModel.findOne.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(null),
+      });
+
+      const mockSummarizer = {
+        summarize: vi.fn(),
+      } as unknown as SummarizerService;
+
+      const serviceWithSummarizer = new PostsService(
+        mockPostModel as any,
+        mockUsersService as UsersService,
+        mockSummarizer,
+      );
+
+      await expect(serviceWithSummarizer.summarizePost(postId)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(mockSummarizer.summarize).not.toHaveBeenCalled();
     });
   });
 });

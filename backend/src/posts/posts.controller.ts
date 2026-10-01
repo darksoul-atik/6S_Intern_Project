@@ -200,6 +200,63 @@ export class PostsController {
   |--------------------------------------------------------------------------
   */
 
+  /*
+   * |--------------------------------------------------------------------------
+   * | Summarize Post
+   * |--------------------------------------------------------------------------
+   *
+   * Authenticated users may generate an on-demand summary
+   * and technical skill tags for any active post.
+   *
+   * The generated result is not persisted.
+   * |--------------------------------------------------------------------------
+   */
+
+  @Post(':id/summarize')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Summarize a post',
+    description:
+      'Generates an on-demand AI summary and technical skill tags for an active post. The generated result is not stored.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'MongoDB ObjectId of the post',
+    example: '66e138fc29094e137127e4e0',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Post summarized successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized: Missing or invalid Bearer token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Post not found',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Summarizer provider rate limit reached',
+  })
+  @ApiResponse({
+    status: 502,
+    description: 'Summarizer returned an invalid response',
+  })
+  @ApiResponse({
+    status: 503,
+    description: 'Summarizer service is unavailable',
+  })
+  @ApiResponse({
+    status: 504,
+    description: 'Summarizer request timed out',
+  })
+  async summarizePost(@Param('id') id: string) {
+    return this.postsService.summarizePost(id);
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Get a post by ID',
