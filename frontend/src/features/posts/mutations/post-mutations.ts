@@ -2,21 +2,23 @@ import {
   type InfiniteData,
   useMutation,
   useQueryClient,
-} from '@tanstack/react-query';
+} from "@tanstack/react-query";
 import type {
   Post,
   PaginatedPostsResponse,
   CreatePostPayload,
   UpdatePostPayload,
   DeletePostResult,
-} from '../types/post';
+} from "../types/post";
 import {
   createPost as apiCreatePost,
   updatePost as apiUpdatePost,
   softDeletePost as apiSoftDeletePost,
-} from '@/services/api/posts';
-import { postKeys } from '../queries/post-queries';
-import { profileKeys } from '@/features/users/queries/user-queries';
+  summarizePost as apiSummarizePost,
+  type PostSummary,
+} from "@/services/api/posts";
+import { postKeys } from "../queries/post-queries";
+import { profileKeys } from "@/features/users/queries/user-queries";
 
 /*
 |--------------------------------------------------------------------------
@@ -27,7 +29,7 @@ import { profileKeys } from '@/features/users/queries/user-queries';
 export async function createPost(payload: CreatePostPayload): Promise<Post> {
   const res = await apiCreatePost(payload);
   if (!res.data) {
-    throw new Error(res.message || 'Failed to create post');
+    throw new Error(res.message || "Failed to create post");
   }
   return res.data;
 }
@@ -38,7 +40,7 @@ export async function updatePost(
 ): Promise<Post> {
   const res = await apiUpdatePost(id, payload);
   if (!res.data) {
-    throw new Error(res.message || 'Failed to update post');
+    throw new Error(res.message || "Failed to update post");
   }
   return res.data;
 }
@@ -46,8 +48,18 @@ export async function updatePost(
 export async function softDeletePost(id: string): Promise<DeletePostResult> {
   const res = await apiSoftDeletePost(id);
   if (!res.data) {
-    throw new Error(res.message || 'Failed to delete post');
+    throw new Error(res.message || "Failed to delete post");
   }
+  return res.data;
+}
+
+export async function summarizePost(id: string): Promise<PostSummary> {
+  const res = await apiSummarizePost(id);
+
+  if (!res.data) {
+    throw new Error(res.message || "Failed to summarize post");
+  }
+
   return res.data;
 }
 
@@ -147,5 +159,11 @@ export function useSoftDeletePostMutation() {
         queryKey: profileKeys.all,
       });
     },
+  });
+}
+
+export function useSummarizePostMutation() {
+  return useMutation({
+    mutationFn: summarizePost,
   });
 }
