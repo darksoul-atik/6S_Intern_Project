@@ -149,6 +149,33 @@ Interactive OpenAPI Swagger documentation is available at:
 - **Validation & Trimming**: `SearchPostsQueryDto` applies `@Transform` whitespace trimming, minimum length 1, maximum length 100, and pagination clamping.
 - **Author Projection & Soft-Delete Filtering**: Populates lean author attributes (`name`, `headline`, `avatarUrl`) and excludes soft-deleted posts (`deletedAt: null`).
 
+---
+
+### 9. AI-Assisted Post Summarizer (Day 16)
+- **`POST /posts/:id/summarize`**: Authenticated endpoint (`JwtAuthGuard`) generating on-demand AI summaries and technical tags for active posts. Result is computed dynamically and is **not persisted** to MongoDB.
+- **Provider Architecture**: Abstracted via `SUMMARIZER_PROVIDER` interface with dynamic factory switching:
+  - **`GroqSummarizerProvider`**: Activated when `GROQ_API_KEY` is present. Uses `groq-sdk` with `openai/gpt-oss-20b` (or configured `GROQ_MODEL`) in JSON mode (`response_format: { type: 'json_object' }`).
+  - **`MockSummarizerProvider`**: Activated when `GROQ_API_KEY` is absent. Uses a deterministic 2-sentence heuristic extractor and keyword scanner across 12 tech domains.
+- **Error Mapping & Resilience**:
+  - `429 Too Many Requests`: Triggered on provider rate limits (`SummarizerRateLimitError`).
+  - `502 Bad Gateway`: Triggered if the provider returns invalid JSON or fails the runtime result schema validator (`SummarizerMalformedOutputError`).
+  - `503 Service Unavailable`: Triggered if upstream provider is down, network fails, or summarizer module is unmounted (`SummarizerUnavailableError`).
+  - `504 Gateway Timeout`: Triggered if provider processing exceeds 8 seconds (`SUMMARIZER_TIMEOUT_MS = 8_000`).
+
+#### 📐 Documented Boundary Behavior for Very Short & Very Long Posts
+The summarizer explicitly handles boundary conditions for extreme post lengths:
+1. **Very Short Posts** (e.g. 1 short sentence, minimal words, or empty body):
+   - **Groq Provider**: Prompted with a zero-temperature strict anti-hallucination constraint (`"Do not invent technologies or facts that are not present in the post."` and `"Return at most 5 tags."`). Short posts produce a concise 1-sentence summary matching the provided context and empty tags (`tags: []`) if no technologies are referenced.
+   - **Mock Provider**: Extracts the first 1–2 available sentences directly without error. If the body is empty or whitespace only, returns the standard fallback: `"No post content available to summarize."` with empty tags.
+   - **Runtime Schema Validator**: Accepts valid non-empty summaries and empty tag arrays (`tags: []`) without schema rejection.
+2. **Very Long Posts** (e.g. posts up to the schema maximum of 20,000 characters):
+   - **Input Truncation Guard**: `GroqSummarizerProvider` safely truncates `input.body` to the first 12,000 characters (`MAX_BODY_LENGTH = 12_000`) before constructing the prompt. This prevents token context window overflow, LLM context crashes, and rate-limit spikes.
+   - **Output Length Ceiling**: The runtime validator (`isSummarizerResult`) strictly enforces `MAX_SUMMARY_LENGTH = 1,000` characters and `MAX_TAGS = 10` (with max 50 chars per tag).
+   - **Mock Provider Summary Cap**: Bounds the heuristic lead summary to at most 280 characters (`MAX_SUMMARY_LENGTH = 280`), slicing cleanly at 279 characters and appending an ellipsis (`…`).
+   - **Timeout Ceiling**: An 8-second hard timeout (`SUMMARIZER_TIMEOUT_MS = 8_000`) prevents long-context LLM calls from hanging client connections indefinitely.
+
+---
+
 ## 🔄 Working Flow as of Day 13
 
 ### 1. Threaded Comments & Replies Lifecycle

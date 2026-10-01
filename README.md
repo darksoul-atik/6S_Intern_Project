@@ -40,7 +40,7 @@ DevPulse is a high-performance, engineering-first developer community platform e
 | **Day 13** | **Ranked, Latest & Most-Discussed Feed APIs** | Pure deterministic ranking calculation (`calculatePostRankScore`), aggregation pipeline (`buildTopPostsPipeline`), `sort=top`, `sort=latest`, and `sort=most-discussed` query options on `GET /posts`, stable secondary tie-breaker sorting (`createdAt DESC`, `_id DESC`), compound index `{ commentCount: -1, createdAt: -1, _id: -1 }`, query plan explain verification (`npm run check:plans`), controlled seed fixtures, verification scripts (`seed:ranking`, `cleanup:ranking`), unit & replica-set integration test matrix (161/161 tests passing across 20 suites). | ✅ **Completed** |
 | **Day 14** | **Feed Filter Tabs & Glass Sort Dropdown** | Interactive `FeedTabs` and glass sort dropdown defaulting to `Top Ranked`, bidirectional URL query sync (`?sort=`), Next.js App Router `useFeedSort` hook, isolated TanStack Query cache partitioning (`postKeys.feed(sort, limit)`), CSR bailout protection via `<Suspense>` boundary in `app/posts/page.tsx`, responsive mobile ergonomics. | ✅ **Completed** |
 | **Day 15** | **Full-Text Post Search Engine & Debounced Query Pipeline** | Indexed full-text search (`title: 5, body: 1`), `GET /posts/search` with `SearchPostsQueryDto`, text relevance scoring (`$meta: 'textScore'`), 300ms debounced search bar (`PostSearch`), `AbortController` cancellation, and zero-flicker feed integration. | ✅ **Completed** |
-| **Day 16** | **AI-Assisted Post Summarization** | Automatic technical summaries, key takeaways extraction, and LLM-assisted post compression. | ⏳ *Upcoming* |
+| **Day 16** | **AI-Assisted Post Summarization** | On-demand Groq LLM & Mock summarizer, JSON mode extraction, domain error mapping (429, 502, 503, 504), input truncation boundary guards (12k chars), 8s timeout, Next.js `PostSummaryPanel` UX with auth redirect, concurrency guard, and plain text rendering. | ✅ **Completed** |
 
 ### Phase 5: Testing, Security, Deployment, and Communication (Days 17–20)
 | Day | Focus Areas | Status |
@@ -1355,4 +1355,39 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
    - Next.js Route Handler BFF proxy (`app/api/posts/search/route.ts`) cleanly forwards `request.signal` to NestJS, conserving server and network bandwidth.
 6. **Automated Vitest Test Matrix Verification**:
    - In `backend/`, run `npm test`.
-   - Verify all **22 test suites and 176 unit and integration tests** pass with 100% green status, including `search-posts-query.dto.spec.ts` (9 tests) and `post-search.integration.spec.ts` (6 tests).
+   - Verify all test suites pass with 100% green status, including `search-posts-query.dto.spec.ts` (9 tests) and `post-search.integration.spec.ts` (6 tests).
+
+### 13. Day 16 AI-Assisted Post Summarization Verification Flow
+1. **On-Demand AI Summarization Endpoint (`POST /posts/:id/summarize`)**:
+   - Authenticated endpoint guarded with `JwtAuthGuard`.
+   - Generates summary on-demand without persisting to the database.
+   - Dynamic provider fallback: switches between Groq SDK (`openai/gpt-oss-20b`) and `MockSummarizerProvider` depending on whether `GROQ_API_KEY` is present in the environment.
+2. **Documented Behavior for Very Short and Very Long Posts**:
+   - **Very Short Posts** (e.g. 1 short sentence, minimal words, or empty body):
+     - *Groq Provider*: Strictly prompted with zero temperature and anti-hallucination constraint (`"Do not invent technologies or facts that are not present in the post."` and `"Return at most 5 tags."`). Short posts produce a concise 1-sentence summary matching the provided context and empty tags (`tags: []`) if no technologies are referenced.
+     - *Mock Provider*: Extracts the first 1–2 available sentences directly without error. If the body is empty or whitespace only, returns the standard fallback: `"No post content available to summarize."` with empty tags.
+     - *Runtime Schema Validator*: Accepts valid non-empty summaries and empty tag arrays (`tags: []`) without schema rejection.
+   - **Very Long Posts** (e.g. posts up to the schema maximum of 20,000 characters):
+     - *Input Truncation Guard*: `GroqSummarizerProvider` safely truncates `input.body` to the first 12,000 characters (`MAX_BODY_LENGTH = 12_000`) before constructing the prompt. This prevents token context window overflow, LLM context crashes, and rate-limit spikes.
+     - *Output Length Ceiling*: The runtime validator (`isSummarizerResult`) strictly enforces `MAX_SUMMARY_LENGTH = 1,000` characters and `MAX_TAGS = 10` (with max 50 chars per tag).
+     - *Mock Provider Summary Cap*: Bounds the heuristic lead summary to at most 280 characters (`MAX_SUMMARY_LENGTH = 280`), slicing cleanly at 279 characters and appending an ellipsis (`…`).
+     - *Timeout Ceiling*: An 8-second hard timeout (`SUMMARIZER_TIMEOUT_MS = 8_000`) prevents long-context LLM calls from hanging client connections indefinitely, returning a `504 Gateway Timeout`.
+3. **Domain Error Mappings**:
+   - `429 Too Many Requests`: Upstream provider rate limits mapped gracefully.
+   - `502 Bad Gateway`: Malformed or schema-invalid JSON from provider.
+   - `503 Service Unavailable`: Upstream provider outage or missing service.
+   - `504 Gateway Timeout`: Provider took longer than 8 seconds.
+4. **Frontend UX Verification (`PostSummaryPanel`)**:
+   - Mounted beneath post body in `/posts/[id]`.
+   - **Logged-Out Users**: Displays a clear locked prompt: `"Log in to generate an AI summary"`. Clicking redirects to `/login?redirect=/posts/[id]` with full post-login return preservation.
+   - **Concurrency Guard**: Duplicate clicks during generation are blocked while the request is in-flight.
+   - **Safe Plain-Text Rendering**: Summaries are rendered as plain text strings to prevent XSS or markdown injection vulnerabilities.
+   - **Retry Handling**: Status-mapped error alerts with a prominent retry button.
+5. **Automated Unit & Integration Test Matrix**:
+   - In `backend/`, run `npx vitest run src/summarizer src/posts`.
+   - Tests cover:
+     - `groq-summarizer.provider.spec.ts`: Very short posts, very long posts (>12k char truncation), 429 rate limit mapping, service unavailable error handling.
+     - `mock-summarizer.provider.spec.ts`: Very short posts, empty body fallback, very long posts (>280 char bounding with ellipsis), tag extraction.
+     - `summarizer.service.spec.ts`: Valid results, malformed schema rejection (502), service unavailable (503), rate limit (429), 8-second timeout (504).
+     - `post-summarization.integration.spec.ts`: Active post summarization, soft-deleted post rejection (404), non-existent post (404), invalid ObjectId (404), error propagation.
+
