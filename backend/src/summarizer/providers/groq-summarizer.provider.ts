@@ -68,7 +68,11 @@ export class GroqSummarizerProvider implements SummarizerProvider {
       }
 
       try {
-        return JSON.parse(content) as unknown;
+        const parsed = JSON.parse(content) as Record<string, unknown>;
+        return {
+          ...parsed,
+          provider: 'Groq',
+        };
       } catch {
         return content;
       }

@@ -54,6 +54,7 @@ describe('GroqSummarizerProvider', () => {
       expect(result).toEqual({
         summary: 'Brief overview of TypeScript types.',
         tags: ['TypeScript'],
+        provider: 'Groq',
       });
     });
   });

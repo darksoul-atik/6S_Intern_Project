@@ -1,6 +1,7 @@
 export interface SummarizerResult {
   summary: string;
   tags: string[];
+  provider?: 'Groq' | 'Mock';
 }
 
 const MAX_SUMMARY_LENGTH = 1000;
@@ -14,11 +15,21 @@ export function isSummarizerResult(value: unknown): value is SummarizerResult {
 
   const result = value as Record<string, unknown>;
   const keys = Object.keys(result);
+  const allowedKeys = ['summary', 'tags', 'provider'];
 
   if (
-    keys.length !== 2 ||
+    !keys.every((key) => allowedKeys.includes(key)) ||
     !keys.includes('summary') ||
     !keys.includes('tags')
+  ) {
+    return false;
+  }
+
+  if (
+    'provider' in result &&
+    result.provider !== undefined &&
+    result.provider !== 'Groq' &&
+    result.provider !== 'Mock'
   ) {
     return false;
   }

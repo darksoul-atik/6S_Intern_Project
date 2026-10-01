@@ -28,6 +28,7 @@ export class MockSummarizerProvider implements SummarizerProvider {
     return {
       summary: this.createSummary(normalizedBody),
       tags: this.createTags(input.title, normalizedBody),
+      provider: 'Mock',
     };
   }
 

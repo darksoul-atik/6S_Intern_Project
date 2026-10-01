@@ -30,6 +30,7 @@ export type SearchPostsParams = {
 export type PostSummary = {
   summary: string;
   tags: string[];
+  provider?: 'Groq' | 'Mock';
 };
 
 /*
