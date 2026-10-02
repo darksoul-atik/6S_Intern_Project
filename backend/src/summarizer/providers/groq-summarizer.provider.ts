@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import Groq from 'groq-sdk';
 import {
   SummarizerRateLimitError,
@@ -29,6 +30,7 @@ Required JSON shape:
 
 export class GroqSummarizerProvider implements SummarizerProvider {
   private readonly client: Groq;
+  private readonly logger = new Logger(GroqSummarizerProvider.name);
 
   constructor(
     apiKey: string,
@@ -41,8 +43,11 @@ export class GroqSummarizerProvider implements SummarizerProvider {
 
   async summarize(input: SummarizerInput): Promise<unknown> {
     const body = input.body.slice(0, MAX_BODY_LENGTH);
+    const startTime = Date.now();
 
     try {
+      this.logger.log(`Dispatching prompt to Groq API (model: ${this.model})...`);
+
       const completion = await this.client.chat.completions.create({
         model: this.model,
         temperature: 0,
@@ -60,6 +65,12 @@ export class GroqSummarizerProvider implements SummarizerProvider {
           },
         ],
       });
+
+      const durationMs = Date.now() - startTime;
+      const totalTokens = completion.usage?.total_tokens ?? 0;
+      this.logger.log(
+        `Groq API responded in ${durationMs}ms | Completion ID: ${completion.id ?? 'N/A'} | Total tokens: ${totalTokens}`,
+      );
 
       const content = completion.choices[0]?.message?.content;
 
