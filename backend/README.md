@@ -4,7 +4,7 @@
 
 ---
 
-## 🏛️ System Architecture Overview (As of Day 16)
+## 🏛️ System Architecture Overview (As of Day 17)
 
 The DevPulse backend is engineered as a modular, domain-driven NestJS service adhering to enterprise security standards, strict data encapsulation, and predictable REST conventions:
 
@@ -152,6 +152,12 @@ Interactive OpenAPI Swagger documentation is available at:
 
 ---
 
+
+### 10. Automated Testing Matrix & E2E Test Suite (Day 17)
+- **Unit & Replica-Set Integration Matrix**: 200 tests across 27 suites validating Auth, RBAC guards, Developer Profiles, Posts Feed ranking, Full-Text Search, Threaded Comments, and AI Summarizer boundary guards.
+- **End-to-End Test Engine (`backend/test/app.e2e-spec.ts`)**: 7 Supertest integration tests running against in-memory MongoDB replica sets (`MongoMemoryServer`), verifying end-to-end signup, credential login, JWT Bearer verification on `/auth/me`, 401 unauthorized rejection, and admin role elevation.
+- **Code Coverage & Quality Gates**: Configured with Vitest v8 coverage provider (`npm run test:cov`) delivering **81.69% line coverage**, **81.55% statement coverage**, and **80.43% function coverage**.
+
 ### 9. AI-Assisted Post Summarizer (Day 16)
 - **`POST /posts/:id/summarize`**: Authenticated endpoint (`JwtAuthGuard`) generating on-demand AI summaries and technical tags for active posts. Result is computed dynamically and is **not persisted** to MongoDB.
 - **Provider Architecture**: Abstracted via `SUMMARIZER_PROVIDER` interface with dynamic factory switching:
@@ -177,7 +183,7 @@ The summarizer explicitly handles boundary conditions for extreme post lengths:
 
 ---
 
-## 🔄 Working Flow as of Day 16
+## 🔄 Working Flow as of Day 17
 
 ### 1. Threaded Comments & Replies Lifecycle
 

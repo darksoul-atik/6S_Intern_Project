@@ -136,7 +136,7 @@ frontend/src/
 
 ---
 
-## 🔄 Working Flow as of Day 16
+## 🔄 Working Flow as of Day 17
 
 ### 1. Community Feed & Infinite Scroll (`/posts`)
 1. User navigates to `/posts`.
@@ -264,6 +264,17 @@ frontend/src/
 - **Zero-Flicker Feed Mode Swap**:
   - When an active search term is detected, `/posts` seamlessly hides the infinite feed and renders search results sorted by MongoDB text relevance.
   - Clearing the search input immediately restores the previous feed sort tab (`Top Ranked`, `Latest`, or `Most Discussed`) without full page reloads or layout jumping.
+
+
+### 11. Phase 5 Automated Component & Integration Testing (Day 17 Completed)
+- **Vitest & React Testing Library Infrastructure**:
+  - Test runner: Vitest 4 with `jsdom` DOM simulation and native `resolve.tsconfigPaths: true`.
+  - DOM Matchers: Ambient module augmentation in `src/types/jest-dom.d.ts` providing full type-safety for `toBeDisabled()`, `toHaveValue()`, and `toBeInTheDocument()`.
+- **Form & Schema Test Coverage (45/45 Tests Passing)**:
+  - **Auth Schemas** (`src/features/auth/schemas/auth-schema.test.ts`): 7 tests covering Zod password complexity, email format normalization, and whitespace stripping.
+  - **Login Form UX** (`src/features/auth/components/login-form.test.tsx`): 9 tests covering React Hook Form validation, double-submit protection, API error banners, and redirect preservation.
+  - **User Profile Schemas** (`src/features/users/schemas/user-schema.test.ts`): 28 tests covering URL validation, date sequence rules (`startDate <= endDate`), and nested portfolio project fields.
+  - **Profile Edit Form** (`src/features/users/components/profile-edit-form.test.tsx`): 1 test verifying profile cache hydration, userEvent typing, and normalized mutation dispatches.
 
 ### 10. Phase 4 AI-Assisted Post Summarizer Interface (Day 16 Completed)
 - **Post Summary Panel (`PostSummaryPanel`)**:
