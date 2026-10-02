@@ -217,7 +217,7 @@ export function CommentItem({
               </button>
 
               {showMenu && (
-                <div className="absolute right-0 top-full z-20 mt-1 min-w-[130px] overflow-hidden rounded-xl border border-slate-200/90 bg-white/95 py-1 shadow-lg backdrop-blur-md">
+                <div className="absolute right-0 top-full z-20 mt-1 min-w-32.5 overflow-hidden rounded-xl border border-slate-200/90 bg-white/95 py-1 shadow-lg backdrop-blur-md">
                   {canEdit && (
                     <button
                       type="button"
@@ -300,7 +300,7 @@ export function CommentItem({
             </div>
           </form>
         ) : (
-          <p className="mt-3 whitespace-pre-wrap wrap-break-word break-words text-sm leading-6 text-slate-700">
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700 wrap-break-word">
             {comment.mentionedUserId && comment.mentionedUserId.name && (
               <Link
                 href={`/developers/${comment.mentionedUserId.id}`}

@@ -338,7 +338,7 @@ export function PostDetails({ postId }: PostDetailsProps) {
               </button>
 
               {showMenu && (
-                <div className="absolute right-0 top-full z-20 mt-1 min-w-[130px] overflow-hidden rounded-xl border border-slate-200/90 bg-white/95 py-1 shadow-lg backdrop-blur-md">
+                <div className="absolute right-0 top-full z-20 mt-1 min-w-32.5 overflow-hidden rounded-xl border border-slate-200/90 bg-white/95 py-1 shadow-lg backdrop-blur-md">
                   <Link
                     href={`/posts/${post.id}/edit`}
                     onClick={() => setShowMenu(false)}
@@ -367,12 +367,12 @@ export function PostDetails({ postId }: PostDetailsProps) {
         </div>
 
         {/* Title */}
-        <h1 className="mt-6 font-manrope text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 break-words">
+        <h1 className="mt-6 font-manrope text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 wrap-break-word">
           {post.title}
         </h1>
 
         {/* Body */}
-        <div className="mt-6 whitespace-pre-wrap wrap-break-word text-[15px] sm:text-base leading-7 sm:leading-8 text-slate-800 font-sans break-words">
+        <div className="mt-6 whitespace-pre-wrap text-[15px] sm:text-base leading-7 sm:leading-8 text-slate-800 font-sans wrap-break-word">
           {post.body}
         </div>
 
