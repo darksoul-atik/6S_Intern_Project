@@ -11,7 +11,6 @@ import {
   SummarizerUnavailableError,
 } from './errors/summarizer.errors.js';
 import type { SummarizerProvider } from './providers/summarizer-provider.interface.js';
-import { SUMMARIZER_PROVIDER } from './providers/summarizer-provider.interface.js';
 import { SummarizerService } from './summarizer.service.js';
 
 describe('SummarizerService', () => {
