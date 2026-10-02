@@ -388,3 +388,39 @@ npx vitest run --coverage
 2. **Author Sanitization**: Post author population explicitly projects only public fields (`name`, `headline`, `avatarUrl`), preventing exposure of `passwordHash`, `email`, or `role`.
 3. **Soft-Delete Safety Net**: Deleted posts remain recoverable for 5 days before automated background purge, protecting users from accidental data loss.
 4. **Principle of Least Privilege**: Sensitive administrative actions (permanent post purge, user role promotion, user soft-delete) are strictly enforced via `@Roles('admin')` and `RolesGuard`.
+
+---
+
+## 🧪 Day 17 Automated Testing Matrix & E2E Runbook
+
+### 1. Test Matrix Summary
+- **Total Test Suites**: 27 unit/integration suites + 1 E2E suite
+- **Total Passing Tests**: 207 / 207 tests (100% passing)
+- **Line Coverage**: **81.69%** (Vitest v8 provider)
+- **E2E Engine**: `supertest` + `MongoMemoryServer` in-memory cluster
+
+### 2. Coverage Metrics Breakdown
+| Layer / Domain | Statements | Branches | Functions | Lines |
+|---|---|---|---|---|
+| **All Files** | **81.55%** | **62.55%** | **80.43%** | **81.69%** |
+| Auth & RBAC | 90.00% | 80.00% | 100.00% | 90.00% |
+| Guards & Interceptors | 100.00% | 89.20% | 100.00% | 100.00% |
+| Comments Service | 88.27% | 69.89% | 94.11% | 88.27% |
+| Reactions Service | 90.08% | 69.13% | 100.00% | 90.75% |
+| Post Ranking Util & Pipeline | 100.00% | 87.50% | 100.00% | 100.00% |
+| Posts Service | 84.25% | 68.88% | 81.81% | 84.11% |
+| AI Summarizer Service | 95.83% | 83.33% | 100.00% | 95.83% |
+| AI Providers (Groq & Mock) | 95.74% | 90.00% | 100.00% | 95.65% |
+
+### 3. Execution Commands
+```bash
+# Run 200 unit and replica-set integration tests
+npm test
+
+# Run 7 Supertest E2E lifecycle tests
+npm run test:e2e
+
+# Run coverage report with v8 thresholds
+npm run test:cov
+```
+

@@ -45,7 +45,8 @@ DevPulse is a high-performance, engineering-first developer community platform e
 ### Phase 5: Testing, Security, Deployment, and Communication (Days 17–20)
 | Day | Focus Areas | Status |
 |:---:|---|:---:|
-| **Day 17–20** | Automated testing matrix, refresh token rotation, rate limiting & security hardening, multi-stage Dockerization, final release candidate demo. | ⏳ *Upcoming* |
+| **Day 17** | **Automated Testing Matrix & E2E Verification** | Complete unit, integration, and E2E test matrix across full-stack platform: 207 backend tests (200 unit/integration + 7 Supertest/MongoMemoryServer E2E, 81.7% line coverage) and 45 frontend Vitest tests (auth validation, login form, profile validation, profile editing). Strict threshold reporting (`test:cov`), `@testing-library/jest-dom` matchers, and zero test flakiness. | ✅ **Completed** |
+| **Day 18–20** | Refresh token rotation, rate limiting & security hardening, multi-stage Dockerization, final release candidate demo. | ⏳ *Upcoming* |
 
 ---
 
@@ -1390,4 +1391,44 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
      - `mock-summarizer.provider.spec.ts`: Very short posts, empty body fallback, very long posts (>280 char bounding with ellipsis), tag extraction.
      - `summarizer.service.spec.ts`: Valid results, malformed schema rejection (502), service unavailable (503), rate limit (429), 8-second timeout (504).
      - `post-summarization.integration.spec.ts`: Active post summarization, soft-deleted post rejection (404), non-existent post (404), invalid ObjectId (404), error propagation.
+
+### 14. Day 17 Automated Testing Matrix & E2E Verification Flow
+1. **Full-Stack Test Coverage Overview**:
+   - **Backend**: 207 automated tests (200 unit/integration across 27 suites + 7 Supertest/MongoMemoryServer E2E tests), achieving **81.7% line coverage** with zero flaky tests.
+   - **Frontend**: 45 Vitest tests across 4 test suites running in `jsdom` with `@testing-library/jest-dom` matchers, validating authentication, profile validation, and interactive form submissions.
+   - **Total Platform**: **252 / 252 tests passing (100% green)**.
+
+2. **Backend Automated Testing Architecture**:
+   - **Unit & Replica-Set Integration (`npm run test`)**:
+     * *Auth & RBAC*: Token issuance, password hashing, anti-enumeration, `JwtAuthGuard`, `RolesGuard` (admin vs user access).
+     * *Reactions Engine*: Atomic toggle concurrency, race condition resilience, reaction peeks, and paginated reactors.
+     * *Post Ranking*: Deterministic score calculation, tie-breaking (`createdAt DESC, _id DESC`), multi-page pagination stability.
+     * *Full-Text Search*: MongoDB text indexing (`$meta: 'textScore'`), query sanitization, and sorting integration.
+     * *Threaded Comments*: Max depth-1 tree assembly, cascade deletion, parent-reply integrity, and atomic counter synchronization.
+     * *AI Summarization*: Groq JSON-mode extraction, 12,000-char truncation guard, 8s timeout, and mock fallback.
+   - **End-to-End API Integration (`npm run test:e2e`)**:
+     * Executes `test/app.e2e-spec.ts` against an isolated in-memory MongoDB instance (`MongoMemoryServer`).
+     * Verifies complete user journeys: `/health` -> `/auth/signup` -> `/auth/login` -> `/auth/me` with Bearer JWT -> unauthenticated 401 rejection -> user 403 on `/auth/admin-check` -> admin role elevation & 200 OK.
+   - **Code Coverage Reporting (`npm run test:cov`)**:
+     * Vitest v8 coverage provider reports:
+       - **Statements**: `81.55%`
+       - **Branches**: `62.55%`
+       - **Functions**: `80.43%`
+       - **Lines**: `81.69%`
+
+3. **Frontend Automated Testing Architecture**:
+   - **Test Harness**: Vitest 4 + jsdom environment configured in `vitest.config.ts` with native `resolve.tsconfigPaths: true`.
+   - **DOM Matcher Augmentation**: Ambient declaration in `src/types/jest-dom.d.ts` extending Vitest's `Assertion` interface with `@testing-library/jest-dom` matchers (`toBeDisabled()`, `toHaveValue()`, `toBeInTheDocument()`).
+   - **Test Suites Executed (`npm run test` in `frontend/`)**:
+     * `src/features/auth/schemas/auth-schema.test.ts` (7 tests): Zod validation for signup & login (password strength, email normalization, whitespace trimming).
+     * `src/features/auth/components/login-form.test.tsx` (9 tests): Interactive React Hook Form lifecycle, loading states, validation error displays, API error alerts, and redirect navigation.
+     * `src/features/users/schemas/user-schema.test.ts` (28 tests): Profile Zod schema boundaries, URL protocols, date constraints (`startDate <= endDate`), and portfolio project fields.
+     * `src/features/users/components/profile-edit-form.test.tsx` (1 test): Form hydration from query cache, user-event typing, and normalized profile mutation dispatch.
+
+4. **Test Runbook Commands**:
+   - Backend unit & integration: `cd backend && npm test`
+   - Backend E2E: `cd backend && npm run test:e2e`
+   - Backend coverage report: `cd backend && npm run test:cov`
+   - Frontend test suite: `cd frontend && npm test`
+   - Frontend watch mode: `cd frontend && npm run test:watch`
 

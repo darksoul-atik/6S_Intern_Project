@@ -307,3 +307,31 @@ npm run build
 # Start production server
 npm run start
 ```
+
+---
+
+## 🧪 Day 17 Frontend Vitest & Testing Library Architecture
+
+### 1. Test Runner & Environment
+- **Test Framework**: Vitest 4 with `jsdom` DOM simulation
+- **Path Resolution**: Native `resolve.tsconfigPaths: true` in `vitest.config.ts`
+- **DOM Matchers**: `@testing-library/jest-dom` via ambient `src/types/jest-dom.d.ts`
+- **Total Passing Tests**: 45 / 45 tests across 4 suites (100% green)
+
+### 2. Frontend Test Suites
+| Suite | Path | Tests | Coverage Scope |
+|---|---|---|---|
+| Auth Validation | `src/features/auth/schemas/auth-schema.test.ts` | 7 | Zod email format, password complexity, trim guards |
+| Login Form UX | `src/features/auth/components/login-form.test.tsx` | 9 | Submission locks, validation feedback, error banners, redirect preservation |
+| User Profile Schema | `src/features/users/schemas/user-schema.test.ts` | 28 | URL format, date sequence (`startDate <= endDate`), skill arrays |
+| Profile Edit Form | `src/features/users/components/profile-edit-form.test.tsx` | 1 | Hydration from React Query, user-event input, mutation submission |
+
+### 3. Execution Commands
+```bash
+# Run all frontend tests once
+npm test
+
+# Run frontend tests in watch mode
+npm run test:watch
+```
+

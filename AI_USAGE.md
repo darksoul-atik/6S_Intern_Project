@@ -511,3 +511,22 @@
   - Authored 9 unit tests in `search-posts-query.dto.spec.ts` and 6 in-memory integration tests in `post-search.integration.spec.ts`.
   - Vitest backend suite expanded to 22 test suites and 176 tests (100% passing).
   - Next.js production build: all 20 routes generated cleanly with 0 errors.
+
+### Day 17 — Automated Testing Matrix, E2E Verification & Coverage Hardening
+- **End-to-End API Test Harness (`backend/test/app.e2e-spec.ts`)**:
+  - Scaffolding a standalone `MongoMemoryServer` instance for end-to-end integration without touching production or local development databases.
+  - Implemented the complete user journey: system health ping (`GET /health`), secure signup (`POST /auth/signup`), credential verification and JWT generation (`POST /auth/login`), Bearer-authenticated profile inspection (`GET /auth/me`), unauthenticated route rejection (401), normal user admin rejection (403 on `/auth/admin-check`), and dynamic admin role promotion to verify administrative privilege enforcement.
+  - Resolved NestJS `ValidationPipe` integration in the E2E application fixture to guarantee identical transformation and validation behavior as production.
+- **Backend Test Suite Expansion & Code Coverage Verification (207 Tests, 81.7% Line Coverage)**:
+  - Validated 27 backend test files and 200 unit/integration tests covering Authentication, Authorization Guards, Reactions (concurrency locks, toggle semantics, reactor pagination), Posts Feed Ranking, Full-Text Search indexing, Threaded Comments (cascade deletes, depth-1 constraints, atomic counter integrity), and AI Summarization (Groq boundary guards, 12,000-char truncation, 8s timeout, mock fallback).
+  - Executed `npm run test:cov` with the Vitest v8 coverage provider, documenting an overall **81.69% line coverage**, **81.55% statement coverage**, and **80.43% function coverage** across all source files.
+- **Frontend Vitest & React Testing Library Foundation (`frontend/vitest.config.ts`)**:
+  - Configured Vitest 4 with the `jsdom` test environment, testing-library lifecycle setup in `src/test/setup.ts`, and native TypeScript path resolution via `resolve.tsconfigPaths: true`.
+  - Added ambient declaration in `src/types/jest-dom.d.ts` and updated `frontend/tsconfig.json` with `"types": ["vitest/globals", "@testing-library/jest-dom/vitest"]`, resolving `Assertion<HTMLElement>` DOM matcher typing issues (such as `toBeDisabled` and `toHaveValue`) across all IDE surfaces.
+  - Built comprehensive test suites:
+    * `auth-schema.test.ts` (7 tests) and `login-form.test.tsx` (9 tests) verifying React Hook Form state, double-submit protection, and redirect logic.
+    * `user-schema.test.ts` (28 tests) and `profile-edit-form.test.tsx` (1 test) validating profile constraints, portfolio date chronologies, and optimistic updates.
+  - Frontend test pass rate: 4 test files passed (45/45 tests, 100% green).
+- **Tailwind CSS Canonical Class Alignment**:
+  - Addressed Tailwind LSP canonical class and CSS property conflict warnings in `post-details.tsx` and `comment-item.tsx`: normalized arbitrary widths to `min-w-32.5` and unified text-wrapping to canonical `wrap-break-word`.
+
