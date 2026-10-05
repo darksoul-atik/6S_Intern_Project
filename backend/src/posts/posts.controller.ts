@@ -29,7 +29,6 @@ import { SearchPostsQueryDto } from './dto/search-posts-query.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
-
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 
 import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy.js';
@@ -126,12 +125,6 @@ export class PostsController {
   |--------------------------------------------------------------------------
   | Search Posts
   |--------------------------------------------------------------------------
-  |
-  | Day 18 rate limit:
-  | 60 requests per minute per IP.
-  |
-  | Search is public and can otherwise be abused to repeatedly hit MongoDB.
-  |--------------------------------------------------------------------------
   */
 
   @Get('search')
@@ -144,7 +137,7 @@ export class PostsController {
   @ApiOperation({
     summary: 'Search posts',
     description:
-      'Performs full-text search across active post titles and bodies. Results are ordered by text relevance.',
+      'Performs full-text search across active post titles and bodies. The query is validated and rate-limited to reduce abusive or excessively frequent searches.',
   })
   @ApiQuery({
     name: 'q',
@@ -167,14 +160,59 @@ export class PostsController {
   @ApiResponse({
     status: 200,
     description: 'Search results retrieved successfully',
+    schema: {
+      example: {
+        success: true,
+        statusCode: 200,
+        data: {
+          items: [
+            {
+              id: '66e138fc29094e137127e4e0',
+              title: 'React authentication patterns',
+              body: 'Example developer-community post body',
+              commentCount: 4,
+              reactionCounts: {
+                like: 10,
+                dislike: 1,
+              },
+              author: {
+                id: '66e138fc29094e137127e4e1',
+                name: 'Example Developer',
+              },
+            },
+          ],
+          page: 1,
+          limit: 10,
+          total: 1,
+          totalPages: 1,
+        },
+        message: 'Request successful',
+      },
+    },
   })
   @ApiResponse({
     status: 400,
     description: 'Invalid search query, page, or limit',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 400,
+        message: 'q must be longer than or equal to 2 characters',
+        errors: ['q must be longer than or equal to 2 characters'],
+      },
+    },
   })
   @ApiResponse({
     status: 429,
-    description: 'Too many search requests. Please try again later.',
+    description: 'Search rate limit exceeded',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 429,
+        message: 'ThrottlerException: Too Many Requests',
+        errors: [],
+      },
+    },
   })
   async searchPosts(@Query() query: SearchPostsQueryDto) {
     return this.postsService.searchPosts({
@@ -187,13 +225,6 @@ export class PostsController {
   /*
   |--------------------------------------------------------------------------
   | Summarize Post
-  |--------------------------------------------------------------------------
-  |
-  | Day 18 rate limit:
-  | 10 requests per minute per IP.
-  |
-  | This endpoint can consume real Groq API quota, so it needs a much
-  | stricter limit than ordinary API reads.
   |--------------------------------------------------------------------------
   */
 
@@ -209,7 +240,7 @@ export class PostsController {
   @ApiOperation({
     summary: 'Summarize a post',
     description:
-      'Generates an on-demand AI summary and technical skill tags for an active post. The generated result is not stored.',
+      'Generates an on-demand AI summary and technical skill tags for an active post. Requires authentication, is rate-limited, and does not send unnecessary user information to the summarizer provider.',
   })
   @ApiParam({
     name: 'id',
@@ -219,31 +250,92 @@ export class PostsController {
   @ApiResponse({
     status: 201,
     description: 'Post summarized successfully',
+    schema: {
+      example: {
+        success: true,
+        statusCode: 201,
+        data: {
+          summary:
+            'The post explains how to implement secure authentication with short-lived access tokens and refresh-token rotation.',
+          tags: ['NestJS', 'JWT', 'Authentication'],
+          provider: 'Groq',
+        },
+        message: 'Request successful',
+      },
+    },
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized: Missing or invalid Bearer token',
+    description: 'Missing, invalid, or expired access token',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 401,
+        message: 'Unauthorized',
+        errors: [],
+      },
+    },
   })
   @ApiResponse({
     status: 404,
     description: 'Post not found',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 404,
+        message: 'Post not found',
+        errors: [],
+      },
+    },
   })
   @ApiResponse({
     status: 429,
     description:
-      'Too many summarizer requests or summarizer provider rate limit reached',
+      'DevPulse summarizer rate limit or external provider rate limit exceeded',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 429,
+        message: 'Too many summarization requests',
+        errors: [],
+      },
+    },
   })
   @ApiResponse({
     status: 502,
     description: 'Summarizer returned an invalid response',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 502,
+        message: 'Summarizer returned an invalid response',
+        errors: [],
+      },
+    },
   })
   @ApiResponse({
     status: 503,
     description: 'Summarizer service is unavailable',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 503,
+        message: 'Summarizer service is unavailable',
+        errors: [],
+      },
+    },
   })
   @ApiResponse({
     status: 504,
     description: 'Summarizer request timed out',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 504,
+        message: 'Summarizer request timed out',
+        errors: [],
+      },
+    },
   })
   async summarizePost(@Param('id') id: string) {
     return this.postsService.summarizePost(id);
