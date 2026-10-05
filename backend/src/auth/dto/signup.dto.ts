@@ -1,37 +1,30 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength, Matches } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 export class SignupDto {
   @ApiProperty({
-    example: 'Alex Chen',
-    description: 'Full name of the user',
-    minLength: 2,
+    description: 'Display name for the new DevPulse account.',
+    example: 'Tasfia Rahman',
   })
-  @IsNotEmpty({ message: 'Name is required' })
-  @IsString({ message: 'Name must be a string' })
-  @MinLength(2, { message: 'Name must be at least 2 characters long' })
+  @IsString()
+  @IsNotEmpty()
   name!: string;
 
   @ApiProperty({
-    example: 'alex.chen@devpulse.io',
-    description: 'Valid and unique email address',
+    description: 'Unique email address used for authentication.',
+    example: 'tasfia@devpulse.io',
   })
-  @IsNotEmpty({ message: 'Email is required' })
-  @IsEmail({}, { message: 'Please provide a valid email address' })
-  @Transform(({ value }: { value: string }) => value?.toLowerCase()?.trim())
+  @IsEmail()
+  @IsNotEmpty()
   email!: string;
 
   @ApiProperty({
-    example: 'SecretP@ss123',
-    description: 'Password with minimum 6 characters',
+    description: 'Password for the new account.',
+    example: 'SecurePassword123',
     minLength: 6,
   })
-  @IsNotEmpty({ message: 'Password is required' })
-  @IsString({ message: 'Password must be a string' })
-  @MinLength(6, { message: 'Password must be at least 6 characters long' })
-  @Matches(/^(?=.*\S).{6,}$/, {
-    message: 'Password must contain at least 6 characters including non-whitespace',
-  })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(6)
   password!: string;
 }

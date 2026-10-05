@@ -123,7 +123,9 @@ seedRankingData()
     console.log('Ranking seed completed successfully.');
   })
   .catch(async (error) => {
-    console.error('Ranking seed failed:', error);
+    console.error(
+      'Ranking seed failed. Check database connectivity and ranking seed configuration.',
+    );
 
     await mongoose.disconnect();
 

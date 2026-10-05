@@ -79,7 +79,10 @@ async function verifyFeeds(): Promise<void> {
   });
 
   const topLabels = getLabels(topResult.posts);
-  console.log('Expected Top Order:        ', [...EXPECTED_TOP_ORDER].join(' -> '));
+  console.log(
+    'Expected Top Order:        ',
+    [...EXPECTED_TOP_ORDER].join(' -> '),
+  );
   console.log('Actual Top Order:          ', topLabels.join(' -> '));
 
   const topMatches =
@@ -105,14 +108,19 @@ async function verifyFeeds(): Promise<void> {
   const bIdx = topLabels.indexOf('B');
   const iIdx = topLabels.indexOf('I');
   if (bIdx > iIdx) throw new Error('Tie-breaker B vs I failed');
-  console.log('✅ Top Tie-Breaker (createdAt): Post B ranks before Post I (score 12 tie broken by newer date)');
+  console.log(
+    '✅ Top Tie-Breaker (createdAt): Post B ranks before Post I (score 12 tie broken by newer date)',
+  );
 
   const hIdx = topLabels.indexOf('H');
   const dIdx = topLabels.indexOf('D');
   const cIdx = topLabels.indexOf('C');
-  if (hIdx > dIdx || hIdx > cIdx) throw new Error('Tie-breaker H vs D/C failed');
+  if (hIdx > dIdx || hIdx > cIdx)
+    throw new Error('Tie-breaker H vs D/C failed');
   if (dIdx > cIdx) throw new Error('Tie-breaker D vs C (_id) failed');
-  console.log('✅ Top Tie-Breaker (_id): Post D ranks before Post C (identical score 8 & identical date broken by _id)');
+  console.log(
+    '✅ Top Tie-Breaker (_id): Post D ranks before Post C (identical score 8 & identical date broken by _id)',
+  );
 
   /*
   |--------------------------------------------------------------------------
@@ -127,7 +135,10 @@ async function verifyFeeds(): Promise<void> {
   });
 
   const latestLabels = getLabels(latestResult.posts);
-  console.log('Expected Latest Order:     ', [...EXPECTED_LATEST_ORDER].join(' -> '));
+  console.log(
+    'Expected Latest Order:     ',
+    [...EXPECTED_LATEST_ORDER].join(' -> '),
+  );
   console.log('Actual Latest Order:       ', latestLabels.join(' -> '));
 
   const latestMatches =
@@ -150,7 +161,10 @@ async function verifyFeeds(): Promise<void> {
   });
 
   const mostDiscussedLabels = getLabels(mostDiscussedResult.posts);
-  console.log('Expected Most Discussed:   ', [...EXPECTED_MOST_DISCUSSED_ORDER].join(' -> '));
+  console.log(
+    'Expected Most Discussed:   ',
+    [...EXPECTED_MOST_DISCUSSED_ORDER].join(' -> '),
+  );
   console.log('Actual Most Discussed:     ', mostDiscussedLabels.join(' -> '));
 
   const mostDiscussedMatches =
@@ -164,18 +178,27 @@ async function verifyFeeds(): Promise<void> {
   // Verify Most Discussed tie-breakers
   const mdDIdx = mostDiscussedLabels.indexOf('D');
   const mdAIdx = mostDiscussedLabels.indexOf('A');
-  if (mdDIdx > mdAIdx) throw new Error('Most discussed tie-breaker D vs A failed');
-  console.log('✅ Most Discussed Tie-Breaker: Post D ranks before Post A (commentCount 3 tie broken by newer date)');
+  if (mdDIdx > mdAIdx)
+    throw new Error('Most discussed tie-breaker D vs A failed');
+  console.log(
+    '✅ Most Discussed Tie-Breaker: Post D ranks before Post A (commentCount 3 tie broken by newer date)',
+  );
 
   const mdHIdx = mostDiscussedLabels.indexOf('H');
   const mdCIdx = mostDiscussedLabels.indexOf('C');
-  if (mdHIdx > mdCIdx) throw new Error('Most discussed tie-breaker H vs C failed');
-  console.log('✅ Most Discussed Tie-Breaker: Post H ranks before Post C (commentCount 2 tie broken by newer date)');
+  if (mdHIdx > mdCIdx)
+    throw new Error('Most discussed tie-breaker H vs C failed');
+  console.log(
+    '✅ Most Discussed Tie-Breaker: Post H ranks before Post C (commentCount 2 tie broken by newer date)',
+  );
 
   const mdFIdx = mostDiscussedLabels.indexOf('F');
   const mdGIdx = mostDiscussedLabels.indexOf('G');
-  if (mdFIdx > mdGIdx) throw new Error('Most discussed tie-breaker F vs G failed');
-  console.log('✅ Most Discussed Tie-Breaker: Post F ranks before Post G (commentCount 1 tie broken by newer date)');
+  if (mdFIdx > mdGIdx)
+    throw new Error('Most discussed tie-breaker F vs G failed');
+  console.log(
+    '✅ Most Discussed Tie-Breaker: Post F ranks before Post G (commentCount 1 tie broken by newer date)',
+  );
 
   /*
   |--------------------------------------------------------------------------
@@ -187,14 +210,18 @@ async function verifyFeeds(): Promise<void> {
   if (allLabels.includes('J')) {
     throw new Error('Soft-deleted Post J leaked into feed results!');
   }
-  console.log('✅ Soft-deleted Post J is completely excluded from all feed sort queries');
+  console.log(
+    '✅ Soft-deleted Post J is completely excluded from all feed sort queries',
+  );
 
   /*
   |--------------------------------------------------------------------------
   | 5. Pagination Stability Verification (3 Pages, limit=3)
   |--------------------------------------------------------------------------
   */
-  console.log('\n--- 5. Testing Multi-Page Pagination Stability (3 Pages, limit=3) ---');
+  console.log(
+    '\n--- 5. Testing Multi-Page Pagination Stability (3 Pages, limit=3) ---',
+  );
   const sortModes: Array<'top' | 'latest' | 'most-discussed'> = [
     'top',
     'latest',
@@ -217,7 +244,9 @@ async function verifyFeeds(): Promise<void> {
     console.log(`  Page 1 (3 items): ${p1Labels.join(', ')}`);
     console.log(`  Page 2 (3 items): ${p2Labels.join(', ')}`);
     console.log(`  Page 3 (3 items): ${p3Labels.join(', ')}`);
-    console.log(`  Combined:         ${combined.join(', ')} (Total: ${combined.length}, Unique: ${uniqueCount})`);
+    console.log(
+      `  Combined:         ${combined.join(', ')} (Total: ${combined.length}, Unique: ${uniqueCount})`,
+    );
 
     if (page1.total !== 9 || page1.totalPages !== 3) {
       throw new Error(`Pagination metadata incorrect for ${sort}`);
@@ -236,7 +265,9 @@ async function verifyFeeds(): Promise<void> {
       throw new Error(`Repeated page 1 request unstable for ${sort}!`);
     }
 
-    console.log(`  ✅ Pagination stays 100% intact, zero duplicates, zero dropped items`);
+    console.log(
+      `  ✅ Pagination stays 100% intact, zero duplicates, zero dropped items`,
+    );
   }
 
   console.log('\n======================================================');
@@ -250,7 +281,9 @@ verifyFeeds()
     process.exit(0);
   })
   .catch(async (error) => {
-    console.error('\n❌ Verification Failed:', error);
+    console.error(
+      '\n❌ Feed verification failed. Check database connectivity and seed data.',
+    );
     await mongoose.disconnect();
     process.exit(1);
   });

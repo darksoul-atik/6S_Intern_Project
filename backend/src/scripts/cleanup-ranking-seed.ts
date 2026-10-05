@@ -70,7 +70,9 @@ cleanupRankingSeed()
     console.log('Ranking seed cleanup completed successfully.');
   })
   .catch(async (error) => {
-    console.error('Ranking seed cleanup failed:', error);
+    console.error(
+      'Ranking seed cleanup failed. Check database connectivity and seed configuration.',
+    );
 
     await mongoose.disconnect();
 

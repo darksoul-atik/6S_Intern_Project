@@ -32,7 +32,9 @@ async function migrateAvatars() {
       })
       .toArray();
 
-    console.log(`📋 Found ${users.length} users with Base64 avatars to migrate:`);
+    console.log(
+      `📋 Found ${users.length} users with Base64 avatars to migrate:`,
+    );
 
     for (const user of users) {
       const userId = user._id.toString();
@@ -40,14 +42,18 @@ async function migrateAvatars() {
 
       const matches = rawAvatar.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
       if (!matches || matches.length !== 3) {
-        console.warn(`⚠️ User ${user.name} (${userId}) has invalid base64 avatarUrl format, skipping.`);
+        console.warn(
+          `⚠️ User ${user.name} (${userId}) has invalid base64 avatarUrl format, skipping.`,
+        );
         continue;
       }
 
       const contentType = matches[1];
       const buffer = Buffer.from(matches[2], 'base64');
 
-      console.log(`  - Migrating ${user.name} (${userId}): ${contentType}, ${buffer.length} bytes`);
+      console.log(
+        `  - Migrating ${user.name} (${userId}): ${contentType}, ${buffer.length} bytes`,
+      );
 
       // Clean up any existing GridFS file with this filename
       const existingFiles = await bucket.find({ filename: userId }).toArray();
@@ -77,7 +83,9 @@ async function migrateAvatars() {
 
     console.log('🎉 Migration completed successfully!');
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    console.error(
+      '❌ Avatar migration failed. Check database connectivity and migration configuration.',
+    );
     process.exit(1);
   } finally {
     await mongoose.disconnect();

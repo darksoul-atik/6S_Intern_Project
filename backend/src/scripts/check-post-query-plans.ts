@@ -208,8 +208,9 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  console.error('\nQuery-plan verification failed:\n');
-  console.error(error);
+  console.error(
+    '\nQuery-plan verification failed. Check database connectivity and query configuration.',
+  );
 
   process.exitCode = 1;
 });
