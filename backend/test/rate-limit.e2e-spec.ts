@@ -4,8 +4,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
 
 describe('Day 18 rate limiting (e2e)', () => {
-  let app: INestApplication;
-  let mongoServer: MongoMemoryServer;
+  let app: INestApplication | undefined;
+  let mongoServer: MongoMemoryServer | undefined;
 
   const testUser = {
     name: 'Rate Limit User',
@@ -46,11 +46,8 @@ describe('Day 18 rate limiting (e2e)', () => {
 
     /*
     |--------------------------------------------------------------------------
-    | Create one real user
+    | Create a real user before testing login throttling
     |--------------------------------------------------------------------------
-    |
-    | Login throttling is tested using repeated wrong-password attempts.
-    |
     */
 
     await request(app.getHttpServer())
@@ -60,20 +57,28 @@ describe('Day 18 rate limiting (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
-    await mongoServer.stop();
+    if (app) {
+      await app.close();
+    }
+
+    if (mongoServer) {
+      await mongoServer.stop();
+    }
   });
 
   it('allows the first 10 login attempts but blocks the 11th with 429', async () => {
+    if (!app) {
+      throw new Error('Nest application was not initialized');
+    }
+
     /*
     |--------------------------------------------------------------------------
-    | First 10 login attempts
+    | Attempts 1-10
     |--------------------------------------------------------------------------
     |
-    | Credentials deliberately contain the wrong password.
+    | Wrong password is intentional.
     |
-    | The important point:
-    | they reach AuthService normally and return 401.
+    | These requests should reach AuthService and return 401.
     |
     */
 
@@ -82,6 +87,7 @@ describe('Day 18 rate limiting (e2e)', () => {
         .post('/auth/login')
         .send({
           email: testUser.email,
+
           password: 'DefinitelyWrongPassword',
         })
         .expect(401);
@@ -92,7 +98,7 @@ describe('Day 18 rate limiting (e2e)', () => {
     | Attempt 11
     |--------------------------------------------------------------------------
     |
-    | ThrottlerGuard should stop this BEFORE AuthService processes it.
+    | ThrottlerGuard should reject this before AuthService handles it.
     |
     */
 
@@ -100,6 +106,7 @@ describe('Day 18 rate limiting (e2e)', () => {
       .post('/auth/login')
       .send({
         email: testUser.email,
+
         password: 'DefinitelyWrongPassword',
       })
       .expect(429);

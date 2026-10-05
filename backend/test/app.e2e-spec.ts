@@ -59,10 +59,14 @@ describe('DevPulse API (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
-    await mongoServer.stop();
-  });
+    if (app) {
+      await app.close();
+    }
 
+    if (mongoServer) {
+      await mongoServer.stop();
+    }
+  });
   /*
   |--------------------------------------------------------------------------
   | Health
