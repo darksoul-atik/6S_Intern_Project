@@ -19,6 +19,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { Throttle } from '@nestjs/throttler';
+
 import { PostsService } from './posts.service.js';
 
 import { CreatePostDto } from './dto/create-post.dto.js';
@@ -76,23 +78,6 @@ export class PostsController {
   |--------------------------------------------------------------------------
   | List Posts
   |--------------------------------------------------------------------------
-  |
-  | Public endpoint.
-  |
-  | latest:
-  | createdAt DESC -> _id DESC
-  |
-  | top:
-  | rankScore DESC -> createdAt DESC -> _id DESC
-  |
-  | most-discussed:
-  | commentCount DESC -> createdAt DESC -> _id DESC
-  |
-  | If sort is omitted, latest is used.
-  |
-  | Soft-deleted Posts are automatically excluded
-  | by PostsService.
-  |--------------------------------------------------------------------------
   */
 
   @Get()
@@ -142,14 +127,20 @@ export class PostsController {
   | Search Posts
   |--------------------------------------------------------------------------
   |
-  | Public endpoint.
+  | Day 18 rate limit:
+  | 60 requests per minute per IP.
   |
-  | Full-text search across post title and body.
-  | Soft-deleted posts are excluded.
+  | Search is public and can otherwise be abused to repeatedly hit MongoDB.
   |--------------------------------------------------------------------------
   */
 
   @Get('search')
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
   @ApiOperation({
     summary: 'Search posts',
     description:
@@ -181,6 +172,10 @@ export class PostsController {
     status: 400,
     description: 'Invalid search query, page, or limit',
   })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many search requests. Please try again later.',
+  })
   async searchPosts(@Query() query: SearchPostsQueryDto) {
     return this.postsService.searchPosts({
       q: query.q,
@@ -191,28 +186,24 @@ export class PostsController {
 
   /*
   |--------------------------------------------------------------------------
-  | Get One Post
+  | Summarize Post
   |--------------------------------------------------------------------------
   |
-  | Public endpoint.
+  | Day 18 rate limit:
+  | 10 requests per minute per IP.
   |
-  | Soft-deleted Posts return 404.
+  | This endpoint can consume real Groq API quota, so it needs a much
+  | stricter limit than ordinary API reads.
   |--------------------------------------------------------------------------
   */
 
-  /*
-   * |--------------------------------------------------------------------------
-   * | Summarize Post
-   * |--------------------------------------------------------------------------
-   *
-   * Authenticated users may generate an on-demand summary
-   * and technical skill tags for any active post.
-   *
-   * The generated result is not persisted.
-   * |--------------------------------------------------------------------------
-   */
-
   @Post(':id/summarize')
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 60_000,
+    },
+  })
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
@@ -239,7 +230,8 @@ export class PostsController {
   })
   @ApiResponse({
     status: 429,
-    description: 'Summarizer provider rate limit reached',
+    description:
+      'Too many summarizer requests or summarizer provider rate limit reached',
   })
   @ApiResponse({
     status: 502,
@@ -256,6 +248,12 @@ export class PostsController {
   async summarizePost(@Param('id') id: string) {
     return this.postsService.summarizePost(id);
   }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Get One Post
+  |--------------------------------------------------------------------------
+  */
 
   @Get(':id')
   @ApiOperation({
@@ -283,11 +281,6 @@ export class PostsController {
   /*
   |--------------------------------------------------------------------------
   | Update Post
-  |--------------------------------------------------------------------------
-  |
-  | Author or admin only.
-  |
-  | Soft-deleted Posts cannot be updated.
   |--------------------------------------------------------------------------
   */
 
@@ -331,14 +324,6 @@ export class PostsController {
   /*
   |--------------------------------------------------------------------------
   | Restore Soft-Deleted Post
-  |--------------------------------------------------------------------------
-  |
-  | POST /posts/:id/restore
-  |
-  | Author or admin only.
-  |
-  | Restore is allowed only within 5 days
-  | of deletedAt.
   |--------------------------------------------------------------------------
   */
 
@@ -384,13 +369,6 @@ export class PostsController {
   |--------------------------------------------------------------------------
   | Permanently Delete Soft-Deleted Post
   |--------------------------------------------------------------------------
-  |
-  | DELETE /posts/:id/permanent
-  |
-  | Author or admin only.
-  |
-  | The Post MUST already be soft-deleted.
-  |--------------------------------------------------------------------------
   */
 
   @Delete(':id/permanent')
@@ -433,13 +411,6 @@ export class PostsController {
   /*
   |--------------------------------------------------------------------------
   | Soft Delete Post
-  |--------------------------------------------------------------------------
-  |
-  | DELETE /posts/:id
-  |
-  | Author or admin only.
-  |
-  | This does NOT physically remove the document.
   |--------------------------------------------------------------------------
   */
 

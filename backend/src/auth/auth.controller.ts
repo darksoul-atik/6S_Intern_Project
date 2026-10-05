@@ -15,6 +15,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { Throttle } from '@nestjs/throttler';
+
 import { AuthService } from './auth.service.js';
 import { SignupDto } from './dto/signup.dto.js';
 import { LoginDto } from './dto/login.dto.js';
@@ -33,7 +35,25 @@ import type { AuthenticatedUser } from './strategies/jwt.strategy.js';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /*
+  |--------------------------------------------------------------------------
+  | Signup
+  |--------------------------------------------------------------------------
+  |
+  | Maximum:
+  | 5 requests per 15 minutes per IP
+  |
+  | Protects against automated account creation / signup spam.
+  |
+  */
+
   @Post('signup')
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 15 * 60_000,
+    },
+  })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Register a new user',
@@ -52,11 +72,33 @@ export class AuthController {
     status: 409,
     description: 'Email is already registered',
   })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many signup attempts. Please try again later.',
+  })
   async signup(@Body() signupDto: SignupDto) {
     return this.authService.signup(signupDto);
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | Login
+  |--------------------------------------------------------------------------
+  |
+  | Maximum:
+  | 10 requests per 15 minutes per IP
+  |
+  | This is stricter because login is a brute-force target.
+  |
+  */
+
   @Post('login')
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 15 * 60_000,
+    },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Authenticate a user',
@@ -75,11 +117,34 @@ export class AuthController {
     status: 401,
     description: 'Invalid email or password',
   })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many login attempts. Please try again later.',
+  })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | Refresh
+  |--------------------------------------------------------------------------
+  |
+  | Maximum:
+  | 30 requests per 15 minutes per IP
+  |
+  | More generous than login because legitimate clients may need several
+  | refreshes throughout a normal session.
+  |
+  */
+
   @Post('refresh')
+  @Throttle({
+    default: {
+      limit: 30,
+      ttl: 15 * 60_000,
+    },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Refresh an authenticated session',
@@ -98,12 +163,25 @@ export class AuthController {
     status: 401,
     description: 'Refresh token is invalid, expired, revoked, or already used',
   })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many refresh attempts. Please try again later.',
+  })
   async refresh(
     @Body()
     refreshTokenDto: RefreshTokenDto,
   ) {
     return this.authService.refresh(refreshTokenDto.refreshToken);
   }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Logout
+  |--------------------------------------------------------------------------
+  |
+  | Uses the normal global throttling policy.
+  |
+  */
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
@@ -127,6 +205,12 @@ export class AuthController {
     return this.authService.logout(refreshTokenDto.refreshToken);
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | Current user
+  |--------------------------------------------------------------------------
+  */
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -149,6 +233,12 @@ export class AuthController {
   ) {
     return this.authService.getMe(user.userId);
   }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Admin check
+  |--------------------------------------------------------------------------
+  */
 
   @Get('admin-check')
   @UseGuards(JwtAuthGuard, RolesGuard)
