@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
+import { createHash } from 'crypto';
 
 import { AuthService } from './auth.service.js';
 
@@ -11,17 +12,16 @@ describe('AuthService', () => {
   let mockJwtService: any;
   let mockConfigService: any;
 
+  const sha256 = (value: string) =>
+    createHash('sha256').update(value).digest('hex');
+
   beforeEach(() => {
     mockUsersService = {
       findByEmail: vi.fn(),
       findById: vi.fn(),
-
       findByIdWithRefreshTokenHash: vi.fn(),
-
       create: vi.fn(),
-
       setRefreshTokenHash: vi.fn(),
-
       rotateRefreshTokenHash: vi.fn().mockResolvedValue(true),
     };
 
@@ -34,21 +34,9 @@ describe('AuthService', () => {
             expiresIn?: string;
           },
         ) => {
-          /*
-          |--------------------------------------------------------------------------
-          | Access token
-          |--------------------------------------------------------------------------
-          */
-
           if (!options?.secret) {
             return 'mock-access-token';
           }
-
-          /*
-          |--------------------------------------------------------------------------
-          | Refresh token
-          |--------------------------------------------------------------------------
-          */
 
           if (options.secret === 'test-refresh-secret') {
             return 'mock-refresh-token';
@@ -82,12 +70,6 @@ describe('AuthService', () => {
       mockConfigService,
     );
   });
-
-  /*
-  |--------------------------------------------------------------------------
-  | Signup
-  |--------------------------------------------------------------------------
-  */
 
   describe('signup', () => {
     it('should successfully register a user and hash the password', async () => {
@@ -145,29 +127,20 @@ describe('AuthService', () => {
     it('should throw ConflictException if email already exists', async () => {
       mockUsersService.findByEmail.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
         email: 'taken@devpulse.io',
       });
 
-      const signupDto = {
-        name: 'Existing Person',
-        email: 'taken@devpulse.io',
-        password: 'password123',
-      };
-
-      await expect(authService.signup(signupDto)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(
+        authService.signup({
+          name: 'Existing Person',
+          email: 'taken@devpulse.io',
+          password: 'password123',
+        }),
+      ).rejects.toThrow(ConflictException);
 
       expect(mockUsersService.create).not.toHaveBeenCalled();
     });
   });
-
-  /*
-  |--------------------------------------------------------------------------
-  | Login
-  |--------------------------------------------------------------------------
-  */
 
   describe('login', () => {
     it('should authenticate valid credentials and issue access and refresh tokens', async () => {
@@ -175,62 +148,36 @@ describe('AuthService', () => {
 
       mockUsersService.findByEmail.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
         name: 'Alex Chen',
-
         email: 'alex.chen@devpulse.io',
-
         passwordHash,
-
         role: 'user',
-
         isDeleted: false,
       });
 
-      const loginDto = {
+      const result = await authService.login({
         email: 'Alex.Chen@devpulse.io',
-
         password: 'Secret123',
-      };
-
-      const result = await authService.login(loginDto);
+      });
 
       expect(mockUsersService.findByEmail).toHaveBeenCalledWith(
         'alex.chen@devpulse.io',
       );
 
-      /*
-      |--------------------------------------------------------------------------
-      | Access token
-      |--------------------------------------------------------------------------
-      */
-
       expect(mockJwtService.sign).toHaveBeenCalledWith({
         sub: '507f1f77bcf86cd799439011',
-
         name: 'Alex Chen',
-
         email: 'alex.chen@devpulse.io',
-
         role: 'user',
       });
-
-      /*
-      |--------------------------------------------------------------------------
-      | Refresh token
-      |--------------------------------------------------------------------------
-      */
 
       expect(mockJwtService.sign).toHaveBeenCalledWith(
         expect.objectContaining({
           sub: '507f1f77bcf86cd799439011',
-
           jti: expect.any(String),
         }),
-
         {
           secret: 'test-refresh-secret',
-
           expiresIn: '7d',
         },
       );
@@ -241,19 +188,10 @@ describe('AuthService', () => {
 
       expect(result.data.user).toEqual({
         id: '507f1f77bcf86cd799439011',
-
         name: 'Alex Chen',
-
         email: 'alex.chen@devpulse.io',
-
         role: 'user',
       });
-
-      /*
-      |--------------------------------------------------------------------------
-      | Only hash is stored
-      |--------------------------------------------------------------------------
-      */
 
       expect(mockUsersService.setRefreshTokenHash).toHaveBeenCalledOnce();
 
@@ -262,14 +200,9 @@ describe('AuthService', () => {
 
       expect(storedUserId).toBe('507f1f77bcf86cd799439011');
 
+      expect(storedRefreshHash).toBe(sha256('mock-refresh-token'));
+
       expect(storedRefreshHash).not.toBe('mock-refresh-token');
-
-      const refreshTokenMatchesHash = await bcrypt.compare(
-        'mock-refresh-token',
-        storedRefreshHash,
-      );
-
-      expect(refreshTokenMatchesHash).toBe(true);
 
       expect(result.message).toBe('Login successful');
     });
@@ -279,22 +212,16 @@ describe('AuthService', () => {
 
       mockUsersService.findByEmail.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
         name: 'Alex Chen',
-
         email: 'alex.chen@devpulse.io',
-
         passwordHash,
-
         role: 'user',
-
         isDeleted: false,
       });
 
       await expect(
         authService.login({
           email: 'alex.chen@devpulse.io',
-
           password: 'WrongPassword',
         }),
       ).rejects.toThrow(UnauthorizedException);
@@ -308,7 +235,6 @@ describe('AuthService', () => {
       await expect(
         authService.login({
           email: 'nonexistent@devpulse.io',
-
           password: 'anyPassword',
         }),
       ).rejects.toThrow(UnauthorizedException);
@@ -317,22 +243,16 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException with admin deletion message if user account isDeleted', async () => {
       mockUsersService.findByEmail.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
         name: 'Deleted User',
-
         email: 'deleted@devpulse.io',
-
         passwordHash: await bcrypt.hash('Secret123', 10),
-
         role: 'user',
-
         isDeleted: true,
       });
 
       await expect(
         authService.login({
           email: 'deleted@devpulse.io',
-
           password: 'Secret123',
         }),
       ).rejects.toThrow(
@@ -347,21 +267,15 @@ describe('AuthService', () => {
 
       mockUsersService.findByEmail.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
         name: 'Alex Chen',
-
         email: 'alex.chen@devpulse.io',
-
         passwordHash,
-
         role: 'user',
-
         isDeleted: false,
       });
 
       const result = await authService.login({
         email: 'alex.chen@devpulse.io',
-
         password: '  Secret123  ',
       });
 
@@ -371,41 +285,24 @@ describe('AuthService', () => {
     });
   });
 
-  /*
-  |--------------------------------------------------------------------------
-  | Refresh token rotation
-  |--------------------------------------------------------------------------
-  */
-
   describe('refresh', () => {
     it('should validate the refresh token, rotate its hash, and issue new tokens', async () => {
       const oldRefreshToken = 'old-refresh-token';
 
-      const oldRefreshTokenHash = await bcrypt.hash(oldRefreshToken, 10);
+      const oldRefreshTokenHash = sha256(oldRefreshToken);
 
       mockUsersService.findByIdWithRefreshTokenHash.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
         name: 'Alex Chen',
-
         email: 'alex.chen@devpulse.io',
-
         role: 'user',
-
         isDeleted: false,
-
         refreshTokenHash: oldRefreshTokenHash,
       });
 
       mockUsersService.rotateRefreshTokenHash.mockResolvedValue(true);
 
       const result = await authService.refresh(oldRefreshToken);
-
-      /*
-      |--------------------------------------------------------------------------
-      | Refresh JWT verification
-      |--------------------------------------------------------------------------
-      */
 
       expect(mockJwtService.verify).toHaveBeenCalledWith(oldRefreshToken, {
         secret: 'test-refresh-secret',
@@ -415,12 +312,6 @@ describe('AuthService', () => {
         mockUsersService.findByIdWithRefreshTokenHash,
       ).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
 
-      /*
-      |--------------------------------------------------------------------------
-      | Atomic rotation
-      |--------------------------------------------------------------------------
-      */
-
       expect(mockUsersService.rotateRefreshTokenHash).toHaveBeenCalledOnce();
 
       const [userId, currentStoredHash, newStoredHash] =
@@ -428,19 +319,11 @@ describe('AuthService', () => {
 
       expect(userId).toBe('507f1f77bcf86cd799439011');
 
-      expect(currentStoredHash).toBe(oldRefreshTokenHash);
+      expect(currentStoredHash).toBe(sha256(oldRefreshToken));
+
+      expect(newStoredHash).toBe(sha256('mock-refresh-token'));
 
       expect(newStoredHash).not.toBe('mock-refresh-token');
-
-      expect(await bcrypt.compare('mock-refresh-token', newStoredHash)).toBe(
-        true,
-      );
-
-      /*
-      |--------------------------------------------------------------------------
-      | New tokens returned
-      |--------------------------------------------------------------------------
-      */
 
       expect(result.data.accessToken).toBe('mock-access-token');
 
@@ -448,11 +331,8 @@ describe('AuthService', () => {
 
       expect(result.data.user).toEqual({
         id: '507f1f77bcf86cd799439011',
-
         name: 'Alex Chen',
-
         email: 'alex.chen@devpulse.io',
-
         role: 'user',
       });
 
@@ -460,20 +340,13 @@ describe('AuthService', () => {
     });
 
     it('should reject a refresh token that does not match the stored hash', async () => {
-      const storedHash = await bcrypt.hash('different-refresh-token', 10);
-
       mockUsersService.findByIdWithRefreshTokenHash.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
         name: 'Alex Chen',
-
         email: 'alex.chen@devpulse.io',
-
         role: 'user',
-
         isDeleted: false,
-
-        refreshTokenHash: storedHash,
+        refreshTokenHash: sha256('different-refresh-token'),
       });
 
       await expect(authService.refresh('stale-refresh-token')).rejects.toThrow(
@@ -486,15 +359,10 @@ describe('AuthService', () => {
     it('should reject refresh when user has no stored refresh token hash', async () => {
       mockUsersService.findByIdWithRefreshTokenHash.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
         name: 'Alex Chen',
-
         email: 'alex.chen@devpulse.io',
-
         role: 'user',
-
         isDeleted: false,
-
         refreshTokenHash: null,
       });
 
@@ -506,20 +374,13 @@ describe('AuthService', () => {
     it('should reject refresh for a deleted user', async () => {
       const refreshToken = 'current-refresh-token';
 
-      const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
-
       mockUsersService.findByIdWithRefreshTokenHash.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
         name: 'Deleted User',
-
         email: 'deleted@devpulse.io',
-
         role: 'user',
-
         isDeleted: true,
-
-        refreshTokenHash,
+        refreshTokenHash: sha256(refreshToken),
       });
 
       await expect(authService.refresh(refreshToken)).rejects.toThrow(
@@ -530,20 +391,13 @@ describe('AuthService', () => {
     it('should reject refresh when atomic rotation fails because token was already used or revoked', async () => {
       const refreshToken = 'current-refresh-token';
 
-      const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
-
       mockUsersService.findByIdWithRefreshTokenHash.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
         name: 'Alex Chen',
-
         email: 'alex.chen@devpulse.io',
-
         role: 'user',
-
         isDeleted: false,
-
-        refreshTokenHash,
+        refreshTokenHash: sha256(refreshToken),
       });
 
       mockUsersService.rotateRefreshTokenHash.mockResolvedValue(false);
@@ -568,22 +422,13 @@ describe('AuthService', () => {
     });
   });
 
-  /*
-  |--------------------------------------------------------------------------
-  | Logout / refresh-token revocation
-  |--------------------------------------------------------------------------
-  */
-
   describe('logout', () => {
     it('should revoke the stored refresh token when the current token matches', async () => {
       const refreshToken = 'current-refresh-token';
 
-      const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
-
       mockUsersService.findByIdWithRefreshTokenHash.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
-        refreshTokenHash,
+        refreshTokenHash: sha256(refreshToken),
       });
 
       const result = await authService.logout(refreshToken);
@@ -599,12 +444,9 @@ describe('AuthService', () => {
     });
 
     it('should not clear the current hash if the provided token does not match it', async () => {
-      const storedHash = await bcrypt.hash('different-refresh-token', 10);
-
       mockUsersService.findByIdWithRefreshTokenHash.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
-        refreshTokenHash: storedHash,
+        refreshTokenHash: sha256('different-refresh-token'),
       });
 
       const result = await authService.logout('stale-refresh-token');
@@ -637,7 +479,6 @@ describe('AuthService', () => {
     it('should remain successful when no current refresh hash exists', async () => {
       mockUsersService.findByIdWithRefreshTokenHash.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
         refreshTokenHash: null,
       });
 
@@ -651,29 +492,17 @@ describe('AuthService', () => {
     });
   });
 
-  /*
-  |--------------------------------------------------------------------------
-  | GET /auth/me service behavior
-  |--------------------------------------------------------------------------
-  */
-
   describe('getMe', () => {
     it('should return user identity and profile attributes including name', async () => {
       const now = new Date();
 
       mockUsersService.findById.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
         name: 'Sarah Connor',
-
         email: 'sarah@sky.net',
-
         role: 'user',
-
         isDeleted: false,
-
         createdAt: now,
-
         updatedAt: now,
       });
 
@@ -685,15 +514,10 @@ describe('AuthService', () => {
 
       expect(result).toEqual({
         id: '507f1f77bcf86cd799439011',
-
         name: 'Sarah Connor',
-
         email: 'sarah@sky.net',
-
         role: 'user',
-
         createdAt: now,
-
         updatedAt: now,
       });
     });
@@ -709,13 +533,9 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException if current user is deleted', async () => {
       mockUsersService.findById.mockResolvedValue({
         _id: '507f1f77bcf86cd799439011',
-
         name: 'Deleted User',
-
         email: 'deleted@devpulse.io',
-
         role: 'user',
-
         isDeleted: true,
       });
 

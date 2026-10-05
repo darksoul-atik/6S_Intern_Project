@@ -1,12 +1,12 @@
 import {
-  Injectable,
   ConflictException,
+  Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcryptjs';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 
 import { UsersService } from '../users/users.service.js';
 import { SignupDto } from './dto/signup.dto.js';
@@ -48,8 +48,6 @@ interface RefreshTokenPayload {
 
 @Injectable()
 export class AuthService {
-  private readonly refreshTokenSaltRounds = 10;
-
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
@@ -74,6 +72,18 @@ export class AuthService {
       );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Password hashing
+    |--------------------------------------------------------------------------
+    |
+    | Passwords still use bcrypt.
+    |
+    | Unlike refresh tokens, passwords are human-created and potentially weak,
+    | so they need a deliberately slow password hashing algorithm.
+    |
+    */
+
     const passwordHash = await bcrypt.hash(signupDto.password, 10);
 
     const newUser = await this.usersService.create({
@@ -92,6 +102,7 @@ export class AuthService {
         createdAt: newUser.createdAt,
         updatedAt: newUser.updatedAt,
       },
+
       message: 'User registered successfully',
     };
   }
@@ -121,12 +132,8 @@ export class AuthService {
 
     /*
     |--------------------------------------------------------------------------
-    | Existing compatibility fallback
+    | Existing trimmed-password compatibility
     |--------------------------------------------------------------------------
-    |
-    | Keeps the current project's behavior where a password with accidental
-    | surrounding whitespace may still match the stored password.
-    |
     */
 
     if (
@@ -151,14 +158,39 @@ export class AuthService {
       role: user.role,
     };
 
+    /*
+    |--------------------------------------------------------------------------
+    | Access token
+    |--------------------------------------------------------------------------
+    */
+
     const accessToken = this.createAccessToken(userData);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Refresh token
+    |--------------------------------------------------------------------------
+    */
 
     const refreshToken = this.createRefreshToken(userData.id);
 
-    const refreshTokenHash = await bcrypt.hash(
-      refreshToken,
-      this.refreshTokenSaltRounds,
-    );
+    /*
+    |--------------------------------------------------------------------------
+    | Store only deterministic SHA-256 digest
+    |--------------------------------------------------------------------------
+    |
+    | Refresh tokens are already cryptographically random JWT secrets.
+    |
+    | We do not need bcrypt here.
+    |
+    | Deterministic hashing also lets MongoDB atomically perform:
+    |
+    | WHERE refreshTokenHash = hash(R1)
+    | SET   refreshTokenHash = hash(R2)
+    |
+    */
+
+    const refreshTokenHash = this.hashRefreshToken(refreshToken);
 
     await this.usersService.setRefreshTokenHash(userData.id, refreshTokenHash);
 
@@ -168,6 +200,7 @@ export class AuthService {
         refreshToken,
         user: userData,
       },
+
       message: 'Login successful',
     };
   }
@@ -176,7 +209,19 @@ export class AuthService {
     data: LoginResponseData;
     message: string;
   }> {
+    /*
+    |--------------------------------------------------------------------------
+    | Step 1: cryptographically verify refresh JWT
+    |--------------------------------------------------------------------------
+    */
+
     const payload = this.verifyRefreshToken(refreshToken);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Step 2: load current refresh hash
+    |--------------------------------------------------------------------------
+    */
 
     const user = await this.usersService.findByIdWithRefreshTokenHash(
       payload.sub,
@@ -188,16 +233,19 @@ export class AuthService {
 
     /*
     |--------------------------------------------------------------------------
-    | Step 1: verify the submitted token matches the current DB hash
+    | Step 3: deterministically hash presented token
     |--------------------------------------------------------------------------
     */
 
-    const tokenMatches = await bcrypt.compare(
-      refreshToken,
-      user.refreshTokenHash,
-    );
+    const presentedRefreshTokenHash = this.hashRefreshToken(refreshToken);
 
-    if (!tokenMatches) {
+    /*
+    |--------------------------------------------------------------------------
+    | Step 4: ensure R1 is actually the current token
+    |--------------------------------------------------------------------------
+    */
+
+    if (presentedRefreshTokenHash !== user.refreshTokenHash) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
@@ -210,38 +258,38 @@ export class AuthService {
 
     /*
     |--------------------------------------------------------------------------
-    | Step 2: generate the new rotated refresh token
+    | Step 5: generate R2
     |--------------------------------------------------------------------------
     */
 
     const newRefreshToken = this.createRefreshToken(userData.id);
 
-    const newRefreshTokenHash = await bcrypt.hash(
-      newRefreshToken,
-      this.refreshTokenSaltRounds,
-    );
+    const newRefreshTokenHash = this.hashRefreshToken(newRefreshToken);
 
     /*
     |--------------------------------------------------------------------------
-    | Step 3: atomically rotate the stored hash
+    | Step 6: atomically rotate R1 -> R2
     |--------------------------------------------------------------------------
     |
-    | The update succeeds only if MongoDB STILL contains the same hash that
-    | we verified above.
+    | MongoDB only updates the user if the database STILL contains hash(R1).
     |
-    | Example:
+    | This is important for concurrent refresh requests:
     |
-    | Request A verifies R1 -> rotates hash(R1) to hash(R2)
-    | Request B also tries R1 -> old hash no longer exists -> fails
+    | Request A:
+    | hash(R1) matches
+    | -> DB becomes hash(R2)
     |
-    | This prevents two concurrent refreshes using the same token from both
-    | succeeding.
+    | Request B using R1:
+    | WHERE refreshTokenHash = hash(R1)
+    | -> no longer matches
+    | -> modifiedCount = 0
+    | -> rejected
     |
     */
 
     const rotated = await this.usersService.rotateRefreshTokenHash(
       userData.id,
-      user.refreshTokenHash,
+      presentedRefreshTokenHash,
       newRefreshTokenHash,
     );
 
@@ -253,7 +301,7 @@ export class AuthService {
 
     /*
     |--------------------------------------------------------------------------
-    | Step 4: issue a fresh short-lived access token
+    | Step 7: issue fresh access token
     |--------------------------------------------------------------------------
     */
 
@@ -262,9 +310,12 @@ export class AuthService {
     return {
       data: {
         accessToken: newAccessToken,
+
         refreshToken: newRefreshToken,
+
         user: userData,
       },
+
       message: 'Session refreshed successfully',
     };
   }
@@ -276,11 +327,11 @@ export class AuthService {
 
     /*
     |--------------------------------------------------------------------------
-    | Logout stays idempotent
+    | Logout remains idempotent
     |--------------------------------------------------------------------------
     |
-    | Even if the token is already expired/invalid, logout should still
-    | succeed from the client's perspective.
+    | If the refresh JWT is already expired or malformed, logout still returns
+    | success. The BFF will clear its cookies regardless.
     |
     */
 
@@ -302,12 +353,18 @@ export class AuthService {
       };
     }
 
-    const tokenMatches = await bcrypt.compare(
-      refreshToken,
-      user.refreshTokenHash,
-    );
+    const presentedRefreshTokenHash = this.hashRefreshToken(refreshToken);
 
-    if (tokenMatches) {
+    /*
+    |--------------------------------------------------------------------------
+    | Only revoke if this is still the current token
+    |--------------------------------------------------------------------------
+    |
+    | A stale R1 must never be able to revoke a newer R2 session.
+    |
+    */
+
+    if (presentedRefreshTokenHash === user.refreshTokenHash) {
       await this.usersService.setRefreshTokenHash(user._id.toString(), null);
     }
 
@@ -337,12 +394,12 @@ export class AuthService {
 
   /*
   |--------------------------------------------------------------------------
-  | Access token
+  | Access-token creation
   |--------------------------------------------------------------------------
   |
-  | Uses the JwtModule's normal JWT_SECRET + JWT_EXPIRES_IN configuration.
+  | Uses JwtModule configuration:
   |
-  | Current target:
+  | JWT_SECRET
   | JWT_EXPIRES_IN=15m
   |
   */
@@ -360,15 +417,15 @@ export class AuthService {
 
   /*
   |--------------------------------------------------------------------------
-  | Refresh token
+  | Refresh-token creation
   |--------------------------------------------------------------------------
   |
-  | Refresh tokens use a DIFFERENT secret from access tokens.
+  | Uses:
   |
-  | Payload intentionally contains only:
+  | JWT_REFRESH_SECRET
+  | JWT_REFRESH_EXPIRES_IN=7d
   |
-  | sub = user ID
-  | jti = unique token identifier
+  | jti guarantees each issued refresh token is unique.
   |
   */
 
@@ -391,9 +448,16 @@ export class AuthService {
 
     return this.jwtService.sign(payload, {
       secret: refreshSecret,
+
       expiresIn: expiresIn as any,
     });
   }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Refresh-token verification
+  |--------------------------------------------------------------------------
+  */
 
   private verifyRefreshToken(refreshToken: string): RefreshTokenPayload {
     const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
@@ -411,5 +475,27 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Refresh-token hashing
+  |--------------------------------------------------------------------------
+  |
+  | SHA-256 is appropriate here because refresh tokens are high-entropy,
+  | machine-generated secrets.
+  |
+  | Example:
+  |
+  | R1
+  | -> SHA-256(R1)
+  | -> MongoDB
+  |
+  | Raw R1 is never persisted.
+  |
+  */
+
+  private hashRefreshToken(refreshToken: string): string {
+    return createHash('sha256').update(refreshToken).digest('hex');
   }
 }
