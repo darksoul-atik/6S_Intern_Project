@@ -1,20 +1,31 @@
 import {
-  Controller,
-  Post,
-  Get,
   Body,
-  UseGuards,
+  Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+
 import { AuthService } from './auth.service.js';
 import { SignupDto } from './dto/signup.dto.js';
 import { LoginDto } from './dto/login.dto.js';
+import { RefreshTokenDto } from './dto/refresh-token.dto.js';
+
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { RolesGuard } from './guards/roles.guard.js';
+
 import { Roles } from './decorators/roles.decorator.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
+
 import type { AuthenticatedUser } from './strategies/jwt.strategy.js';
 
 @ApiTags('Auth')
@@ -27,7 +38,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Register a new user',
     description:
-      'Creates a new user with a hashed password, enforcing role "user" and unique email.',
+      'Creates a new user account using validated input and a securely hashed password.',
   })
   @ApiResponse({
     status: 201,
@@ -35,7 +46,7 @@ export class AuthController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Validation failed on input fields',
+    description: 'Validation failed',
   })
   @ApiResponse({
     status: 409,
@@ -48,17 +59,17 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Authenticate user and issue JWT',
+    summary: 'Authenticate a user',
     description:
-      'Validates credentials and issues a signed JWT containing user ID, email, and role.',
+      'Validates credentials and issues a short-lived access token plus a refresh token.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Authentication successful, JWT token issued',
+    description: 'Authentication successful',
   })
   @ApiResponse({
     status: 400,
-    description: 'Validation failed on input fields',
+    description: 'Validation failed',
   })
   @ApiResponse({
     status: 401,
@@ -68,23 +79,74 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Refresh an authenticated session',
+    description:
+      'Validates the current refresh token, rotates it, and issues a new access token and refresh token.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Session refreshed successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Refresh token is missing or invalid',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token is invalid, expired, revoked, or already used',
+  })
+  async refresh(
+    @Body()
+    refreshTokenDto: RefreshTokenDto,
+  ) {
+    return this.authService.refresh(refreshTokenDto.refreshToken);
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Revoke the current refresh token',
+    description:
+      'Revokes the matching stored refresh-token hash. The endpoint remains idempotent if the refresh token is already invalid or expired.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Logout successful',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Refresh token is missing or invalid',
+  })
+  async logout(
+    @Body()
+    refreshTokenDto: RefreshTokenDto,
+  ) {
+    return this.authService.logout(refreshTokenDto.refreshToken);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Get current authenticated user identity',
+    summary: 'Get the current authenticated user',
     description:
-      'Extracts and returns verified user identity (id, name, email, role) for the authenticated session.',
+      'Uses the verified access token to return the current user identity.',
   })
   @ApiResponse({
     status: 200,
-    description: 'User authenticated, returns identity payload',
+    description: 'Current user returned successfully',
   })
   @ApiResponse({
     status: 401,
-    description: 'Missing or invalid Bearer token',
+    description: 'Missing, invalid, or expired access token',
   })
-  async getMe(@CurrentUser() user: AuthenticatedUser) {
+  async getMe(
+    @CurrentUser()
+    user: AuthenticatedUser,
+  ) {
     return this.authService.getMe(user.userId);
   }
 
@@ -93,23 +155,25 @@ export class AuthController {
   @Roles('admin')
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Sample admin-only endpoint',
-    description:
-      'Requires valid JWT authentication and role "admin". Returns 403 Forbidden for normal users.',
+    summary: 'Verify admin-only access',
+    description: 'Requires a valid access token and the admin role.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Admin access verified successfully',
+    description: 'Admin authorization verified',
   })
   @ApiResponse({
     status: 401,
-    description: 'Missing or invalid Bearer token',
+    description: 'Missing, invalid, or expired access token',
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden resource: Requires elevated privileges',
+    description: 'Authenticated user does not have the admin role',
   })
-  getAdminCheck(@CurrentUser() user: AuthenticatedUser) {
+  getAdminCheck(
+    @CurrentUser()
+    user: AuthenticatedUser,
+  ) {
     return {
       data: {
         id: user.userId,
