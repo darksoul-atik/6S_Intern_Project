@@ -70,6 +70,7 @@ export class UsersService {
 
     try {
       const existingFiles = await bucket.find({ filename: userId }).toArray();
+
       for (const f of existingFiles) {
         await bucket.delete(f._id);
       }
@@ -99,6 +100,7 @@ export class UsersService {
 
     const file = files[0];
     const contentType = (file.metadata?.contentType as string) || 'image/jpeg';
+
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
 
@@ -130,6 +132,68 @@ export class UsersService {
     }
 
     return this.userModel.findById(id).exec();
+  }
+
+  async findByIdWithRefreshTokenHash(id: string): Promise<UserDocument | null> {
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return null;
+    }
+
+    return this.userModel.findById(id).select('+refreshTokenHash').exec();
+  }
+
+  async setRefreshTokenHash(
+    userId: string,
+    refreshTokenHash: string | null,
+  ): Promise<void> {
+    if (!/^[0-9a-fA-F]{24}$/.test(userId)) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    const result = await this.userModel
+      .updateOne(
+        {
+          _id: userId,
+          isDeleted: { $ne: true },
+        },
+        {
+          $set: {
+            refreshTokenHash,
+          },
+        },
+      )
+      .exec();
+
+    if (result.matchedCount === 0) {
+      throw new NotFoundException('User profile not found');
+    }
+  }
+
+  async rotateRefreshTokenHash(
+    userId: string,
+    currentRefreshTokenHash: string,
+    newRefreshTokenHash: string,
+  ): Promise<boolean> {
+    if (!/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return false;
+    }
+
+    const result = await this.userModel
+      .updateOne(
+        {
+          _id: userId,
+          refreshTokenHash: currentRefreshTokenHash,
+          isDeleted: { $ne: true },
+        },
+        {
+          $set: {
+            refreshTokenHash: newRefreshTokenHash,
+          },
+        },
+      )
+      .exec();
+
+    return result.modifiedCount === 1;
   }
 
   // ---------------------------------------------------------------------------
@@ -528,20 +592,11 @@ export class UsersService {
       );
     }
 
-    /*
-     * First calculate what the final project state would be
-     * after applying this PATCH.
-     */
     const nextStartDate = dto.startDate ?? project.startDate;
-
     const nextIsCurrent = dto.isCurrent ?? project.isCurrent;
 
     let nextEndDate = project.endDate;
 
-    /*
-     * Current project:
-     * endDate must not exist.
-     */
     if (nextIsCurrent) {
       if (dto.endDate !== undefined) {
         throw new BadRequestException(
@@ -551,11 +606,6 @@ export class UsersService {
 
       nextEndDate = undefined;
     } else {
-      /*
-       * Finished project:
-       * use new endDate if provided,
-       * otherwise keep the existing one.
-       */
       nextEndDate = dto.endDate ?? project.endDate;
 
       if (!nextEndDate) {
@@ -571,9 +621,6 @@ export class UsersService {
       }
     }
 
-    /*
-     * Apply only fields actually sent by the client.
-     */
     if (dto.title !== undefined) {
       project.title = dto.title;
     }
