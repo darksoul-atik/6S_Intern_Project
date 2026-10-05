@@ -15,9 +15,8 @@ async function createApp(): Promise<INestApplication> {
   const configService = app.get(ConfigService);
 
   // Increase payload size limit for Base64 avatars and media
-  app.use(json({ limit: '10mb' }));
-  app.use(urlencoded({ extended: true, limit: '10mb' }));
-
+  app.use(json({ limit: '256kb' }));
+  app.use(urlencoded({ extended: true, limit: '256kb' }));
   // Enable global input validation with class-validator
   app.useGlobalPipes(
     new ValidationPipe({
@@ -33,12 +32,12 @@ async function createApp(): Promise<INestApplication> {
 
   // Allow browser requests only from the configured frontend origin(s)
   const rawFrontendOrigins =
-    configService.get<string>('FRONTEND_ORIGINS') ||
-    configService.get<string>('FRONTEND_ORIGIN');
+    configService.get<string>('FRONTEND_ORIGIN') ||
+    configService.get<string>('FRONTEND_ORIGINS');
 
   if (!rawFrontendOrigins) {
     throw new Error(
-      'CRITICAL SECURITY CONFIGURATION ERROR: FRONTEND_ORIGINS (or FRONTEND_ORIGIN) environment variable is missing.',
+      'CRITICAL SECURITY CONFIGURATION ERROR: FRONTEND_ORIGIN (or FRONTEND_ORIGINS) environment variable is missing.',
     );
   }
 
@@ -48,7 +47,7 @@ async function createApp(): Promise<INestApplication> {
     .filter(Boolean);
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });

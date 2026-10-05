@@ -43,9 +43,29 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message = resObj.error;
         }
       }
-    } else if (exception instanceof Error) {
-      // Non-HttpException error
-      message = exception.message || 'Internal server error';
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Security hardening
+    |--------------------------------------------------------------------------
+    |
+    | Never expose raw messages from unknown/internal errors.
+    |
+    | Example:
+    |   MongoDB connection errors
+    |   JWT library errors
+    |   provider errors
+    |   stack/internal implementation details
+    |
+    | These remain generic to the client.
+    |
+    */
+
+    if (!(exception instanceof HttpException)) {
+      status = HttpStatus.INTERNAL_SERVER_ERROR;
+      message = 'An unexpected internal server error occurred';
+      errors = [];
     }
 
     const errorPayload: StandardErrorResponse = {

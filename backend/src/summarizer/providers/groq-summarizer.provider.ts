@@ -46,7 +46,9 @@ export class GroqSummarizerProvider implements SummarizerProvider {
     const startTime = Date.now();
 
     try {
-      this.logger.log(`Dispatching prompt to Groq API (model: ${this.model})...`);
+      this.logger.log(
+        `Dispatching summarization request to Groq (model: ${this.model})`,
+      );
 
       const completion = await this.client.chat.completions.create({
         model: this.model,
@@ -68,8 +70,9 @@ export class GroqSummarizerProvider implements SummarizerProvider {
 
       const durationMs = Date.now() - startTime;
       const totalTokens = completion.usage?.total_tokens ?? 0;
+
       this.logger.log(
-        `Groq API responded in ${durationMs}ms | Completion ID: ${completion.id ?? 'N/A'} | Total tokens: ${totalTokens}`,
+        `Groq summarization completed in ${durationMs}ms | Total tokens: ${totalTokens}`,
       );
 
       const content = completion.choices[0]?.message?.content;
@@ -80,6 +83,7 @@ export class GroqSummarizerProvider implements SummarizerProvider {
 
       try {
         const parsed = JSON.parse(content) as Record<string, unknown>;
+
         return {
           ...parsed,
           provider: 'Groq',
