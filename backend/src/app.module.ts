@@ -23,6 +23,7 @@ import { ReactionsModule } from './reactions/reactions.module.js';
     }),
 
     ScheduleModule.forRoot(),
+
     ThrottlerModule.forRoot({
       throttlers: [
         {
@@ -53,6 +54,7 @@ import { ReactionsModule } from './reactions/reactions.module.js';
 
   providers: [
     AppService,
+
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
