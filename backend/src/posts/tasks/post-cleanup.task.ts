@@ -35,17 +35,17 @@ export class PostCleanupTask {
           `Permanently deleted ${deletedCount} expired soft-deleted post(s).`,
         );
       }
-    } catch (error) {
+    } catch {
       /*
-       * A failed cleanup run should be logged,
-       * but should not crash the application.
+       * Do not log the raw exception message here.
+       *
+       * Raw database errors may contain connection details,
+       * internal provider information, or implementation details.
+       *
+       * The scheduled job should fail safely without crashing
+       * the application.
        */
-      const message =
-        error instanceof Error ? error.message : 'Unknown cleanup error';
-
-      this.logger.error(
-        `Failed to purge expired soft-deleted posts: ${message}`,
-      );
+      this.logger.error('Failed to purge expired soft-deleted posts.');
     }
   }
 }
