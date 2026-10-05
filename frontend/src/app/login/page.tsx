@@ -19,7 +19,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <div className="mx-auto max-w-md px-4 pt-6">
             <div
               role="alert"
-              className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200"
+              className="flex items-center justify-center text-center rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm font-medium text-amber-200 shadow-sm"
             >
               Your session has expired. Please sign in again.
             </div>
