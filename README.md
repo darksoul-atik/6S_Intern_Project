@@ -46,7 +46,8 @@ DevPulse is a high-performance, engineering-first developer community platform e
 | Day | Focus Areas | Status |
 |:---:|---|:---:|
 | **Day 17** | **Automated Testing Matrix & E2E Verification** | Complete unit, integration, and E2E test matrix across full-stack platform: 207 backend tests (200 unit/integration + 7 Supertest/MongoMemoryServer E2E, 81.7% line coverage) and 45 frontend Vitest tests (auth validation, login form, profile validation, profile editing). Strict threshold reporting (`test:cov`), `@testing-library/jest-dom` matchers, and zero test flakiness. | ✅ **Completed** |
-| **Day 18–20** | Refresh token rotation, rate limiting & security hardening, multi-stage Dockerization, final release candidate demo. | ⏳ *Upcoming* |
+| **Day 18** | **Refresh Token Rotation, Rate Limiting & Security Hardening** | Enterprise token lifecycle with dual-token authentication (15m access token + 7d refresh token), atomic compare-and-swap SHA-256 token rotation on MongoDB, idempotent `/auth/logout` hash revocation, NestJS Throttler rate limiting (10 req/15m login, 30 req/15m refresh, 60 req/min search, 10 req/min summarize), 256kb payload boundary guards, sanitized database connection logging, production-safe error masking, Next.js BFF dual `httpOnly` cookie proxy (`devpulse_token` & `devpulse_refresh_token`), 401 Axios interceptor replay queue, and complete 270-test test matrix (212 unit/integration + 13 E2E + 45 frontend). | ✅ **Completed** |
+| **Day 19–20** | Multi-stage Dockerization, production orchestration, final release candidate demo. | ⏳ *Upcoming* |
 
 ---
 
@@ -1431,4 +1432,129 @@ curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOK
    - Backend coverage report: `cd backend && npm run test:cov`
    - Frontend test suite: `cd frontend && npm test`
    - Frontend watch mode: `cd frontend && npm run test:watch`
+
+---
+
+## 🔐 Day 18 — Refresh Token Rotation, Rate Limiting & Security Hardening
+
+### 1. Dual-Token Architecture & Security Model
+DevPulse implements a production-grade dual-token authentication lifecycle balancing short-lived credentials with frictionless session continuity:
+- **Short-Lived Access Token (`JWT_EXPIRES_IN=15m`)**: Grants access to protected endpoints (`JwtAuthGuard`). Its 15-minute expiration minimizes vulnerability windows in case of token interception.
+- **Long-Lived Cryptographically Secure Refresh Token (`JWT_REFRESH_EXPIRES_IN=7d`)**: Signed with a dedicated `JWT_REFRESH_SECRET` and stored exclusively in an `httpOnly`, `SameSite=Lax` cookie (`devpulse_refresh_token`).
+
+```
+[ Browser Client ]                     [ Next.js BFF ]                      [ NestJS Core API ]                 [ MongoDB Database ]
+       │                                      │                                      │                                   │
+       │─── 1. POST /api/auth/login ─────────▶│                                      │                                   │
+       │                                      │─── 2. POST /auth/login ─────────────▶│                                   │
+       │                                      │                                      │─── 3. Store SHA-256 hash ────────▶│
+       │                                      │◀── 4. { accessToken, refreshToken }──│                                   │
+       │◀── 5. Set httpOnly Cookies ──────────│                                      │                                   │
+       │       (devpulse_token: 15m)          │                                      │                                   │
+       │       (devpulse_refresh_token: 7d)   │                                      │                                   │
+       │                                      │                                      │                                   │
+       │─── 6. API call (401 Expired) ───────▶│                                      │                                   │
+       │                                      │                                      │                                   │
+       │─── 7. Interceptor catches 401 ───────│                                      │                                   │
+       │       POST /api/auth/refresh ───────▶│                                      │                                   │
+       │                                      │─── 8. POST /auth/refresh ───────────▶│                                   │
+       │                                      │       (atomic CAS rotation)          │─── 9. Match & replace hash ───────▶│
+       │                                      │◀── 10. New access & refresh tokens ──│                                   │
+       │◀── 11. Rotate both httpOnly cookies ─│                                      │                                   │
+       │─── 12. Replay original request ─────▶│                                      │                                   │
+```
+
+### 2. Key Architectural Decisions
+
+#### Decision A: Deterministic SHA-256 Hashing for Atomic Token Rotation
+- **Chosen Approach**: The database stores the deterministic SHA-256 hash of the current refresh token (`refreshTokenHash`). When a client requests a refresh, rotation is executed atomically via MongoDB `findOneAndUpdate`:
+  ```typescript
+  await this.userModel.findOneAndUpdate(
+    { _id: userId, refreshTokenHash: currentHash },
+    { $set: { refreshTokenHash: newHash } },
+    { new: true },
+  );
+  ```
+- **Why this was chosen over `bcrypt`**:
+  1. **Concurrency Safety & Race Condition Defense**: Refresh tokens are high-entropy, cryptographically random strings (UUIDs). Using deterministic SHA-256 allows atomic single-operation Compare-and-Swap (CAS) in MongoDB. If two concurrent requests present the same refresh token, only the first succeeds while the second receives `null` and is rejected with `401 Unauthorized`.
+  2. **Zero CPU Bottlenecks**: Bcrypt hashes require 10+ rounds of salting, causing 70–100ms of synchronous CPU blocking per refresh. SHA-256 computes in sub-millisecond time (<0.1ms), reducing integration test execution from 10.3s to 4.3s and scaling effortlessly under high concurrency.
+  3. **Strict Data Encapsulation**: The `refreshTokenHash` field is marked with `select: false` and explicitly removed in the Mongoose schema's `toJSON` transform, preventing accidental leakage in any API response.
+
+#### Decision B: Tiered Rate Limiting via `@nestjs/throttler`
+Rate limiting is enforced globally via `ThrottlerGuard` bound to `APP_GUARD`, with customized tier limits on sensitive routes:
+| Route | Limit | Window | Defense Purpose |
+|---|---|---|---|
+| **Global Default** | 120 requests | 60 seconds | Baseline protection against scrapers and denial-of-service |
+| **`POST /auth/login`** | 10 requests | 15 minutes | Anti-brute force and credential stuffing mitigation |
+| **`POST /auth/refresh`** | 30 requests | 15 minutes | Token harvesting and refresh abuse prevention |
+| **`GET /posts/search`** | 60 requests | 60 seconds | Database text indexing and compute protection |
+| **`POST /posts/:id/summarize`** | 10 requests | 60 seconds | Groq LLM API quota and credit exhaustion defense |
+
+#### Decision C: Production Security Hardening
+1. **Request Body Sizing (256kb Boundary Guard)**:
+   - Configured in `backend/src/main.ts` via `express.json({ limit: '256kb' })` and `express.urlencoded({ limit: '256kb', extended: true })`.
+   - Rejects payload stuffing attacks with `413 PayloadTooLargeError` before body processing.
+2. **Generic 500 Error Masking**:
+   - `HttpExceptionFilter` intercepts unhandled exceptions to prevent database connection strings, collection names, or internal stack traces from leaking to clients, returning a safe, standardized envelope:
+     ```json
+     {
+       "success": false,
+       "statusCode": 500,
+       "message": "Internal server error"
+     }
+     ```
+3. **Multi-Origin CORS Whitelist Normalization**:
+   - Supports both `FRONTEND_ORIGIN` (single origin) and `FRONTEND_ORIGINS` (comma-separated list).
+   - Automatically trims whitespace and strips trailing slashes (`.replace(/\/+$/, '')`), ensuring full compatibility between local development (`http://localhost:3000`) and Vercel production deployments (`https://frontend-lilac-beta-89.vercel.app`).
+4. **Sanitized Database Connection Logging**:
+   - Sanitized connection strings across all scripts (`seed-admin.ts`, `seed-ranking.ts`, `cleanup-ranking.ts`) to prevent exposing database credentials in deployment logs.
+
+#### Decision D: Next.js BFF Interceptor Replay Queue & Session Expiration UX
+1. **Concurrency-Safe Axios Interceptor Queue**:
+   - When an access token expires (401), the frontend Axios response interceptor holds incoming concurrent requests in a subscriber queue while dispatching a single `/api/auth/refresh` call.
+   - Upon successful refresh, queued requests are automatically replayed with the new credentials.
+   - If the refresh token is expired, revoked, or rejected, queued requests fail, both `devpulse_token` and `devpulse_refresh_token` cookies are cleared, and the user is redirected to `/login?reason=session-expired`.
+2. **Next.js Client Navigation Compliance (`@next/next/no-location-assign-relative-destination`)**:
+   - Avoids raw `window.location.assign()` inside client components.
+   - The `AuthProvider` registers Next.js App Router's `router.push()` via `setSessionExpiredHandler`, with a fallback to `window.location.replace()` if the handler is not yet registered.
+3. **Centered Session Expired Notice**:
+   - The login page renders an amber warning banner formatted with centered, middle-justified layout (`text-center justify-center`) notifying the user that their session has expired.
+
+---
+
+### 3. Day 18 Verification Flow & Runbook
+
+1. **Verify Token Refresh Cycle**:
+   - Log in via `POST /api/auth/login`. Verify that both `devpulse_token` (15m) and `devpulse_refresh_token` (7d) cookies are set.
+   - Trigger `POST /api/auth/refresh` via the frontend BFF or directly to backend `POST /auth/refresh`. Confirm that both cookies are rotated and the database `refreshTokenHash` is updated atomically.
+2. **Verify Session Expired Banner & Navigation**:
+   - Navigate to `http://localhost:3000/login?reason=session-expired`.
+   - Confirm the amber alert displays centered, middle-justified text: *"Your session has expired. Please log in again to continue."*
+3. **Verify Rate Limiting (429 Too Many Requests)**:
+   - Run the automated rate-limit E2E spec:
+     ```bash
+     cd backend && npx vitest run test/rate-limit.e2e-spec.ts
+     ```
+   - Confirms that after 10 failed login attempts, the 11th request receives HTTP 429 Too Many Requests.
+4. **Verify Request Payload Boundary Guard (413 Payload Too Large)**:
+   - Run the automated request-size E2E spec:
+     ```bash
+     cd backend && npx vitest run test/request-size.e2e-spec.ts
+     ```
+   - Confirms that payloads exceeding 256kb receive HTTP 413.
+5. **Full Automated Test Matrix Verification**:
+   - Backend unit & integration (212 tests):
+     ```bash
+     cd backend && npm test
+     ```
+   - Backend E2E suites (13 tests across 3 suites):
+     ```bash
+     cd backend && npm run test:e2e
+     ```
+   - Frontend Vitest suite (45 tests across 4 suites):
+     ```bash
+     cd frontend && npm test
+     ```
+   - **Total Full-Stack Verification**: **270 / 270 passed tests (100% green)**.
+
 

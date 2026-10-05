@@ -530,3 +530,31 @@
 - **Tailwind CSS Canonical Class Alignment**:
   - Addressed Tailwind LSP canonical class and CSS property conflict warnings in `post-details.tsx` and `comment-item.tsx`: normalized arbitrary widths to `min-w-32.5` and unified text-wrapping to canonical `wrap-break-word`.
 
+### Day 18 — Refresh Token Rotation, Rate Limiting & Security Hardening
+- **Deterministic SHA-256 Hashing for Atomic Token Rotation**:
+  - Prompted the architecture for dual-token authentication (15m access token + 7d refresh token) and investigated the concurrency trade-offs between bcrypt and SHA-256.
+  - Guided the agent to use deterministic SHA-256 hashing for refresh tokens stored in MongoDB, enabling atomic Compare-and-Swap (CAS) rotation via `findOneAndUpdate({ _id, refreshTokenHash })`.
+  - This eliminated race conditions from concurrent frontend refresh requests and dropped test execution times from 10.3s to 4.3s by removing synchronous bcrypt hashing overhead (<0.1ms vs 80ms).
+  - Enforced strict schema isolation with `select: false` and explicit exclusion in `toJSON` serialization to prevent token leaks.
+- **Tiered Rate Limiting & E2E Validation (`@nestjs/throttler`)**:
+  - Directed the integration of `ThrottlerModule` with a global 120 req / 60s limit and `APP_GUARD` binding via `ThrottlerGuard`.
+  - Prompted route-specific `@Throttle` guards on high-risk endpoints: `/auth/login` (10 req / 15m), `/auth/refresh` (30 req / 15m), `/posts/search` (60 req / 1m), and `/posts/:id/summarize` (10 req / 1m).
+  - Implemented standalone E2E suite `test/rate-limit.e2e-spec.ts` in an in-memory MongoMemoryServer verifying that 10 failed login attempts are allowed, but the 11th is rejected with HTTP 429 Too Many Requests.
+- **256kb Payload Boundary Guard & Production Error Masking**:
+  - Configured 256kb body size limits in NestJS Express configuration (`express.json({ limit: '256kb' })`) and authored `test/request-size.e2e-spec.ts` verifying that oversized payloads trigger HTTP 413 `PayloadTooLargeError`.
+  - Updated `HttpExceptionFilter` to intercept unhandled 500 exceptions, returning a standardized generic error envelope in production to eliminate database connection string, collection schema, or stack trace exposure.
+  - Standardized multi-origin CORS parsing across `FRONTEND_ORIGIN` and `FRONTEND_ORIGINS` with trailing slash normalization (`.replace(/\/+$/, '')`), ensuring simultaneous compatibility with local development (`http://localhost:3000`) and Vercel preview environments (`https://frontend-lilac-beta-89.vercel.app`).
+- **Next.js BFF Dual-Cookie Management & Interceptor Replay Queue**:
+  - Built `frontend/src/app/api/auth/refresh/route.ts` Route Handler reading `devpulse_refresh_token`, dispatching to NestJS `/auth/refresh`, and atomically rotating both `devpulse_token` (15m) and `devpulse_refresh_token` (7d) as secure `httpOnly` cookies.
+  - Refactored Axios response interceptors to hold concurrent requests in a subscriber queue during active token refreshes, seamlessly replaying them on HTTP 200 without user interruption.
+- **Next.js 16 Client Navigation Compliance (`@next/next/no-location-assign-relative-destination`)**:
+  - Diagnosed Next.js 16 compiler warning on raw `window.location.assign()` inside client modules.
+  - Resolved by providing a `setSessionExpiredHandler` hook registered in `AuthProvider` that invokes Next.js `router.push('/login?reason=session-expired')`, with a safe `window.location.replace()` fallback.
+  - Polished the session-expired notice banner on `/login` with centered, middle-justified text layout (`text-center justify-center`).
+- **Full-Stack Test Matrix Expansion (270 Passing Tests)**:
+  - Backend unit and integration test suite expanded to 212 tests across 27 files (100% green).
+  - Backend E2E test suite expanded to 13 tests across 3 files (`app.e2e-spec.ts`, `rate-limit.e2e-spec.ts`, `request-size.e2e-spec.ts`).
+  - Frontend Vitest suite validated with 45 tests across 4 files (100% green).
+  - Total verified test matrix: **270 / 270 passed tests (100% green)**.
+
+

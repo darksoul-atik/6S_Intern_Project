@@ -6,24 +6,29 @@
 
 ## 🏛️ Architecture & Authentication Security
 
-### 1. The Backend-For-Frontend (BFF) Pattern
-Rather than storing sensitive JWT tokens in browser `localStorage` where they are vulnerable to Cross-Site Scripting (XSS), DevPulse utilizes an enterprise **BFF (Backend-For-Frontend)** architecture:
+### 1. The Dual-Token Backend-For-Frontend (BFF) Pattern (Day 18)
+Rather than storing sensitive JWT tokens in browser `localStorage` where they are vulnerable to Cross-Site Scripting (XSS), DevPulse utilizes an enterprise **BFF (Backend-For-Frontend)** architecture with automatic token rotation:
 
 ```
 [ Browser / Client UI ]
            │
-           │  Same-Origin Relative HTTP Requests (`/api/*`)
-           │  withCredentials: true (cookies sent automatically)
+           │  1. Relative HTTP Requests (`/api/*`)
+           │     withCredentials: true (cookies sent automatically)
            ▼
 [ Next.js BFF Route Handlers (`src/app/api/*`) ]
            │
-           │  1. Extracts `devpulse_token` from httpOnly cookie
-           │  2. Attaches `Authorization: Bearer <JWT>` header
+           │  • `devpulse_token`: 15-minute access token httpOnly cookie
+           │  • `devpulse_refresh_token`: 7-day refresh token httpOnly cookie
+           │  • Extracts access token & attaches `Authorization: Bearer <JWT>`
            ▼
 [ NestJS Core API (`http://localhost:5000`) ]
            │
+           │  • On 401: Frontend Axios interceptor queues concurrent requests
+           │  • Dispatches `POST /api/auth/refresh` (BFF) -> `POST /auth/refresh` (NestJS)
+           │  • Rotates both cookies on 200 OK & replays queued requests
+           │  • On refresh failure: Clears cookies, triggers session-expired redirect
            ▼
-[ MongoDB Atlas Database ]
+[ MongoDB Database ]
 ```
 
 ### 2. Edge Middleware Route Guarding (`src/middleware.ts`)
@@ -31,7 +36,12 @@ Rather than storing sensitive JWT tokens in browser `localStorage` where they ar
 - **Immediate Zero-Flicker Redirects**: Unauthenticated requests to `/dashboard`, `/profile`, `/posts/new`, `/posts/*/edit`, or `/admin` are intercepted immediately and redirected to `/login?redirect=<original_path>`.
 - **Destination Memory**: Preserves requested paths and query parameters so users land exactly where they intended upon logging in.
 
-### 3. Server-State Management via TanStack Query v5
+### 3. Transparent 401 Token Refresh & Interceptor Queue (Day 18)
+- **Concurrency-Safe Request Queue** (`src/lib/axios/interceptors.ts`): When an access token expires during active user sessions, incoming concurrent requests are held in a subscriber array while a single `/api/auth/refresh` request executes.
+- **Automatic Request Replay**: Once the refresh returns HTTP 200 and rotates both `devpulse_token` and `devpulse_refresh_token`, queued requests are automatically replayed with zero data loss or user disruption.
+- **Next.js Router Navigation Rule (`@next/next/no-location-assign-relative-destination`)**: Replaced raw `window.location.assign()` with registered App Router `router.push('/login?reason=session-expired')` inside `AuthProvider`, providing a smooth client-side transition with an amber centered warning notice on the login page.
+
+### 4. Server-State Management via TanStack Query v5
 - **Global Configuration** (`src/lib/tanstack/query-client.ts`): Configured with standard garbage collection (`gcTime: 5m`), stale time (`staleTime: 30s` to `1m`), and exponential retry policy.
 - **Separation of Concerns**: Feature hooks are strictly split into:
   - **`queries/`**: Data-fetching hooks (`useQuery`, `useInfiniteQuery`) that depend on deterministic `queryKeys`.

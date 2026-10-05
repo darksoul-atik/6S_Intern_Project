@@ -4,13 +4,20 @@
 
 ---
 
-## 🏛️ System Architecture Overview (As of Day 17)
+## 🏛️ System Architecture Overview (As of Day 18)
 
-The DevPulse backend is engineered as a modular, domain-driven NestJS service adhering to enterprise security standards, strict data encapsulation, and predictable REST conventions:
+The DevPulse backend is engineered as a modular, domain-driven NestJS service adhering to enterprise security standards, strict data encapsulation, rate-limiting, payload guards, and predictable REST conventions:
 
 ```
                   ┌─────────────────────────────────────────┐
                   │        Incoming HTTP Request            │
+                  │   (256kb payload limits & CORS Origin)  │
+                  └────────────────────┬────────────────────┘
+                                       │
+                                       ▼
+                  ┌─────────────────────────────────────────┐
+                  │             ThrottlerGuard              │
+                  │   (Global 120/min + Route-level tiers)  │
                   └────────────────────┬────────────────────┘
                                        │
                                        ▼
@@ -35,7 +42,7 @@ The DevPulse backend is engineered as a modular, domain-driven NestJS service ad
                          ▼                           ▼
             ┌─────────────────────────┐ ┌─────────────────────────┐
             │   TransformInterceptor  │ │   HttpExceptionFilter   │
-            │  { success: true, data }│ │  { success:false,errors}│
+            │  { success: true, data }│ │  (Masked 500 in Prod)   │
             └─────────────────────────┘ └─────────────────────────┘
 ```
 
@@ -54,7 +61,11 @@ Create a `.env` file in `backend/` following `.env.example`:
 PORT=5000
 MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/dev_community
 JWT_SECRET=your_super_secret_jwt_key_here
-JWT_EXPIRES_IN=7d
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_SECRET=your_super_secret_refresh_jwt_key_here
+JWT_REFRESH_EXPIRES_IN=7d
+FRONTEND_ORIGIN=http://localhost:3000
+FRONTEND_ORIGINS=http://localhost:3000,https://frontend-lilac-beta-89.vercel.app
 ADMIN_NAME="DevPulse Administrator"
 ADMIN_EMAIL="admin@devpulse.io"
 ADMIN_PASSWORD="Admin@SecurePass2026"
@@ -82,9 +93,11 @@ Interactive OpenAPI Swagger documentation is available at:
 
 ## 📦 Domain Modules
 
-### 1. `AuthModule` (`/auth`)
+### 1. `AuthModule` (`/auth`) — *Day 3 & Day 18 Deliverables*
 - **`POST /auth/signup`**: Validated user registration with `bcrypt` password hashing (10 salt rounds).
-- **`POST /auth/login`**: Credential verification issuing signed JWT tokens (`sub`, `email`, `role`, `name`).
+- **`POST /auth/login`**: Credential verification issuing dual tokens: short-lived access token (15m) and cryptographically secure refresh token (7d). Rate limited at 10 requests / 15m.
+- **`POST /auth/refresh`**: Atomic Compare-and-Swap SHA-256 token rotation on MongoDB. Issues new token pair and revokes previous token. Rate limited at 30 requests / 15m.
+- **`POST /auth/logout`**: Revokes authenticated user's `refreshTokenHash` in MongoDB to null. Guarded by `JwtAuthGuard`.
 - **`GET /auth/me`**: Current authenticated user identity verified via `JwtAuthGuard`.
 - **`GET /auth/admin-check`**: Restricted route guarded by `@Roles('admin')` and `RolesGuard`.
 
@@ -388,42 +401,44 @@ npx vitest run --coverage
 
 ---
 
-## 🛡️ Security & Data Integrity
+## 🛡️ Security & Rate Limiting Hardening (Day 18)
 
 1. **Anti-Enumeration Defense**: Login failures return generic `"Invalid email or password"` to prevent account harvesting.
 2. **Author Sanitization**: Post author population explicitly projects only public fields (`name`, `headline`, `avatarUrl`), preventing exposure of `passwordHash`, `email`, or `role`.
-3. **Soft-Delete Safety Net**: Deleted posts remain recoverable for 5 days before automated background purge, protecting users from accidental data loss.
-4. **Principle of Least Privilege**: Sensitive administrative actions (permanent post purge, user role promotion, user soft-delete) are strictly enforced via `@Roles('admin')` and `RolesGuard`.
+3. **Atomic Compare-and-Swap Refresh Token Rotation**:
+   - Refresh tokens are hashed via deterministic SHA-256 and matched atomically in MongoDB via `{ _id: userId, refreshTokenHash: presentedHash }`.
+   - Prevents race conditions during concurrent refreshes, eliminates CPU bottlenecks, and guarantees zero token leakage (`select: false` and `toJSON` stripping).
+4. **Tiered Rate Limiting (`@nestjs/throttler`)**:
+   - Global default: 120 req / 60s.
+   - `POST /auth/login`: 10 req / 15m (anti-brute force).
+   - `POST /auth/refresh`: 30 req / 15m (refresh abuse defense).
+   - `GET /posts/search`: 60 req / min (text search DDoS mitigation).
+   - `POST /posts/:id/summarize`: 10 req / min (LLM API quota protection).
+5. **256kb Request Payload Boundary**: Rejects payload stuffing attacks (`413 PayloadTooLargeError`) before processing.
+6. **Production 500 Error Masking**: `HttpExceptionFilter` intercepts unhandled exceptions to return a standardized generic envelope, preventing database connection string and stack trace exposure.
+7. **Multi-Origin CORS Whitelist Normalization**: Supports both `FRONTEND_ORIGIN` and comma-separated `FRONTEND_ORIGINS` with automatic trailing slash normalization.
 
 ---
 
-## 🧪 Day 17 Automated Testing Matrix & E2E Runbook
+## 🧪 Day 18 Automated Testing Matrix & E2E Runbook
 
 ### 1. Test Matrix Summary
-- **Total Test Suites**: 27 unit/integration suites + 1 E2E suite
-- **Total Passing Tests**: 207 / 207 tests (100% passing)
-- **Line Coverage**: **81.69%** (Vitest v8 provider)
+- **Total Test Suites**: 27 unit/integration suites + 3 E2E suites
+- **Total Passing Tests**: 225 / 225 backend tests (100% passing)
+  - 212 Unit & Integration tests (`npm test`)
+  - 13 End-to-End tests (`npm run test:e2e`):
+    * `test/app.e2e-spec.ts` (11 tests): Auth lifecycle, Bearer tokens, RBAC.
+    * `test/rate-limit.e2e-spec.ts` (1 test): 10 login threshold & 11th 429 rejection.
+    * `test/request-size.e2e-spec.ts` (1 test): 256kb payload threshold & 413 rejection.
+- **Line Coverage**: **>81%** (Vitest v8 provider)
 - **E2E Engine**: `supertest` + `MongoMemoryServer` in-memory cluster
 
-### 2. Coverage Metrics Breakdown
-| Layer / Domain | Statements | Branches | Functions | Lines |
-|---|---|---|---|---|
-| **All Files** | **81.55%** | **62.55%** | **80.43%** | **81.69%** |
-| Auth & RBAC | 90.00% | 80.00% | 100.00% | 90.00% |
-| Guards & Interceptors | 100.00% | 89.20% | 100.00% | 100.00% |
-| Comments Service | 88.27% | 69.89% | 94.11% | 88.27% |
-| Reactions Service | 90.08% | 69.13% | 100.00% | 90.75% |
-| Post Ranking Util & Pipeline | 100.00% | 87.50% | 100.00% | 100.00% |
-| Posts Service | 84.25% | 68.88% | 81.81% | 84.11% |
-| AI Summarizer Service | 95.83% | 83.33% | 100.00% | 95.83% |
-| AI Providers (Groq & Mock) | 95.74% | 90.00% | 100.00% | 95.65% |
-
-### 3. Execution Commands
+### 2. Execution Commands
 ```bash
-# Run 200 unit and replica-set integration tests
+# Run 212 unit and replica-set integration tests
 npm test
 
-# Run 7 Supertest E2E lifecycle tests
+# Run 13 Supertest E2E lifecycle, rate-limit, and payload-size tests
 npm run test:e2e
 
 # Run coverage report with v8 thresholds
