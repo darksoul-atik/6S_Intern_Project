@@ -18,9 +18,17 @@ import {
 import { Throttle } from '@nestjs/throttler';
 
 import { AuthService } from './auth.service.js';
+
 import { SignupDto } from './dto/signup.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RefreshTokenDto } from './dto/refresh-token.dto.js';
+
+import {
+  CurrentUserResponseDto,
+  LoginResponseDto,
+  RefreshResponseDto,
+  SignupResponseDto,
+} from './dto/auth-response.dto.js';
 
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { RolesGuard } from './guards/roles.guard.js';
@@ -39,12 +47,6 @@ export class AuthController {
   |--------------------------------------------------------------------------
   | Signup
   |--------------------------------------------------------------------------
-  |
-  | Maximum:
-  | 5 requests per 15 minutes per IP
-  |
-  | Protects against automated account creation / signup spam.
-  |
   */
 
   @Post('signup')
@@ -58,23 +60,48 @@ export class AuthController {
   @ApiOperation({
     summary: 'Register a new user',
     description:
-      'Creates a new user account using validated input and a securely hashed password.',
+      'Creates a new DevPulse user account using validated input and a securely hashed password.',
   })
   @ApiResponse({
     status: 201,
     description: 'User registered successfully',
+    type: SignupResponseDto,
   })
   @ApiResponse({
     status: 400,
     description: 'Validation failed',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 400,
+        message: 'email must be an email',
+        errors: ['email must be an email'],
+      },
+    },
   })
   @ApiResponse({
     status: 409,
-    description: 'Email is already registered',
+    description: 'The supplied email address is already registered',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 409,
+        message: 'Email is already registered',
+        errors: [],
+      },
+    },
   })
   @ApiResponse({
     status: 429,
-    description: 'Too many signup attempts. Please try again later.',
+    description: 'Too many signup attempts',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 429,
+        message: 'ThrottlerException: Too Many Requests',
+        errors: [],
+      },
+    },
   })
   async signup(@Body() signupDto: SignupDto) {
     return this.authService.signup(signupDto);
@@ -84,12 +111,6 @@ export class AuthController {
   |--------------------------------------------------------------------------
   | Login
   |--------------------------------------------------------------------------
-  |
-  | Maximum:
-  | 10 requests per 15 minutes per IP
-  |
-  | This is stricter because login is a brute-force target.
-  |
   */
 
   @Post('login')
@@ -103,23 +124,48 @@ export class AuthController {
   @ApiOperation({
     summary: 'Authenticate a user',
     description:
-      'Validates credentials and issues a short-lived access token plus a refresh token.',
+      'Validates the supplied credentials and returns a short-lived access token, rotating-session refresh token, and authenticated user information.',
   })
   @ApiResponse({
     status: 200,
     description: 'Authentication successful',
+    type: LoginResponseDto,
   })
   @ApiResponse({
     status: 400,
     description: 'Validation failed',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 400,
+        message: 'email must be an email',
+        errors: ['email must be an email'],
+      },
+    },
   })
   @ApiResponse({
     status: 401,
     description: 'Invalid email or password',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 401,
+        message: 'Invalid email or password',
+        errors: [],
+      },
+    },
   })
   @ApiResponse({
     status: 429,
-    description: 'Too many login attempts. Please try again later.',
+    description: 'Too many login attempts',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 429,
+        message: 'ThrottlerException: Too Many Requests',
+        errors: [],
+      },
+    },
   })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
@@ -127,15 +173,8 @@ export class AuthController {
 
   /*
   |--------------------------------------------------------------------------
-  | Refresh
+  | Refresh Session
   |--------------------------------------------------------------------------
-  |
-  | Maximum:
-  | 30 requests per 15 minutes per IP
-  |
-  | More generous than login because legitimate clients may need several
-  | refreshes throughout a normal session.
-  |
   */
 
   @Post('refresh')
@@ -149,23 +188,48 @@ export class AuthController {
   @ApiOperation({
     summary: 'Refresh an authenticated session',
     description:
-      'Validates the current refresh token, rotates it, and issues a new access token and refresh token.',
+      'Validates the current refresh token, rotates it, and returns a fresh access token and refresh token.',
   })
   @ApiResponse({
     status: 200,
     description: 'Session refreshed successfully',
+    type: RefreshResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Refresh token is missing or invalid',
+    description: 'Refresh token request body is invalid',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 400,
+        message: 'refreshToken should not be empty',
+        errors: ['refreshToken should not be empty'],
+      },
+    },
   })
   @ApiResponse({
     status: 401,
     description: 'Refresh token is invalid, expired, revoked, or already used',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 401,
+        message: 'Invalid or expired refresh token',
+        errors: [],
+      },
+    },
   })
   @ApiResponse({
     status: 429,
-    description: 'Too many refresh attempts. Please try again later.',
+    description: 'Too many refresh attempts',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 429,
+        message: 'ThrottlerException: Too Many Requests',
+        errors: [],
+      },
+    },
   })
   async refresh(
     @Body()
@@ -178,9 +242,6 @@ export class AuthController {
   |--------------------------------------------------------------------------
   | Logout
   |--------------------------------------------------------------------------
-  |
-  | Uses the normal global throttling policy.
-  |
   */
 
   @Post('logout')
@@ -188,15 +249,31 @@ export class AuthController {
   @ApiOperation({
     summary: 'Revoke the current refresh token',
     description:
-      'Revokes the matching stored refresh-token hash. The endpoint remains idempotent if the refresh token is already invalid or expired.',
+      'Revokes the matching stored refresh token. Logout remains idempotent if the supplied token is already expired or invalid.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Logout successful',
+    description: 'Logout completed successfully',
+    schema: {
+      example: {
+        success: true,
+        statusCode: 200,
+        data: null,
+        message: 'Logout successful',
+      },
+    },
   })
   @ApiResponse({
     status: 400,
-    description: 'Refresh token is missing or invalid',
+    description: 'Refresh token request body is invalid',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 400,
+        message: 'refreshToken should not be empty',
+        errors: ['refreshToken should not be empty'],
+      },
+    },
   })
   async logout(
     @Body()
@@ -207,7 +284,7 @@ export class AuthController {
 
   /*
   |--------------------------------------------------------------------------
-  | Current user
+  | Current User
   |--------------------------------------------------------------------------
   */
 
@@ -217,15 +294,24 @@ export class AuthController {
   @ApiOperation({
     summary: 'Get the current authenticated user',
     description:
-      'Uses the verified access token to return the current user identity.',
+      'Returns the current user based on the verified short-lived access token.',
   })
   @ApiResponse({
     status: 200,
     description: 'Current user returned successfully',
+    type: CurrentUserResponseDto,
   })
   @ApiResponse({
     status: 401,
-    description: 'Missing, invalid, or expired access token',
+    description: 'Access token is missing, invalid, or expired',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 401,
+        message: 'Unauthorized',
+        errors: [],
+      },
+    },
   })
   async getMe(
     @CurrentUser()
@@ -236,7 +322,7 @@ export class AuthController {
 
   /*
   |--------------------------------------------------------------------------
-  | Admin check
+  | Admin Authorization Check
   |--------------------------------------------------------------------------
   */
 
@@ -246,19 +332,49 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Verify admin-only access',
-    description: 'Requires a valid access token and the admin role.',
+    description:
+      'Requires a valid access token and an authenticated user with the admin role.',
   })
   @ApiResponse({
     status: 200,
     description: 'Admin authorization verified',
+    schema: {
+      example: {
+        success: true,
+        statusCode: 200,
+        data: {
+          id: '66e138fc29094e137127e4e0',
+          email: 'admin@devpulse.io',
+          role: 'admin',
+          adminAccess: true,
+        },
+        message: 'Admin authorization verified',
+      },
+    },
   })
   @ApiResponse({
     status: 401,
-    description: 'Missing, invalid, or expired access token',
+    description: 'Access token is missing, invalid, or expired',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 401,
+        message: 'Unauthorized',
+        errors: [],
+      },
+    },
   })
   @ApiResponse({
     status: 403,
     description: 'Authenticated user does not have the admin role',
+    schema: {
+      example: {
+        success: false,
+        statusCode: 403,
+        message: 'Forbidden',
+        errors: [],
+      },
+    },
   })
   getAdminCheck(
     @CurrentUser()
