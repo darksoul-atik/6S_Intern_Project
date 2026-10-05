@@ -1,11 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useCallback } from 'react';
+import React, { createContext, useContext, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentUser, CURRENT_USER_QUERY_KEY } from '@/features/users/queries/user-queries';
 import { useLogoutMutation } from '@/features/auth/mutations/auth-mutations';
 import { clearStoredReactions } from '@/features/reactions/utils/reaction-storage';
+import { setSessionExpiredHandler } from '@/lib/axios/interceptors';
 import type { AuthUser } from '@/features/auth/types/auth';
 
 export type UserSession = AuthUser;
@@ -31,6 +32,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const authError = isError && error
     ? (error instanceof Error ? error.message : 'Authentication service error')
     : null;
+
+  useEffect(() => {
+    setSessionExpiredHandler((url: string) => {
+      router.push(url);
+    });
+    return () => {
+      setSessionExpiredHandler(null);
+    };
+  }, [router]);
 
   const login = useCallback(
     (userData: UserSession) => {
