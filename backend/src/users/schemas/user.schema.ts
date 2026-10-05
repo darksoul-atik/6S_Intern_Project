@@ -116,6 +116,7 @@ export const PortfolioProjectSchema =
       }
 
       delete ret.passwordHash;
+      delete ret.refreshTokenHash;
       delete ret.__v;
 
       return ret;
@@ -137,6 +138,13 @@ export class User {
 
   @Prop({ required: true })
   passwordHash!: string;
+
+  @Prop({
+    type: String,
+    default: null,
+    select: false,
+  })
+  refreshTokenHash?: string | null;
 
   @Prop({
     type: String,
