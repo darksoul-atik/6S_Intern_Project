@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -21,6 +23,15 @@ import { ReactionsModule } from './reactions/reactions.module.js';
     }),
 
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          name: 'default',
+          ttl: 60_000,
+          limit: 120,
+        },
+      ],
+    }),
 
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
@@ -39,6 +50,13 @@ import { ReactionsModule } from './reactions/reactions.module.js';
   ],
 
   controllers: [AppController],
-  providers: [AppService],
+
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
