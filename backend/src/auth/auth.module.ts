@@ -2,36 +2,53 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+
 import { UsersModule } from '../users/users.module.js';
+
 import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
+
 import { JwtStrategy } from './strategies/jwt.strategy.js';
+
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { RolesGuard } from './guards/roles.guard.js';
 
 @Module({
   imports: [
     UsersModule,
-    PassportModule.register({ defaultStrategy: 'jwt' }),
+
+    PassportModule.register({
+      defaultStrategy: 'jwt',
+    }),
+
     JwtModule.registerAsync({
       imports: [ConfigModule],
+      inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const secret = configService.get<string>('JWT_SECRET');
+
         if (!secret) {
-          throw new Error('CRITICAL SECURITY CONFIGURATION ERROR: JWT_SECRET environment variable is missing.');
+          throw new Error(
+            'CRITICAL SECURITY CONFIGURATION ERROR: JWT_SECRET environment variable is missing.',
+          );
         }
+
         return {
           secret,
+
           signOptions: {
-            expiresIn: (configService.get<string>('JWT_EXPIRES_IN', '7d') || '7d') as any,
+            expiresIn: (configService.get<string>('JWT_EXPIRES_IN', '15m') ||
+              '15m') as any,
           },
         };
       },
-      inject: [ConfigService],
     }),
   ],
+
   controllers: [AuthController],
+
   providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard],
+
   exports: [AuthService, JwtModule, PassportModule, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}
