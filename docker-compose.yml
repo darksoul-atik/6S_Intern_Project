@@ -1,6 +1,6 @@
 services:
   mongo:
-    image: mongo:8.0
+    image: mongo:7.0-jammy
     command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     volumes:
       - mongo_data:/data/db
@@ -20,23 +20,20 @@ services:
     restart: unless-stopped
 
   mongo-init:
-    image: mongo:8.0
+    image: mongo:7.0-jammy
     depends_on:
       mongo:
         condition: service_healthy
     volumes:
       - ./docker/mongo/init-replica-set.js:/scripts/init-replica-set.js:ro
-    command: >
-      bash -c "
-        mongosh --host mongo:27017 /scripts/init-replica-set.js &&
-        until mongosh --host mongo:27017 --quiet --eval
-        'quit(db.hello().isWritablePrimary ? 0 : 1)';
-        do
-          echo 'Waiting for MongoDB replica-set primary...';
-          sleep 1;
-        done;
-        echo 'MongoDB replica set is ready.'
-      "
+    command:
+      [
+        "mongosh",
+        "--host",
+        "mongo:27017",
+        "--file",
+        "/scripts/init-replica-set.js",
+      ]
     restart: "no"
 
   backend:

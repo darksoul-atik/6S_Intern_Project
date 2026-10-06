@@ -1,5 +1,5 @@
 # ---------- Stage 1: Install all dependencies ----------
-FROM node:24-alpine AS deps
+FROM node:24-bookworm-slim AS deps
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ RUN npm ci
 
 
 # ---------- Stage 2: Build NestJS ----------
-FROM node:24-alpine AS builder
+FROM node:24-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN npm run build
 
 
 # ---------- Stage 3: Production ----------
-FROM node:24-alpine AS runner
+FROM node:24-bookworm-slim AS runner
 
 WORKDIR /app
 
