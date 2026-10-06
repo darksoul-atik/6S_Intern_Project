@@ -20,11 +20,14 @@ describe("Axios Interceptors", () => {
     setupInterceptors(instance);
 
     // Mock window location
-    delete (window as unknown as { location?: unknown }).location;
-    window.location = {
-      pathname: "/",
-      replace: vi.fn(),
-    } as unknown as Location;
+    Object.defineProperty(window, "location", {
+      writable: true,
+      configurable: true,
+      value: {
+        pathname: "/",
+        replace: vi.fn(),
+      },
+    });
   });
 
   it("does not attempt refresh or redirect when /auth/login returns 401", async () => {

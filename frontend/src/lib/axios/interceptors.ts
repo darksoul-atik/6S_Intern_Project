@@ -95,7 +95,7 @@ async function handleRefreshFailure(originalRequestUrl?: string): Promise<void> 
     return;
   }
 
-  if (originalRequestUrl?.includes("/auth/me") && isPublicPath(currentPath)) {
+  if (originalRequestUrl?.includes("/auth/me")) {
     return;
   }
 
