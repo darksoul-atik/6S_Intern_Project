@@ -56,7 +56,33 @@ export function setSessionExpiredHandler(
   sessionExpiredHandler = handler;
 }
 
-async function handleRefreshFailure(): Promise<void> {
+function isPublicPath(pathname: string): boolean {
+  if (
+    pathname === "/" ||
+    pathname === "/status" ||
+    pathname === "/login" ||
+    pathname === "/signup"
+  ) {
+    return true;
+  }
+
+  // Public /posts and /posts/:id (excluding /posts/new and /posts/:id/edit)
+  if (
+    pathname === "/posts" ||
+    (/^\/posts\/[^/]+$/.test(pathname) && pathname !== "/posts/new")
+  ) {
+    return true;
+  }
+
+  // Public /developers/:id (excluding /developers/:id/edit)
+  if (/^\/developers\/[^/]+$/.test(pathname)) {
+    return true;
+  }
+
+  return false;
+}
+
+async function handleRefreshFailure(originalRequestUrl?: string): Promise<void> {
   /*
   |--------------------------------------------------------------------------
   | Best-effort logout
@@ -78,16 +104,28 @@ async function handleRefreshFailure(): Promise<void> {
 
   /*
   |--------------------------------------------------------------------------
-  | Session-expired redirect
+  | Session-expired redirect guard
   |--------------------------------------------------------------------------
   |
-  | Prefer Next.js client-side router navigation via registered handler to
-  | avoid full page reloads and state drops.
-  |
-  | Fall back to window.location.replace() to replace the current history
-  | entry without using window.location.assign().
+  | 1. Never redirect if the user is already on /login or /signup.
+  | 2. If a background /auth/me check fails while on a public route (e.g. / or /posts),
+  |    the user is simply an unauthenticated guest. Do NOT force a redirect.
   |
   */
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const currentPath = window.location.pathname;
+
+  if (currentPath === "/login" || currentPath === "/signup") {
+    return;
+  }
+
+  if (originalRequestUrl?.includes("/auth/me") && isPublicPath(currentPath)) {
+    return;
+  }
 
   const redirectPath = "/login?reason=session-expired";
 
@@ -96,9 +134,7 @@ async function handleRefreshFailure(): Promise<void> {
     return;
   }
 
-  if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-    window.location.replace(redirectPath);
-  }
+  window.location.replace(redirectPath);
 }
 
 export function setupInterceptors(instance: AxiosInstance): void {
@@ -123,11 +159,21 @@ export function setupInterceptors(instance: AxiosInstance): void {
 
         /*
         |--------------------------------------------------------------------------
-        | Never refresh the refresh request itself
+        | Never intercept auth lifecycle endpoints
         |--------------------------------------------------------------------------
+        |
+        | /auth/login: Credential rejections (401) are user input errors, not expired sessions.
+        | /auth/signup: Registration rejections should bubble to the form.
+        | /auth/refresh: Never refresh the refresh endpoint itself to avoid infinite loops.
+        | /auth/logout: Logout rejections should complete cleanly.
         */
 
-        if (requestUrl.includes("/auth/refresh")) {
+        if (
+          requestUrl.includes("/auth/login") ||
+          requestUrl.includes("/auth/signup") ||
+          requestUrl.includes("/auth/refresh") ||
+          requestUrl.includes("/auth/logout")
+        ) {
           return Promise.reject(normalizeAxiosError(error));
         }
 
@@ -156,7 +202,7 @@ export function setupInterceptors(instance: AxiosInstance): void {
 
           return instance(originalRequest);
         } catch (refreshError) {
-          await handleRefreshFailure();
+          await handleRefreshFailure(requestUrl);
 
           return Promise.reject(normalizeAxiosError(refreshError));
         }
@@ -173,7 +219,7 @@ export function setupInterceptors(instance: AxiosInstance): void {
       */
 
       if (statusCode === 401 && originalRequest?._retry) {
-        await handleRefreshFailure();
+        await handleRefreshFailure(originalRequest.url);
       }
 
       return Promise.reject(normalizeAxiosError(error));
