@@ -18,6 +18,7 @@ import {
 import { loginSchema, type LoginInput } from "../schemas/auth-schema";
 import { useLoginMutation } from "../mutations/auth-mutations";
 import { extractAuthErrorMessage } from "../utils/auth-error";
+import { getSafeRedirectUrl } from "../utils/auth-redirect";
 import { MeshGradientBackground } from "@/components/ui/mesh-gradient-background";
 import { useAuth } from "@/context/AuthContext";
 import { ROUTES } from "@/constants/routes";
@@ -64,7 +65,7 @@ export function LoginForm() {
 
       if (response.success && response.data?.user) {
         setAuthUser(response.data.user);
-        const redirectPath = searchParams.get("redirect") || ROUTES.DASHBOARD;
+        const redirectPath = getSafeRedirectUrl(searchParams.get("redirect"));
         router.push(redirectPath);
       } else {
         setErrorMessage(

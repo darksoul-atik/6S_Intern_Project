@@ -109,7 +109,8 @@ function isProtectedDeveloperPath(pathname: string): boolean {
  * are redirected to /dashboard.
  */
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get("devpulse_token")?.value;
+  const accessToken = request.cookies.get("devpulse_token")?.value;
+  const refreshToken = request.cookies.get("devpulse_refresh_token")?.value;
 
   const { pathname, search } = request.nextUrl;
 
@@ -134,105 +135,95 @@ export function middleware(request: NextRequest) {
 
   const isAuthPath = pathname === "/login" || pathname === "/signup";
 
-  const hasValidToken = isTokenValid(token);
+  const hasValidAccessToken = isTokenValid(accessToken);
+  const hasValidRefreshToken = isTokenValid(refreshToken);
 
   /*
   |--------------------------------------------------------------------------
-  | Invalid / expired token
+  | Active session verification
   |--------------------------------------------------------------------------
+  |
+  | A session is active if the short-lived access token is valid OR if the
+  | long-lived refresh token is valid (which the client-side Axios interceptor
+  | will exchange for a fresh access token on its first API request).
+  |
   */
 
-  if (token && !hasValidToken) {
-    /*
-     * Expired token while trying to access
-     * a protected page.
-     */
-    if (isProtectedPath) {
-      const loginUrl = new URL("/login", request.url);
-
-      const targetPath = search ? `${pathname}${search}` : pathname;
-
-      loginUrl.searchParams.set("redirect", targetPath);
-
-      const response = NextResponse.redirect(loginUrl);
-
-      /*
-       * Remove the stale cookie.
-       */
-      response.cookies.delete("devpulse_token");
-
-      return response;
-    }
-
-    /*
-     * User visits login/signup with an
-     * expired cookie.
-     *
-     * Clear the cookie and allow them
-     * to sign in again.
-     */
-    if (isAuthPath) {
-      const response = NextResponse.next();
-
-      response.cookies.delete("devpulse_token");
-
-      return response;
-    }
-  }
+  const hasActiveSession = hasValidAccessToken || hasValidRefreshToken;
 
   /*
   |--------------------------------------------------------------------------
-  | No valid session + protected route
+  | Protected route without an active session
   |--------------------------------------------------------------------------
   */
 
-  if (isProtectedPath && !hasValidToken) {
+  if (isProtectedPath && !hasActiveSession) {
     const loginUrl = new URL("/login", request.url);
 
-    /*
-     * Preserve where the user was trying
-     * to go.
-     *
-     * Example:
-     *
-     * /posts/new
-     *
-     * becomes:
-     *
-     * /login?redirect=/posts/new
-     */
     const targetPath = search ? `${pathname}${search}` : pathname;
 
-    loginUrl.searchParams.set("redirect", targetPath);
+    // Prevent recursive redirect loops
+    if (targetPath !== "/login" && targetPath !== "/signup") {
+      loginUrl.searchParams.set("redirect", targetPath);
+    }
 
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl);
+
+    // Clean up dead cookies
+    if (accessToken) {
+      response.cookies.delete("devpulse_token");
+    }
+    if (refreshToken) {
+      response.cookies.delete("devpulse_refresh_token");
+    }
+
+    return response;
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Already logged in + login/signup
+  | Already logged in + navigating to login or signup
   |--------------------------------------------------------------------------
   */
 
-  if (isAuthPath && hasValidToken) {
+  if (isAuthPath && hasActiveSession) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   /*
-   * Everything else continues normally.
-   */
+  |--------------------------------------------------------------------------
+  | Visiting login/signup with expired cookies
+  |--------------------------------------------------------------------------
+  |
+  | Clear stale cookies to ensure clean form submission without residual state.
+  |
+  */
+
+  if (isAuthPath && (accessToken || refreshToken) && !hasActiveSession) {
+    const response = NextResponse.next();
+
+    if (accessToken) {
+      response.cookies.delete("devpulse_token");
+    }
+    if (refreshToken) {
+      response.cookies.delete("devpulse_refresh_token");
+    }
+
+    return response;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Pass-through for public routes
+  |--------------------------------------------------------------------------
+  */
+
   return NextResponse.next();
 }
 
 /*
 |--------------------------------------------------------------------------
 | Middleware matcher
-|--------------------------------------------------------------------------
-|
-| Public post pages are included so the middleware can distinguish
-| public routes from protected create/edit routes.
-|
-| It immediately allows public /posts and /posts/:id through.
 |--------------------------------------------------------------------------
 */
 
@@ -241,9 +232,8 @@ export const config = {
     "/dashboard/:path*",
     "/profile/:path*",
     "/admin/:path*",
-
     "/posts/:path*",
-
+    "/developers/:path*",
     "/login",
     "/signup",
   ],

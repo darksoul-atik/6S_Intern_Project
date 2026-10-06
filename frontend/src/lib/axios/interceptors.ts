@@ -82,37 +82,9 @@ function isPublicPath(pathname: string): boolean {
   return false;
 }
 
+let failurePromise: Promise<void> | null = null;
+
 async function handleRefreshFailure(originalRequestUrl?: string): Promise<void> {
-  /*
-  |--------------------------------------------------------------------------
-  | Best-effort logout
-  |--------------------------------------------------------------------------
-  |
-  | The BFF logout route clears both auth cookies even if the backend refresh
-  | token is already invalid or expired.
-  |
-  | Logout failure is intentionally ignored here because the session is already
-  | considered invalid.
-  |
-  */
-
-  try {
-    await requestSessionLogout();
-  } catch {
-    // Ignore logout network failure.
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | Session-expired redirect guard
-  |--------------------------------------------------------------------------
-  |
-  | 1. Never redirect if the user is already on /login or /signup.
-  | 2. If a background /auth/me check fails while on a public route (e.g. / or /posts),
-  |    the user is simply an unauthenticated guest. Do NOT force a redirect.
-  |
-  */
-
   if (typeof window === "undefined") {
     return;
   }
@@ -127,14 +99,37 @@ async function handleRefreshFailure(originalRequestUrl?: string): Promise<void> 
     return;
   }
 
-  const redirectPath = "/login?reason=session-expired";
+  if (!failurePromise) {
+    failurePromise = (async () => {
+      /*
+      |--------------------------------------------------------------------------
+      | Best-effort logout
+      |--------------------------------------------------------------------------
+      */
+      try {
+        await requestSessionLogout();
+      } catch {
+        // Ignore logout network failure.
+      }
 
-  if (sessionExpiredHandler) {
-    sessionExpiredHandler(redirectPath);
-    return;
+      /*
+      |--------------------------------------------------------------------------
+      | Session-expired redirect
+      |--------------------------------------------------------------------------
+      */
+      const redirectPath = "/login?reason=session-expired";
+
+      if (sessionExpiredHandler) {
+        sessionExpiredHandler(redirectPath);
+      } else {
+        window.location.replace(redirectPath);
+      }
+    })().finally(() => {
+      failurePromise = null;
+    });
   }
 
-  window.location.replace(redirectPath);
+  await failurePromise;
 }
 
 export function setupInterceptors(instance: AxiosInstance): void {
@@ -142,6 +137,10 @@ export function setupInterceptors(instance: AxiosInstance): void {
     (response) => response,
 
     async (error: AxiosError) => {
+      if (typeof window === "undefined") {
+        return Promise.reject(normalizeAxiosError(error));
+      }
+
       const originalRequest = error.config as
         | RetryableRequestConfig
         | undefined;

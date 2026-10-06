@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,11 +11,13 @@ import { FiUserPlus, FiEye, FiEyeOff, FiX, FiAlertTriangle, FiCheck } from 'reac
 import { signupSchema, type SignupInput } from '../schemas/auth-schema';
 import { useSignupMutation } from '../mutations/auth-mutations';
 import { extractAuthErrorMessage } from '../utils/auth-error';
+import { getSafeRedirectUrl } from '../utils/auth-redirect';
 import { MeshGradientBackground } from '@/components/ui/mesh-gradient-background';
 import { ROUTES } from '@/constants/routes';
 
 export function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -56,7 +58,13 @@ export function SignupForm() {
           response.message || 'Account created successfully! Redirecting to login...'
         );
         setTimeout(() => {
-          router.push(`${ROUTES.LOGIN}?registered=true`);
+          const rawRedirect = searchParams.get('redirect');
+          const safeRedirect = getSafeRedirectUrl(rawRedirect);
+          const loginTarget =
+            rawRedirect && safeRedirect !== ROUTES.DASHBOARD
+              ? `${ROUTES.LOGIN}?registered=true&redirect=${encodeURIComponent(safeRedirect)}`
+              : `${ROUTES.LOGIN}?registered=true`;
+          router.push(loginTarget);
         }, 1800);
       }
     } catch (err: unknown) {

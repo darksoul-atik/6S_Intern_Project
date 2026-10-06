@@ -107,4 +107,34 @@ describe("Axios Interceptors", () => {
 
     expect(mockSessionExpired).toHaveBeenCalledWith("/login?reason=session-expired");
   });
+
+  it("coalesces simultaneous 401 failures so redirect and logout are called once", async () => {
+    window.location.pathname = "/dashboard";
+
+    vi.spyOn(axios, "post").mockRejectedValue(new Error("Refresh token revoked"));
+
+    instance.defaults.adapter = async (config) => {
+      const error = new Error("Request failed with status code 401") as unknown as {
+        response: { status: number; data: { message: string } };
+        config: typeof config;
+        isAxiosError: boolean;
+      };
+      error.response = { status: 401, data: { message: "Unauthorized" } };
+      error.config = config;
+      error.isAxiosError = true;
+      return Promise.reject(error);
+    };
+
+    // Fire 3 simultaneous requests
+    const results = await Promise.allSettled([
+      instance.get("/posts"),
+      instance.get("/users/me"),
+      instance.get("/notifications"),
+    ]);
+
+    expect(results.every((r) => r.status === "rejected")).toBe(true);
+    // Even though 3 failed simultaneously, sessionExpiredHandler called only once
+    expect(mockSessionExpired).toHaveBeenCalledTimes(1);
+    expect(mockSessionExpired).toHaveBeenCalledWith("/login?reason=session-expired");
+  });
 });

@@ -31,9 +31,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Clear any lingering session cookie so newly registered user is unauthenticated
+    // 2. Clear any lingering session cookies so newly registered user is unauthenticated
     const cookieStore = await cookies();
     cookieStore.delete('devpulse_token');
+    cookieStore.delete('devpulse_refresh_token');
 
     // 3. Return clean registration success without auto-login so user is redirected to sign-in
     return NextResponse.json({

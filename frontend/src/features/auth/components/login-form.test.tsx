@@ -301,4 +301,29 @@ describe("LoginForm", () => {
     expect(mockSetAuthUser).not.toHaveBeenCalled();
     expect(mockPush).not.toHaveBeenCalled();
   });
+
+  it("safely redirects to /dashboard when redirect param contains external or recursive urls", async () => {
+    const user = userEvent.setup();
+
+    mockSearchParams = new URLSearchParams("redirect=https://attacker.com/phish");
+
+    mockMutateAsync.mockResolvedValueOnce({
+      success: true,
+      message: "Login successful",
+      data: {
+        accessToken: "test-token",
+        user: { id: "1", name: "User", email: "user@test.com", role: "user" },
+      },
+    });
+
+    render(<LoginForm />);
+
+    await user.type(screen.getByLabelText(/email address/i), "user@test.com");
+    await user.type(screen.getByLabelText(/^password$/i), "secret123");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/dashboard");
+    });
+  });
 });
