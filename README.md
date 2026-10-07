@@ -272,10 +272,13 @@ We believe in honest, transparent engineering. Current constraints identified du
 
 ---
 
-## 📚 Documentation Index
-
+* [Complete Workflow & Technical Decisions Specification](docs/workflow-and-technical-decisions.md) — Comprehensive end-to-end workflows and architectural trade-off analysis.
+* [Workflow & Technical Decisions PDF](docs/DevPulse_Project_Workflow_and_Technical_Decisions.pdf) — Printable executive PDF document covering system workflows and technical decisions.
+* [20-Day Full-Stack Milestone Tracking Sheet](docs/devpulse-20day-tracking-sheet.md) ([CSV format](docs/devpulse_20day_tracking_sheet.csv)) — Complete day-by-day deliverable tracking sheet.
+* [Agile Jira Board & Sprint Backlog](docs/jira-board-day20.md) ([Jira CSV Import](docs/jira_backlog_day20.csv)) — Full 5-sprint Scrum backlog and user story matrix as of Day 20.
 * [System Architecture Specification](docs/architecture.md) — BFF pattern, dual cookies, and security design.
 * [Database Architecture & ER Diagram](docs/db-diagram.md) — Schemas, indexes, and transaction boundaries.
 * [Custom Features Deep Dive](docs/custom-features.md) — Breakdown of features built beyond the original plan.
 * [Known Limitations & Roadmap](docs/known-issues.md) — Transparent limitation log and next steps.
 * [Day 17 Test Matrix](backend/docs/day-17-test-matrix.md) — Test suite inventory and coverage report.
+

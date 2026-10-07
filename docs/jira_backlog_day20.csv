@@ -1,0 +1,34 @@
+Issue Key,Issue Type,Summary,Epic Link,Component,Story Points,Priority,Status,Resolution
+DP-101,Story,Setup NestJS Modular Monorepo & Mongoose,DP-EPIC-1,Backend,5,Highest,Closed,Done
+DP-102,Story,Next.js 16 App Router Setup & System Status Page,DP-EPIC-1,Frontend,3,High,Closed,Done
+DP-103,Story,Standard Response Envelopes & Swagger OpenAPI,DP-EPIC-1,Backend,3,High,Closed,Done
+DP-104,Story,Backend Authentication & Password Hashing,DP-EPIC-1,Backend,5,Highest,Closed,Done
+DP-105,Story,Idempotent CLI Admin Bootstrap Script,DP-EPIC-1,Backend,3,Medium,Closed,Done
+DP-106,Story,Next.js BFF Proxy with Dual httpOnly Cookies,DP-EPIC-1,Frontend,5,Highest,Closed,Done
+DP-107,Story,React Hook Form & Centralized Zod Validation,DP-EPIC-1,Frontend,3,High,Closed,Done
+DP-108,Story,Edge Middleware Protected Route Gating,DP-EPIC-1,Frontend,2,High,Closed,Done
+DP-109,Story,Developer Profile Schema & Ownership Authorization,DP-EPIC-2,Backend,5,High,Closed,Done
+DP-110,Story,Portfolio Projects Subdocument Modeling & Validation,DP-EPIC-2,Backend,5,High,Closed,Done
+DP-111,Story,Dynamic Portfolio Project Form & Branded Delete Modal,DP-EPIC-2,Frontend,5,Medium,Closed,Done
+DP-112,Story,Public vs Private Profile Projections,DP-EPIC-2,Backend,3,High,Closed,Done
+DP-113,Story,Posts REST API with Soft-Delete & Hourly Purge Task,DP-EPIC-2,Backend,5,Highest,Closed,Done
+DP-114,Story,Infinite Scroll Feed & Markdown Post Presentation,DP-EPIC-2,Frontend,5,High,Closed,Done
+DP-115,Story,Post Authoring Form & Client Validation,DP-EPIC-2,Frontend,3,High,Closed,Done
+DP-116,Story,Threaded Comments Schema & Single-Query Tree Assembly,DP-EPIC-3,Backend,5,Highest,Closed,Done
+DP-117,Story,Flattened Depth-1 Reply Constraint with @Mentions,DP-EPIC-3,Backend,5,High,Closed,Done
+DP-118,Story,Interactive Comment Tree & Reply Form UX,DP-EPIC-3,Frontend,5,High,Closed,Done
+DP-119,Story,Concurrency-Safe Reaction Engine via MongoDB Transactions,DP-EPIC-3,Backend,8,Highest,Closed,Done
+DP-120,Story,Optimistic Reaction Updates with Atomic Rollback,DP-EPIC-3,Frontend,5,High,Closed,Done
+DP-121,Story,Reactors List Modal with Filter Tabs & Hover Peek Popover,DP-EPIC-3,Custom,4,Medium,Closed,Done
+DP-122,Story,Deterministic Multi-Criteria Feed Ranking Pipeline,DP-EPIC-4,Backend,8,Highest,Closed,Done
+DP-123,Story,Feed Filter Tabs Glass Sort Dropdown & URL Query Sync,DP-EPIC-4,Frontend,5,High,Closed,Done
+DP-124,Story,Debounced Full-Text Search Engine,DP-EPIC-4,Fullstack,5,High,Closed,Done
+DP-125,Story,Groq Cloud AI Post Summarization Engine,DP-EPIC-4,Backend,5,High,Closed,Done
+DP-126,Story,AI Summary Presentation Panel & Loading State,DP-EPIC-4,Frontend,3,Medium,Closed,Done
+DP-127,Story,Clickable Commenter Profiles & Lean Author Projections,DP-EPIC-4,Custom,2,Medium,Closed,Done
+DP-128,Story,Full-Stack Automated Test Matrix (274 Tests),DP-EPIC-5,QA,8,Highest,Closed,Done
+DP-129,Story,SHA-256 Refresh Token Rotation & Compare-and-Swap,DP-EPIC-5,Security,5,Highest,Closed,Done
+DP-130,Story,NestJS Throttler Rate Limiting & Sliding Windows,DP-EPIC-5,Security,3,High,Closed,Done
+DP-131,Story,Shared-Promise 401 Interceptor with Coalescing,DP-EPIC-5,Frontend,5,Highest,Closed,Done
+DP-132,Story,Multi-Stage Production Dockerization & Compose Stack,DP-EPIC-5,DevOps,5,Highest,Closed,Done
+DP-133,Story,Day 20 Live Smoke Testing & Regression Verification,DP-EPIC-5,QA,2,Highest,Closed,Done
