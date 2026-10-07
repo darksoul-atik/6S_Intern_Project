@@ -1,1560 +1,281 @@
 # ⚡ DevPulse
 
-> **Next-Generation Full-Stack Developer Community & Collaboration Hub**  
-> *(Full-Stack Software Engineering Internship — 20-Day Learning Plan)*
+> **Next-Generation Full-Stack Developer Community & Collaboration Platform**  
+> *Engineered as a high-performance monorepo with NestJS 11, Next.js 16 (App Router), MongoDB Replica Set, and Groq Cloud AI.*
 
-DevPulse is a high-performance, engineering-first developer community platform engineered as a clean, unified monorepo. It features a scalable **NestJS** backend integrated with **MongoDB** via **Mongoose** for resilient domain logic, alongside a modern **Next.js 16** App Router frontend styled with **Tailwind CSS**, **Framer Motion**, frosted white glassmorphism, **Google Inter & Manrope** typography, and pure **React Icons** for a fluid, reactive developer experience.
-
----
-
-## 📅 20-Day Learning Plan Roadmap & Implementation Status
-
-### Phase 1: Foundations and Authentication (Days 1–4) — ✅ COMPLETED
-| Day | Milestone | Focus Areas | Status |
-|:---:|---|---|:---:|
-| **Day 1** | **Project Setup & Request Lifecycle** | NestJS modular architecture (`AppModule`, `HealthModule`, `UsersModule`, `AuthModule`), Mongoose MongoDB Atlas connection, live diagnostics (`GET /health`), Next.js App Router setup, `/status` page with loading/operational/offline states, `.env.example`, clean checkout verification. | ✅ **Completed** |
-| **Day 2** | **API Contracts & TanStack Query Foundation** | Global `TransformInterceptor` (`{ success: true, data }`), `HttpExceptionFilter` (standard error envelope), interactive Swagger OpenAPI (`/docs`), typed Axios API client (`frontend/src/lib/api.ts`) with `withCredentials: true`, `QueryClientProvider` with default caching/retry policies, status query lifecycle with TanStack Query. | ✅ **Completed** |
-| **Day 3** | **Backend Authentication & Role-Based Access** | Mongoose `User` schema with unique lowercase email and `passwordHash` exclusion, `POST /auth/signup` with DTO validation and bcrypt salt rounds (10), `POST /auth/login` issuing signed JWT with `{ sub, email, role }`, `GET /auth/me` with `JwtAuthGuard`, `@Roles('admin')` + `RolesGuard`, idempotent admin bootstrap script (`npm run seed:admin`), anti-enumeration error normalization. | ✅ **Completed** |
-| **Day 4** | **Frontend Authentication Flow & Brand Identity** | RHF + centralized Zod validation (`mode: 'onTouched'`), TanStack Query mutations (`useSignupMutation`, `useLoginMutation`, `useLogoutMutation`), `httpOnly` cookie persistence via Next.js Route Handlers, Edge middleware protection for `/dashboard`, `/profile`, `/admin` with `?redirect=` preservation, double-submit defense, responsive brand PNG logo integration (`Navbar`, Hero, `login`, `signup`, and tab favicon). | ✅ **Completed** |
-
-### Phase 2: Profiles, Forms, and Posts (Days 5–8)
-| Day | Milestone | Focus Areas | Status |
-|:---:|---|---|:---:|
-| **Day 5** | **Developer Profile API** | Headline, bio, skills, portfolioProjects Mongoose models, nested validation, conditional date rules, ownership rules (`GET /profile/me`, `PATCH /profile/me`, `/profile/me/projects`). | ✅ **Completed** |
-| **Day 6** | **Complex Developer Profile Form** | Dynamic forms with nested arrays, `useFieldArray` for portfolio projects, theme-matching `DeleteProjectModal`, optimistic updates, delete confirmation dialog. | ✅ **Completed** |
-| **Day 7** | **Posts API with Ownership & Pagination** | Post schema, authorId, CRUD endpoints, pagination metadata, author sanitization, query indexing, soft-delete lifecycle (5-day restore, permanent delete), automated hourly cron purge. | ✅ **Completed** |
-| **Day 8** | **Feed & Reusable Post Interface** | `PostCard`, feed components, `useInfiniteQuery`, Intersection Observer infinite scroll, query cache invalidation. | ✅ **Completed** |
-
-### Phase 3: Comments, Reactions, and Reliable UI (Days 9–12+)
-| Day | Milestone | Focus Areas | Status |
-|:---:|---|---|:---:|
-| **Day 9** | **Threaded Comments API & Data Integrity** | Self-referencing Mongoose `Comment` schema (`postId`, `authorId`, `parentCommentId`), compound indexes, single-query tree hierarchy assembly, cross-post boundary check, max depth 1 enforcement, thread cascade deletion, atomic post & user counter `$inc` synchronization. | ✅ **Completed** |
-| **Day 10** | **Threaded Comments Interface** | Recursive comment hierarchy (`CommentItem`), inline reply forms with keyboard focus management, TanStack Query cache invalidation, accessible delete confirmation dialog with cascade warning, mobile-responsive layout. | ✅ **Completed** |
-| **Day 11** | **Reaction Engine & Data Integrity** | Toggle behavior for like/dislike, compound unique indexes, concurrency-safe atomic counters. | ✅ **Completed** |
-| **Day 12** | **Optimistic Reaction Interface** | Instant UI feedback, safe rollbacks, rapid-click throttling, cache reconciliation. | ✅ **Completed** |
-| **Refinements** | **Community Transparency & Reactions Peek** | Hover peek popovers with smooth enter/leave delays scaling to 100+ reactions, paginated reactors modal (`GET /reactions`), clickable commenter profiles (`/developers/[id]`), flattened same-depth replies with structured `@Mention`, optimistic social proof reactor summary (`PostReactorsSummary`). | ✅ **Completed** |
-
-### Phase 4: Discovery, Quality, and Applied Features (Days 13–16)
-| Day | Milestone | Focus Areas | Status |
-|:---:|---|---|:---:|
-| **Day 13** | **Ranked, Latest & Most-Discussed Feed APIs** | Pure deterministic ranking calculation (`calculatePostRankScore`), aggregation pipeline (`buildTopPostsPipeline`), `sort=top`, `sort=latest`, and `sort=most-discussed` query options on `GET /posts`, stable secondary tie-breaker sorting (`createdAt DESC`, `_id DESC`), compound index `{ commentCount: -1, createdAt: -1, _id: -1 }`, query plan explain verification (`npm run check:plans`), controlled seed fixtures, verification scripts (`seed:ranking`, `cleanup:ranking`), unit & replica-set integration test matrix (161/161 tests passing across 20 suites). | ✅ **Completed** |
-| **Day 14** | **Feed Filter Tabs & Glass Sort Dropdown** | Interactive `FeedTabs` and glass sort dropdown defaulting to `Top Ranked`, bidirectional URL query sync (`?sort=`), Next.js App Router `useFeedSort` hook, isolated TanStack Query cache partitioning (`postKeys.feed(sort, limit)`), CSR bailout protection via `<Suspense>` boundary in `app/posts/page.tsx`, responsive mobile ergonomics. | ✅ **Completed** |
-| **Day 15** | **Full-Text Post Search Engine & Debounced Query Pipeline** | Indexed full-text search (`title: 5, body: 1`), `GET /posts/search` with `SearchPostsQueryDto`, text relevance scoring (`$meta: 'textScore'`), 300ms debounced search bar (`PostSearch`), `AbortController` cancellation, and zero-flicker feed integration. | ✅ **Completed** |
-| **Day 16** | **AI-Assisted Post Summarization** | On-demand Groq LLM & Mock summarizer, JSON mode extraction, domain error mapping (429, 502, 503, 504), input truncation boundary guards (12k chars), 8s timeout, Next.js `PostSummaryPanel` UX with auth redirect, concurrency guard, and plain text rendering. | ✅ **Completed** |
-
-### Phase 5: Testing, Security, Deployment, and Communication (Days 17–20)
-| Day | Focus Areas | Status |
-|:---:|---|:---:|
-| **Day 17** | **Automated Testing Matrix & E2E Verification** | Complete unit, integration, and E2E test matrix across full-stack platform: 207 backend tests (200 unit/integration + 7 Supertest/MongoMemoryServer E2E, 81.7% line coverage) and 45 frontend Vitest tests (auth validation, login form, profile validation, profile editing). Strict threshold reporting (`test:cov`), `@testing-library/jest-dom` matchers, and zero test flakiness. | ✅ **Completed** |
-| **Day 18** | **Refresh Token Rotation, Rate Limiting & Security Hardening** | Enterprise token lifecycle with dual-token authentication (15m access token + 7d refresh token), atomic compare-and-swap SHA-256 token rotation on MongoDB, idempotent `/auth/logout` hash revocation, NestJS Throttler rate limiting (10 req/15m login, 30 req/15m refresh, 60 req/min search, 10 req/min summarize), 256kb payload boundary guards, sanitized database connection logging, production-safe error masking, Next.js BFF dual `httpOnly` cookie proxy (`devpulse_token` & `devpulse_refresh_token`), 401 Axios interceptor replay queue, and complete 270-test test matrix (212 unit/integration + 13 E2E + 45 frontend). | ✅ **Completed** |
-| **Day 19–20** | Multi-stage Dockerization, production orchestration, final release candidate demo. | ⏳ *Upcoming* |
+[![NestJS](https://img.shields.io/badge/Backend-NestJS%2011-ea284e?style=flat-square&logo=nestjs)](https://nestjs.com/)
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016%20App%20Router-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![MongoDB](https://img.shields.io/badge/Database-MongoDB%207.0%20Replica%20Set-green?style=flat-square&logo=mongodb)](https://www.mongodb.com/)
+[![Docker](https://img.shields.io/badge/Orchestration-Docker%20Compose-2496ed?style=flat-square&logo=docker)](https://www.docker.com/)
+[![TanStack Query](https://img.shields.io/badge/State-TanStack%20Query%20v5-ff4154?style=flat-square&logo=react-query)](https://tanstack.com/query)
+[![Groq](https://img.shields.io/badge/AI-Groq%20Cloud%20LLM-f55036?style=flat-square)](https://groq.com/)
 
 ---
 
-## 🛠️ Tech Stack Summary
-
-- **Backend**: [NestJS](https://nestjs.com/) (Node.js, TypeScript), [Mongoose](https://mongoosejs.com/) (MongoDB ODM), `@nestjs/config`, `@nestjs/swagger`, `passport-jwt`, `bcryptjs`, `class-validator`, `vitest`
-- **Frontend**: [Next.js 16](https://nextjs.org/) (React 19, TypeScript, App Router), [Axios](https://axios-http.com/), [TanStack Query v5](https://tanstack.com/query), [React Hook Form](https://react-hook-form.com/), [Zod](https://zod.dev/), [Tailwind CSS](https://tailwindcss.com/), [Framer Motion](https://www.framer.com/motion/), [React Icons](https://react-icons.github.io/react-icons/icons/fi/), Google Inter & Manrope Fonts. Architecture follows the mandated feature-driven modular structure documented in [frontend/ARCHITECTURE.md](frontend/ARCHITECTURE.md).
-- **Database**: MongoDB (Atlas cloud cluster or local MongoDB)
-- **API Documentation**: OpenAPI 3.0 / Swagger UI at `http://localhost:5000/docs`
-- **Package Manager**: npm
-
----
-
-## 🩺 Day 1 — Project Setup & Request Lifecycle
-
-### 1. Architecture & Monorepo Foundation
-- **NestJS Application**: Modular layout split into `AppModule`, `HealthModule`, `UsersModule`, and `AuthModule`. Configuration is managed globally through `@nestjs/config` reading environment variables from `.env`.
-- **Database Connection Lifecycle**: Connected to MongoDB Atlas via `MongooseModule.forRootAsync`. Connection health is evaluated dynamically via `connection.readyState` (`1 = connected`).
-- **Health Diagnostic Endpoint (`GET /health`)**:
-  - Live inspection of the Mongoose connection pool.
-  - Returns backend operational status, timestamp, and database connectivity.
-- **Frontend App Router Foundation**:
-  - Built with Next.js 16 App Router (`src/app/`).
-  - `/status` page (`frontend/src/app/status/page.tsx`): Pings `/health` and renders real-time visual states for **Loading**, **Operational (200 OK)**, and **Unavailable (Offline / Degraded)**.
-- **Request Lifecycle (Browser to Database)**:
-  `Client (Browser/Next.js) ──▶ Express Middleware ──▶ ValidationPipe ──▶ Route Guards ──▶ Controller ──▶ Service ──▶ Mongoose ODM ──▶ MongoDB Atlas ──▶ TransformInterceptor ──▶ Standard Success JSON`
+## 📑 Table of Contents
+1. [Overview & Core Value](#-overview--core-value)
+2. [Architecture Overview](#-architecture-overview)
+3. [Quick Start (Clean Checkout)](#-quick-start-clean-checkout)
+   - [Option A: Full Docker Stack (Recommended)](#option-a-full-docker-stack-recommended)
+   - [Option B: Local Development Setup](#option-b-local-development-setup)
+4. [Environment Variables Reference](#-environment-variables-reference)
+5. [Backend Architecture & Specifications](#-backend-architecture--specifications)
+6. [Frontend Architecture & Specifications](#-frontend-architecture--specifications)
+7. [Custom Features (Beyond the Original Plan)](#-custom-features-beyond-the-original-plan)
+8. [Automated Testing & Verification](#-automated-testing--verification)
+9. [Known Limitations & Roadmap](#-known-limitations--roadmap)
+10. [Documentation Index](#-documentation-index)
 
 ---
 
-## 📡 Day 2 — API Contracts & TanStack Query Foundation
+## 🌟 Overview & Core Value
 
-### 1. Standardized Response & Error Contracts
-Implemented globally in `backend/src/main.ts` across **all endpoints**:
-- **Global Success Interceptor (`TransformInterceptor`)**: Wraps successful responses in:
-  ```json
-  {
-    "success": true,
-    "data": {},
-    "message": "Optional feedback"
-  }
-  ```
-- **Global Exception Filter (`HttpExceptionFilter`)**: Standardizes all HTTP errors into:
-  ```json
-  {
-    "success": false,
-    "statusCode": 400,
-    "message": "Human-readable error description",
-    "errors": ["Validation error 1", "Validation error 2"]
-  }
-  ```
+DevPulse is a full-stack community platform engineered for developers. It combines modern social mechanics (discussion feeds, engagements, threaded comments) with professional portfolio showcasing (skills, verified experiences, project repositories) and on-demand artificial intelligence.
 
-### 2. Interactive Swagger Documentation (`/docs`)
-- Documented health DTOs, authentication contracts, bearer authorization, and error envelopes at `http://localhost:5000/docs`.
-
-### 3. Typed Axios API Client (`frontend/src/lib/api.ts`)
-- Powered by `axiosInstance` with `withCredentials: true` and JSON headers.
-- Response interceptors convert Axios rejections directly into typed `ApiError` instances.
-- Universal routing forwards requests seamlessly to Next.js BFF routes (`/api/auth/*`) or the NestJS backend.
-
-### 4. Server-State Management via TanStack Query
-- Application wrapped in `QueryClientProvider` (`frontend/src/providers/QueryProvider.tsx`) with 1-minute fresh caching (`staleTime: 60000`) and network retry policy.
-- `/status` page manages health polling via `useQuery({ queryKey: ['health'] })`, resiliently handling backend shutdowns without UI crashes.
-
+Key engineering highlights:
+* **Production-Grade Security**: Dual `httpOnly` cookies managed via a Next.js BFF proxy; SHA-256 rotated refresh tokens in MongoDB.
+* **Deterministic Feed Ranking**: Multi-criteria sorting (`Top`, `Latest`, `Discussed`) with secondary tie-breakers to prevent feed jitter.
+* **ACID Concurrency Safety**: MongoDB replica-set transactions for atomic reaction counter syncing and thread cascade deletions.
+* **On-Demand AI Insights**: Groq Cloud inference (`openai/gpt-oss-20b`) generating instant executive summaries and extracted skill tags.
 
 ---
 
-## 🔐 Day 3 — Backend Authentication & Role-Based Access
+## 🏛️ Architecture Overview
 
-### 1. Key Architectural Decisions
+DevPulse implements the **Backend-For-Frontend (BFF)** pattern. The client browser communicates exclusively through Next.js App Router route handlers and edge middleware, preventing direct client exposure to raw backend JWT tokens or external API keys.
 
-
-#### Decision A: Token Persistence via `httpOnly` Cookies (Next.js BFF Pattern)
-- **Chosen Approach**: The JWT access token is stored in an **`httpOnly`**, **`Secure`**, **`SameSite=Lax`** cookie (`devpulse_token`) managed via Next.js Route Handlers (`app/api/auth/*`).
-- **Why this was chosen over `localStorage`**:
-  1. **Maximum XSS Immunity**: `httpOnly` cookies cannot be accessed or stolen by client-side JavaScript (`document.cookie`), neutralizing cross-site scripting token exfiltration risks.
-  2. **Server-Side Route Protection**: Next.js Edge `middleware.ts` can immediately inspect the cookie before rendering, redirecting unauthenticated visitors to `/login` without UI flicker or client layout shifts.
-  3. **Decoupled Backend Architecture**: Next.js acts as a secure BFF (Backend-For-Frontend) proxy, extracting the cookie and forwarding it to the NestJS API as a standard `Authorization: Bearer <token>` header. This ensures NestJS remains a pure REST API compatible with mobile or external API clients.
-
-#### Decision B: Admin Bootstrap via Idempotent CLI Seed Script
-- **Chosen Approach**: Provisioning the initial administrator is executed through a dedicated CLI seed script (`npm run seed:admin` / `backend/src/scripts/seed-admin.ts`).
-- **Why this was chosen over an HTTP Bootstrap Endpoint**:
-  1. **Zero Attack Surface**: A public HTTP endpoint (even if protected by a shared secret or header) is exposed to network scans, brute-force attacks, and credential leaks. A CLI script runs entirely out-of-band in a trusted execution environment (terminal, container init, or CI/CD deployment pipeline).
-  2. **Strict Principle of Least Privilege**: Creating high-privilege administrative accounts is an operational concern, not an application-layer user action.
-  3. **Idempotence & Safety**: The script inspects the database: if the specified `ADMIN_EMAIL` already exists with role `admin`, it reports status without altering credentials; if the user exists under role `user`, it safely promotes them; if no user exists, it hashes `ADMIN_PASSWORD` via `bcrypt` (10 rounds) and creates the user with `role: 'admin'`.
-
-#### Decision C: Refined Developer UI & Design System
-- **Frosted White Glassmorphism**: High-contrast, multi-layer frosted cards (`bg-white/55`, `backdrop-blur-3xl`, `backdrop-saturate-200`, specular rim highlights) positioned on a dark glassmorphic shell.
-- **Typography & Iconography**: Google Inter for readable data and Manrope for bold typography; SVG vectors via `react-icons/fi` replacing whimsical emojis.
-- **Single-Source Action Hierarchy**: Diagnostic verification actions trigger directly from the Welcome Developer banner, eliminating duplicate buttons and keeping the diagnostic cards clean and responsive.
-- **Instantaneous Logout Experience**: Direct transition to root (`/`) with instant local state reset and background session revocation, preventing white flashes or page reload spinners.
-
----
-
-### 2. Shared Response Envelope Convention
-
-Implemented via global `TransformInterceptor` and `HttpExceptionFilter` in NestJS across **all endpoints** (including `/health`):
-
-#### Success Envelope:
-```json
-{
-  "success": true,
-  "data": {},
-  "message": "Optional human-readable feedback"
-}
+```
+Browser (React 19)
+    │
+    │  Dual httpOnly Cookies (devpulse_token, devpulse_refresh_token)
+    ▼
+Next.js 16 BFF Layer (Port 3000)
+    │  • Edge Middleware Gating
+    │  • Axios 401 Interceptor with Promise Coalescing
+    │  • Server-Side Proxy Handlers
+    │
+    │  Authorization: Bearer <JWT>
+    ▼
+NestJS 11 REST API (Port 5000)
+    │  • Global Envelope Filters & Validation Pipes
+    │  • RBAC & Resource Ownership Guards
+    │  • Throttler Rate Limiting (IP-based)
+    │
+    ├──▶ MongoDB 7.0 Replica Set (ACID Transactions, Compound Indexes)
+    └──▶ Groq Cloud API (High-Speed LLM Inference with Mock Fallback)
 ```
 
-#### Error Envelope:
-```json
-{
-  "success": false,
-  "statusCode": 400,
-  "message": "Human-readable error description",
-  "errors": ["Validation error detail 1", "Validation error detail 2"]
-}
-```
+For complete architectural details, see [System Architecture Specification](docs/architecture.md).
 
 ---
 
-### 3. API Endpoints Reference
+## 🚀 Quick Start (Clean Checkout)
 
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| `GET` | `/health` | Public | Live database connection diagnostics |
-| `POST` | `/auth/signup` | Public | Register new user (`role: 'user'`), bcrypt hash password |
-| `POST` | `/auth/login` | Public | Validate credentials, issue signed JWT `{ sub, email, role }` |
-| `GET` | `/auth/me` | Bearer JWT | Protected route: returns current authenticated user identity |
-| `GET` | `/auth/admin-check` | Admin Role | Protected route: requires `role: 'admin'` (403 for standard users) |
-
-#### Frontend BFF Route Handlers (`frontend/src/app/api/auth/*`):
-- `POST /api/auth/login`: Proxies credentials to NestJS, writes `httpOnly` cookie `devpulse_token`.
-- `POST /api/auth/logout`: Clears `devpulse_token` cookie and terminates session.
-- `GET /api/auth/me`: Reads cookie, forwards Bearer token to NestJS `/auth/me`.
-- `GET /api/auth/admin-check`: Reads cookie, forwards Bearer token to NestJS `/auth/admin-check`.
-
----
-
-### 4. Testing API Routes in Hoppscotch / Postman
-
-You can test all endpoints in Hoppscotch (`https://hoppscotch.io`) or Postman directly against the backend (`http://localhost:5000`):
-
-1. **Signup (`POST http://localhost:5000/auth/signup`)**:
-   - Header: `Content-Type: application/json`
-   - Body: `{"name":"Dev User","email":"user@devpulse.io","password":"Password123"}`
-2. **Login (`POST http://localhost:5000/auth/login`)**:
-   - Header: `Content-Type: application/json`
-   - Body: `{"email":"user@devpulse.io","password":"Password123"}`
-   - Copy the `accessToken` string from the JSON response.
-3. **Verify User Session (`GET http://localhost:5000/auth/me`)**:
-   - Auth tab: Choose **Bearer Token**, paste the `accessToken`.
-   - Expected Response: `200 OK` with user profile object.
-4. **Test Admin Access (`GET http://localhost:5000/auth/admin-check`)**:
-   - Auth tab: Choose **Bearer Token**, paste the `accessToken`.
-   - Expected Response: `403 Forbidden` for standard users, or `200 OK` for admin (`admin@devpulse.io`).
-5. **Interactive Swagger Docs**:
-   - Open your browser to `http://localhost:5000/docs` to execute requests directly with interactive schemas.
-
----
-
-## 👤 Day 3 — Developer Profiles (Skills & Experiences) Architecture
-
-### 1. Profile Visibility Choice & Security Guarantees
-
-In DevPulse, developer profiles are architected around **open talent discovery** coupled with **strict authorization boundaries**:
-
-#### Why Public Profile Retrieval (`GET /users/:id`):
-- **Organic Discovery & Sharing**: DevPulse is an engineering community where developers showcase skills and projects. Forcing external visitors, recruiters, or peers to register before viewing a profile impairs organic reach and SEO.
-- **Zero Information Leakage**: Sensitive credentials (`passwordHash`) are strictly excluded at query time via Mongoose projection (`.select('-passwordHash')`). Only public-facing developer attributes (`name`, `role`, `skills`, `experiences`, `createdAt`, `updatedAt`) are exposed.
-
-#### Strict Ownership & Admin Authorization on Mutations:
-- **No Anonymous Writes**: Every profile mutation requires a valid JWT Bearer token (`JwtAuthGuard`).
-- **Owner-Only Edits**: Standard users can only update their own profile (`/users/me` or `/users/:id` matching their own `userId`).
-- **Admin Management**: Administrators can edit any user profile to enforce community standards and moderation.
-- **Strict 403 Forbidden**: Any attempt by a non-admin to mutate another developer's profile is immediately rejected with `403 Forbidden` (`You do not have permission to modify this profile`) enforced by `ProfileOwnerOrAdminGuard`.
-
----
-
-### 2. Complete Profile Endpoints Reference
-
-| Method | Endpoint | Access / Role | Description |
-|---|---|---|---|
-| `GET` | `/users/:id` | **Public** | Fetch developer profile (name, role, skills, experiences) |
-| `GET` | `/users/me` | Bearer JWT (User) | Fetch authenticated user's own profile |
-| `PATCH` | `/users/me` | Bearer JWT (Owner) | Update own basic profile (`name`) |
-| `POST` | `/users/me/skills` | Bearer JWT (Owner) | Add skill (trimmed, deduplicated) |
-| `DELETE` | `/users/me/skills/:skill` | Bearer JWT (Owner) | Remove skill from own profile |
-| `PUT` | `/users/me/skills` | Bearer JWT (Owner) | Replace entire skills list |
-| `POST` | `/users/me/experiences` | Bearer JWT (Owner) | Add work experience subdocument |
-| `PATCH` | `/users/me/experiences/:id`| Bearer JWT (Owner) | Update work experience by subdocument ID |
-| `DELETE` | `/users/me/experiences/:id`| Bearer JWT (Owner) | Delete work experience by subdocument ID |
-| `PATCH` | `/users/:id` | Owner or Admin | Update profile for target user ID (`403` if unauthorized) |
-| `POST` | `/users/:id/skills` | Owner or Admin | Add skill to target user ID (`403` if unauthorized) |
-| `DELETE` | `/users/:id/skills/:skill` | Owner or Admin | Remove skill from target user ID (`403` if unauthorized) |
-| `PUT` | `/users/:id/skills` | Owner or Admin | Overwrite skills for target user ID (`403` if unauthorized) |
-| `POST` | `/users/:id/experiences` | Owner or Admin | Add experience to target user ID (`403` if unauthorized) |
-| `PATCH` | `/users/:id/experiences/:id`| Owner or Admin| Update experience on target user ID (`403` if unauthorized) |
-| `DELETE` | `/users/:id/experiences/:id`| Owner or Admin| Delete experience on target user ID (`403` if unauthorized) |
-
-#### Frontend BFF Catch-All Proxy (`frontend/src/app/api/users/[[...path]]`):
-- Next.js acts as an authenticated BFF proxy, extracting `devpulse_token` from `httpOnly` cookies and relaying `Authorization: Bearer <token>` to NestJS backend seamlessly for all client-side profile mutations.
-
----
-
-### 3. Profile Testing Recipes (cURL / Hoppscotch)
+### Option A: Full Docker Stack (Recommended)
+Run the entire production stack (Frontend, Backend, MongoDB Replica Set, and Replica Init) with a single command:
 
 ```bash
-# 1. Fetch Public Profile by User ID (No auth required)
-curl http://localhost:5000/users/<USER_ID>
-
-# 2. Fetch Authenticated User's Profile
-curl http://localhost:5000/users/me \
-  -H "Authorization: Bearer <TOKEN>"
-
-# 3. Update Display Name
-curl -X PATCH http://localhost:5000/users/me \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Alex Chen"}'
-
-# 4. Add Skill (Deduplicated, trimmed)
-curl -X POST http://localhost:5000/users/me/skills \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"skill":"TypeScript"}'
-
-# 5. Remove Skill
-curl -X DELETE http://localhost:5000/users/me/skills/TypeScript \
-  -H "Authorization: Bearer <TOKEN>"
-
-# 6. Add Work Experience Subdocument
-curl -X POST http://localhost:5000/users/me/experiences \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Senior Engineer","company":"Vercel","from":"2023-01","to":"Present","description":"Building edge infrastructure."}'
-
-# 7. Update Work Experience by ID
-curl -X PATCH http://localhost:5000/users/me/experiences/<EXPERIENCE_ID> \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Staff Engineer"}'
-
-# 8. Delete Work Experience by ID
-curl -X DELETE http://localhost:5000/users/me/experiences/<EXPERIENCE_ID> \
-  -H "Authorization: Bearer <TOKEN>"
-
-# 9. Unauthorized Modification Attempt (Expect 403 Forbidden)
-curl -X PATCH http://localhost:5000/users/<OTHER_USER_ID> \
-  -H "Authorization: Bearer <USER_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Hacked Name"}'
-```
-
----
-
-### 4. Frontend Profile UI & Experience
-
-1. **View Profile (`/profile/[id]` or `/profile/me`)**:
-   - High-contrast frosted glassmorphism card with initials avatar ring, online status dot, and role badge.
-   - Skills & Tech chip tags with subtle hover states.
-   - Work Experience vertical timeline with indigo connectors, date badges, company, and responsibilities.
-   - One-click **"Share Profile"** button copying direct URL to clipboard.
-   - Context-aware **"Edit Profile"** button (rendered only when viewer is owner or admin).
-2. **Edit Profile (`/profile/[id]/edit`)**:
-   - Full display name editing with validation feedback.
-   - Interactive skills management with instant optimistic chip addition and removal.
-   - Work experience management with modal dialog for adding and editing positions, plus delete confirmation.
-3. **Resilient UX States**:
-   - **Loading Skeleton**: `ProfileSkeleton` component with shimmering header, skills, and experience cards.
-   - **Empty States**: Contextual messaging ("No skills listed yet" + `+ Add your skills` CTA for owners; clean text for external visitors).
-   - **Error States**: Dedicated 404 (User Not Found) and 403 (Permission Denied) cards with dashboard fallback navigation.
-
----
-
-## 🛡️ Day 4 — Frontend Authentication Flow (React Hook Form, Zod & TanStack Query)
-
-### 1. Architectural Strategy & Design Choices
-
-#### A. Chosen Session Persistence Strategy: `httpOnly` Cookie via Next.js BFF Route Handlers
-- **Strategy**: Authentication tokens are stored in an **`httpOnly`**, **`Secure`**, **`SameSite=Lax`** cookie (`devpulse_token`) managed via Next.js Backend-For-Frontend (BFF) Route Handlers (`frontend/src/app/api/auth/*`).
-- **Why this strategy was chosen over `localStorage`**:
-  1. **Maximum XSS Immunity**: Tokens stored in browser `localStorage` or `sessionStorage` can be exfiltrated by rogue scripts or vulnerable third-party dependencies. An `httpOnly` cookie cannot be read or accessed by client-side JavaScript.
-  2. **Edge Middleware Interception**: Next.js App Router `middleware.ts` reads the cookie directly from the HTTP request headers at the edge, redirecting unauthorized users before server components render or layout shifts occur.
-  3. **Decoupled REST Backend**: The Next.js BFF acts as a secure proxy that forwards `Authorization: Bearer <token>` headers to the NestJS backend, keeping the backend API decoupled and generic.
-
-#### B. React Hook Form Validation Mode: `mode: 'onTouched'`
-- **Decision**: Configured `mode: 'onTouched'` for both signup and login forms.
-- **Rationale**:
-  - Eliminates distracting error messages on initial keystrokes while a user is still typing.
-  - Automatically runs validation the moment a user finishes typing and leaves the field (`onBlur`).
-  - Once a field has been touched, validation dynamically switches to `onChange` for instant positive feedback when errors are resolved.
-
-#### C. Centralized Zod Validation Schemas (`frontend/src/lib/validations/auth.ts`)
-- **`signupSchema`**:
-  - `name`: Must be a string between 2 and 50 characters (matches backend `SignupDto` `@MinLength(2)`).
-  - `email`: Non-empty, valid email format, auto-trimmed and lowercased (matches backend `SignupDto` `@IsEmail()`).
-  - `password`: Non-empty, minimum 6 characters (matches backend `SignupDto` `@MinLength(6)`).
-- **`loginSchema`**:
-  - `email`: Non-empty, valid email format.
-  - `password`: Non-empty string (no client-side length constraints to prevent leaking password criteria or rejecting valid legacy passwords).
-
-#### D. TanStack Query Session & Mutation Architecture
-- **Mutations (`useSignupMutation`, `useLoginMutation`, `useLogoutMutation`)**:
-  - Encapsulated in `frontend/src/hooks/useAuthMutations.ts`.
-  - Maps backend error envelopes into safe human-readable feedback (e.g. 409 Conflict duplicate email mapped to clear advice).
-  - `useLoginMutation` optimistically seeds the current user query cache (`queryClient.setQueryData(['auth', 'user'], user)`).
-  - `useLogoutMutation` calls `/api/auth/logout`, purges all user-specific queries (`queryClient.removeQueries({ queryKey: ['auth'] })`), and clears the query cache (`queryClient.clear()`).
-- **Current User Query (`useCurrentUser`)**:
-  - Centralized hook in `frontend/src/hooks/useCurrentUser.ts` with `queryKey: ['auth', 'user']`.
-  - Replaces ad-hoc re-fetching across components with a 5-minute fresh cache (`staleTime: 5 * 60 * 1000`).
-  - Consumed directly in `AuthContext.tsx` and `Navbar.tsx` to display user name, email, and role badge (`USER` or `ADMIN`).
-
-#### E. Safe Error Messaging & Enumeration Protection
-- During login, whether an email does not exist in the database or the provided password is incorrect, both backend and frontend return and display the identical message:
-  `"Invalid email or password. Please verify your credentials."`
-- This completely prevents malicious actors from enumerating registered user emails.
-
-#### F. Double-Submit Defense & Accessibility
-- Forms feature double-defense locks:
-  1. Internal handler early return: `if (isPending) return;`
-  2. Button UI locks: `disabled={isPending}` and `aria-disabled={isPending}` with an inline spinning loader.
-- Inputs are tied to `<label>` elements via `htmlFor` and explicit `id`s, while errors are linked with `aria-invalid` and `aria-describedby`.
-
-#### G. Protected Route Handling & Redirect Preservation
-- Edge `middleware.ts` guards `/dashboard/:path*`, `/profile/:path*`, and `/admin/:path*`.
-- Unauthenticated requests are redirected to `/login?redirect=<original_path>`.
-- Upon successful authentication, users are returned directly to their requested destination.
-
-#### H. Typed Axios API Client Foundation (`frontend/src/lib/api.ts`)
-- **Engine**: Powered by an `axios` instance configured with `withCredentials: true` and application/json headers for seamless cookie transmission.
-- **Interceptors**: Response interceptor normalizes error payloads and network failures into strongly-typed `ApiError` instances containing `statusCode`, `message`, and validation error arrays.
-- **Universal Routing**: Seamlessly delegates requests between Next.js internal BFF routes (`/api/auth/*`), relative endpoints, and absolute backend URLs (`NEXT_PUBLIC_API_URL`).
-- **Full Backward Compatibility**: Interoperable with standard Fetch options (`body: JSON.stringify(...)` or Axios `data: {...}`), ensuring zero breaking changes across TanStack Query mutations.
-
-#### I. Responsive Brand Identity & Logo Integration
-- **Asset Processing**: High-resolution PNG brand lockup trimmed of empty transparent borders down to its exact bounds (`628×281`, aspect ratio 2.23:1) and saved to [`frontend/public/images/logo.png`](file:///c:/Users/hp/Downloads/6senseHQ/frontend/public/images/logo.png).
-- **Standalone Emblem Favicon**: Isolated the golden geometric emblem (`282×281`) to generate `frontend/src/app/icon.png` (64×64) and configured `metadata.icons` in `layout.tsx` for browser tabs.
-- **Placement-Tailored Responsive Sizing**:
-  - **Top Navigation Bar (`Navbar.tsx`)**: Compact `h-7 sm:h-8 md:h-9 w-auto` (~62px to ~80px wide), ensuring zero overflow on narrow mobile screens ($\le$ 375px) while pairing with the 64px header.
-  - **Landing Hero Banner (`page.tsx`)**: Centered focal showcase `h-12 min-[380px]:h-14 sm:h-16 md:h-20 w-auto` with ambient golden backlight (`drop-shadow-[0_0_28px_rgba(251,191,36,0.3)]`).
-  - **Auth Cards (`login/page.tsx` & `signup/page.tsx`)**: Balanced `h-9 sm:h-11 md:h-12 w-auto` with subtle hover scaling (`hover:scale-105`).
-
----
-
-## 🏗️ Monorepo Refactoring & Feature-Based Architecture
-
-As the DevPulse application expanded through Days 1–4, a dedicated architectural refactoring was executed to organize the codebase for readability, scalability, and clean separation of concerns without altering any user-facing behavior, API contracts, or state handling.
-
-### 1. Feature-First Directory Structure
-Migrated from dispersed hooks, types, and bloated page files to self-contained feature slices under `frontend/src/features/`:
-
-```
-frontend/src/
-├── app/                      # Thin App Router wrappers (routing, params unwrap, metadata)
-│   ├── (auth)/
-│   │   ├── login/page.tsx    # Renders <LoginForm />
-│   │   └── signup/page.tsx   # Renders <SignupForm />
-│   ├── profile/
-│   │   ├── page.tsx          # Renders <ProfileView targetId="me" />
-│   │   └── edit/page.tsx     # Renders <ProfileEditForm />
-│   ├── developers/[id]/
-│   │   └── page.tsx          # Renders <ProfileView targetId={id} />
-│   ├── admin/users/
-│   │   └── page.tsx          # Renders <AdminUsersTable />
-│   └── dashboard/page.tsx    # Clean dashboard presentation page
-│
-├── features/                 # Modular domain features
-│   ├── auth/
-│   │   ├── auth.schemas.ts   # Zod validation schemas (signupSchema, loginSchema)
-│   │   ├── auth.api.ts       # Colocated types & TanStack Query mutations (signup, login, logout, me, admin-check)
-│   │   ├── LoginForm.tsx     # Extracted interactive login component
-│   │   └── SignupForm.tsx    # Extracted interactive signup component
-│   │
-│   ├── users/
-│   │   ├── users.api.ts      # Colocated types (UserProfile, Experience) & TanStack profile mutations
-│   │   ├── useCurrentUser.ts # Current user authentication query hook
-│   │   ├── ProfileView.tsx   # Reusable profile presentation view (used by /profile and /developers/[id])
-│   │   ├── ProfileEditForm.tsx # Clean profile & skills editor
-│   │   ├── ExperienceModal.tsx # Standalone modal for adding & editing work experiences
-│   │   └── ProfileSkeleton.tsx # Reusable shimmering loading placeholder
-│   │
-│   └── admin/
-│       ├── admin.api.ts      # Colocated types (AdminUser, PaginatedResponse) & TanStack admin queries
-│       ├── AdminUsersTable.tsx # Admin directory table with stats, search, filtering & pagination
-│       ├── EditUserModal.tsx # Standalone modal for editing user details and system roles
-│       └── DeleteUserConfirm.tsx # Standalone confirmation modal for soft-deleting accounts
-│
-├── components/               # Shared cross-feature UI components
-│   ├── Navbar.tsx            # Global navigation bar with user badge and mobile drawer
-│   ├── MeshGradientBackground.tsx # Specular ambient backdrop glow
-│   ├── LottieAnimation.tsx   # SSR-safe vector animation wrapper
-│   └── ui/pagination.tsx     # Reusable shadcn pagination controls
-│
-└── lib/                      # Core cross-cutting utilities
-    ├── api.ts                # Axios client with interceptors & ApiError normalization
-    ├── formatters.ts         # Shared initials and date formatting helpers (getInitials, formatDate, formatExpDate)
-    └── image.ts              # Shared HTML5 canvas image compression utility (compressImage)
-```
-
-### 2. Key Architectural Improvements
-1. **Colocated Feature Types (`.api.ts`)**:
-   - Rather than maintaining fragmented or disconnected global `types/` directories, all domain entities and payloads (`AuthUser`, `UserProfile`, `Experience`, `AdminUser`, `PaginatedResponse`) are strictly colocated within their feature API module (`auth.api.ts`, `users.api.ts`, `admin.api.ts`).
-2. **Thin Route Wrappers in `app/`**:
-   - Next.js App Router files (`page.tsx`) now act strictly as lightweight route handlers responsible for unrolling dynamic route params (using React 19's `use(params)`), enforcing metadata, and rendering the designated feature component.
-3. **Discrete Modal UI Surfaces**:
-   - Complex dialogs (`ExperienceModal.tsx`, `EditUserModal.tsx`, `DeleteUserConfirm.tsx`) were extracted into dedicated components with their own local form states and animations, reducing parent page sizes by over 60% without artificial fragmentation.
-4. **Deduplication of Common Utilities**:
-   - Canvas-based image compression was consolidated into `lib/image.ts`.
-   - Date formatters (`formatDate`, `formatExpDate`, `formatDateDisplay`, `toDateInputValue`) and name initial generators (`getInitials`) were unified into `lib/formatters.ts`.
-5. **Zero Behavior Regressions**:
-   - Maintained 100% feature parity, exact styling, responsive breakpoints, cookie session lifetimes, and route protection across all pages.
-
----
-
-## 👤 Day 5 — Developer Profile API (Models, Validation & Ownership Rules)
-
-### 1. MongoDB Schema Modeling
-* **Headline & Bio on User Document**:
-  * `headline`: Optional trimmed string (max 160 characters) representing professional title/tagline.
-  * `bio`: Optional trimmed string (max 2000 characters) for developer summary/about.
-* **Embedded Portfolio Projects (`PortfolioProjectSchema`)**:
-  * `title`: Required non-empty string (max 100 characters).
-  * `description`: Required non-empty string (max 1000 characters).
-  * `urls`: Array of valid HTTP/HTTPS URLs (max 5 links, deduplicated case-insensitively).
-  * `technologies`: Array of non-empty technology names (min 1, max 20 items, deduplicated case-insensitively).
-  * `startDate`: Required `YYYY-MM` calendar string.
-  * `endDate`: Optional `YYYY-MM` calendar string.
-  * `isCurrent`: Boolean flag designating ongoing/current projects.
-  * Auto-generated timestamps (`createdAt`, `updatedAt`) and Mongoose `id` projection transform.
-
-### 2. Nested Validation & Custom Constraints
-* **`PortfolioProjectDto` & `UpdatePortfolioProjectDto`**:
-  * Enforces string trimming and length bounds via `@Transform` and `@MinLength` / `@MaxLength`.
-  * URL format enforcement via `@IsUrl({ protocols: ['http', 'https'] })`.
-  * Array size and uniqueness enforcement via `@ArrayMinSize`, `@ArrayMaxSize`, and `@ArrayUnique`.
-* **Custom Constraint: `ValidPortfolioProjectEndDate`**:
-  * When `isCurrent === true`: Rejects payload if `endDate` is provided (`endDate must not be provided when isCurrent is true`).
-  * When `isCurrent === false`: Requires `endDate` in `YYYY-MM` format.
-  * Chronological Validation: Enforces that `endDate >= startDate` based on ISO `YYYY-MM` format comparison.
-* **Flexible Avatar Format in `UpdateProfileDto`**:
-  * Accepts standard `http://` / `https://` URLs, Base64 data URIs (`data:image/jpeg;base64,...`), and empty string `""` to allow profile photo removal.
-
-### 3. Ownership & Authorization Architecture
-* **Self-Service Profile (`/profile/me`)**:
-  * Dedicated [`ProfileController`](file:///c:/Users/hp/Downloads/6senseHQ/backend/src/users/profile.controller.ts) mounted at `/profile`.
-  * Scoped strictly to authenticated user via `@CurrentUser()` and `@UseGuards(JwtAuthGuard)`.
-* **Resource Ownership Guard (`ProfileOwnerOrAdminGuard`)**:
-  * Applied to parameterized user endpoints (`/users/:id/projects/...`).
-  * Enforces that regular developers cannot read, modify, or delete another developer's projects (HTTP 403 Forbidden).
-  * Grants bypass access to users with role `admin`.
-
-### 4. Public Profile Privacy Projections
-* **`GET /users/:id` (Public)**:
-  * Uses explicit projection: `.select('name headline bio avatarUrl skills experiences portfolioProjects')`.
-  * Sensitive and administrative attributes (`passwordHash`, `email`, `role`, `isDeleted`, `deletedAt`, `deletedReason`) are strictly omitted.
-* **`GET /profile/me` (Private)**:
-  * Returns authenticated user's profile including private identity claims for current session hydration.
-
-### 5. Day 5 API Verification Commands
-
-```bash
-# 1. Retrieve Authenticated User Profile
-curl -X GET http://localhost:5000/profile/me \
-  -H "Authorization: Bearer <JWT_TOKEN>"
-
-# 2. Update Developer Headline & Bio
-curl -X PATCH http://localhost:5000/profile/me \
-  -H "Authorization: Bearer <JWT_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "headline": "Senior Full-Stack & Distributed Systems Architect",
-    "bio": "Passionate about high-throughput microservices, NestJS, and modern frontend architectures."
-  }'
-
-# 3. Add Portfolio Project (with nested validation)
-curl -X POST http://localhost:5000/profile/me/projects \
-  -H "Authorization: Bearer <JWT_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "DevPulse Platform",
-    "description": "Enterprise social developer portfolio and discussion system.",
-    "urls": ["https://github.com/example/devpulse", "https://devpulse.io"],
-    "technologies": ["TypeScript", "NestJS", "MongoDB", "React", "Next.js"],
-    "startDate": "2026-01",
-    "isCurrent": true
-  }'
-
-# 4. Partial Update of Portfolio Project by ID
-curl -X PATCH http://localhost:5000/profile/me/projects/<PROJECT_ID> \
-  -H "Authorization: Bearer <JWT_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "isCurrent": false,
-    "endDate": "2026-06"
-  }'
-
-# 5. Delete Portfolio Project by ID
-curl -X DELETE http://localhost:5000/profile/me/projects/<PROJECT_ID> \
-  -H "Authorization: Bearer <JWT_TOKEN>"
-
-# 6. Retrieve Public Profile (Sanitized Projection)
-curl -X GET http://localhost:5000/users/<USER_ID>
-
-# 7. Unauthorized Mutation by Another User (Expect 403 Forbidden)
-curl -X PATCH http://localhost:5000/users/<OTHER_USER_ID>/projects/<PROJECT_ID> \
-  -H "Authorization: Bearer <USER_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Tampered Title"}'
-```
-
----
-
-## 🎨 Day 6 — Complex Developer Profile Form & Portfolio Management
-
-### 1. Dynamic Nested Forms & Portfolio Subdocuments
-* **Multi-Layer Profile Editing**:
-  * Extracted and refactored profile management into dedicated feature components (`ProfileEditForm.tsx`, `ProjectModal.tsx`, `DeleteProjectModal.tsx`).
-  * Dynamic array management for technology tags (`technologies: string[]`) and project URLs (`urls: string[]`) with validation and deduplication.
-  * Date range logic handling ongoing projects (`isCurrent === true`) and chronological validation (`startDate <= endDate`).
-* **Branded Confirmation Modal (`DeleteProjectModal.tsx`)**:
-  * Replaced native browser `window.confirm()` with a custom glassmorphic modal matching the platform's color palette, frosted background, and typography.
-  * Accessible focus trapping, keyboard ESC cancellation, and animated transitions.
-* **Optimistic UI Updates & Responsive Design**:
-  * Instant visual feedback with TanStack Query optimistic mutations and automatic cache invalidation (`['profile']`, `['users', id]`).
-  * Standardized responsive layout using Tailwind utility classes (`min-w-23 sm:min-w-27`).
-
----
-
-## 📝 Day 7 — Posts API with Ownership, Pagination, Soft-Delete & Background Cleanup
-
-### 1. Post Schema & Feed Indexing ([`post.schema.ts`](file:///c:/Users/hp/Downloads/6senseHQ/backend/src/posts/schemas/post.schema.ts))
-* **Mongoose Schema Structure**:
-  * `authorId`: ObjectId referencing `User` (`required: true`).
-  * `title`: String with automatic whitespace trimming (1–200 characters, `required: true`).
-  * `body`: String with automatic whitespace trimming (1–20,000 characters, `required: true`).
-  * `commentCount`: Number starting at 0 (`min: 0`).
-  * `reactionCounts`: Nested subdocument `{ like: 0, dislike: 0 }`.
-  * `deletedAt`: Date timestamp for soft deletion (`default: undefined`).
-  * `deletedBy`: ObjectId referencing `User` who performed deletion (`default: undefined`).
-  * `timestamps: true` producing `createdAt` and `updatedAt`.
-  * `toJSON.transform`: Maps `_id` to `id` while preserving clean serialization.
-* **Compound & Optimization Indexes**:
-  * Primary Feed Index: `{ createdAt: -1, _id: -1 }` matches newest-first chronological sorting with deterministic secondary tie-breaking.
-  * Soft-Delete Cleanup Index: `{ deletedAt: 1 }` enables high-performance query execution for the hourly purge job.
-
-### 2. Posts REST Endpoints Reference
-
-| Method | Endpoint | Access / Auth | Description |
-|---|---|---|---|
-| `POST` | `/posts` | Bearer JWT (Auth) | Create new post. `authorId` is strictly assigned from JWT claims. Increments user's `postsCount`. |
-| `GET` | `/posts` | **Public** | Fetch paginated feed (newest first). Filters out soft-deleted posts. Returns pagination metadata. |
-| `GET` | `/posts/:id` | **Public** | Fetch single post with safe public author info (`name`, `headline`, `avatarUrl`). Returns 404 for missing/deleted posts. |
-| `PATCH` | `/posts/:id` | Owner or Admin | Update post `title` or `body`. Restricted strictly to active posts. |
-| `DELETE` | `/posts/:id` | Owner or Admin | Soft-delete post. Sets `deletedAt` and `deletedBy`. Decrements original author's `postsCount`. |
-| `POST` | `/posts/:id/restore` | Owner or Admin | Restore soft-deleted post within 5 days. Re-increments original author's `postsCount`. |
-| `DELETE` | `/posts/:id/permanent`| Owner or Admin | Permanently delete an already soft-deleted post from MongoDB. |
-
-### 3. Ownership & Authorization (`PostOwnerOrAdminGuard`)
-* Enforces that only the original post author (`post.authorId.toString() === user.userId`) or a user with `role: 'admin'` can mutate a post.
-* Pre-validates 24-character hexadecimal ObjectIds (`validatePostId`), returning clean HTTP 404s instead of Mongoose `CastError` 500s.
-* Uses `findAnyPostByIdOrThrow` internally so ownership checks succeed for both active and soft-deleted posts during restore and permanent deletion.
-
-### 4. Background Scheduled Purge (`PostCleanupTask`)
-* Integrated via `@nestjs/schedule` with `ScheduleModule.forRoot()`.
-* Cron Schedule: `@Cron(CronExpression.EVERY_HOUR)` runs `purgeExpiredPosts()` every hour.
-* Policy: Permanently purges documents where `deletedAt <= 5 days ago` (`5 * 24 * 60 * 60 * 1000`).
-* Error Handling: Defensive try/catch logging errors without crashing the backend process.
-
-### 5. Day 7 API Verification Commands (cURL)
-
-```bash
-# 1. Create Post (Requires Bearer Token)
-curl -X POST http://localhost:5000/posts \
-  -H "Authorization: Bearer <USER_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Scaling NestJS and MongoDB at Production",
-    "body": "A deep dive into compound indexing, soft deletion patterns, and NestJS schedule tasks."
-  }'
-
-# 2. Get Paginated Feed (Public)
-curl "http://localhost:5000/posts?page=1&limit=10"
-
-# 3. Get Single Post by ID (Public)
-curl http://localhost:5000/posts/<POST_ID>
-
-# 4. Update Post (Author or Admin Only)
-curl -X PATCH http://localhost:5000/posts/<POST_ID> \
-  -H "Authorization: Bearer <USER_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Updated: Scaling NestJS and MongoDB at Production"
-  }'
-
-# 5. Soft Delete Post (Author or Admin Only)
-curl -X DELETE http://localhost:5000/posts/<POST_ID> \
-  -H "Authorization: Bearer <USER_TOKEN>"
-
-# 6. Verify Soft-Deleted Post Excluded from Feed
-curl "http://localhost:5000/posts?page=1&limit=10"
-
-# 7. Restore Soft-Deleted Post (Within 5-day window)
-curl -X POST http://localhost:5000/posts/<POST_ID>/restore \
-  -H "Authorization: Bearer <USER_TOKEN>"
-
-# 8. Permanently Delete Post (Must be soft-deleted first)
-curl -X DELETE http://localhost:5000/posts/<POST_ID> \
-  -H "Authorization: Bearer <USER_TOKEN>"
-curl -X DELETE http://localhost:5000/posts/<POST_ID>/permanent \
-  -H "Authorization: Bearer <USER_TOKEN>"
-```
-
----
-
-## 📰 Day 8 — Community Feed & Reusable Post Interface
-
-### 1. Feed UI Architecture & Reusable Components
-* **`PostCard` (`frontend/src/features/posts/components/post-card.tsx`)**:
-  * Clean frosted glass design with responsive padding and specular borders (`border-slate-200/80 bg-white`).
-  * **Background Hover Shift**: Replaced title text color shifts with a tactile, smooth card container background transition (`hover:bg-slate-50/80 hover:border-slate-300 hover:shadow-md hover:-translate-y-0.5`).
-  * **Dark Theme Action Button**: Black "Read Post" button (`bg-[#090d16] hover:bg-[#121827] text-white`) with vibrant purple arrow icon (`text-indigo-400 group-hover:text-purple-300`).
-  * **Author Metadata & High-Contrast Typography**: Explicit `text-slate-900` title, `text-slate-700` preview body, and localized timestamps (`formatDateTime`).
-  * **Glass Reaction Counters**: Frosted slate badges for comments (`FiMessageCircle`), likes (`FiThumbsUp`), and dislikes (`FiThumbsDown`).
-* **`PostFeed` (`frontend/src/features/posts/components/post-feed.tsx`)**:
-  * Infinite pagination container powered by TanStack Query's `useInfinitePosts(limit = 10)` hook.
-  * Browser `IntersectionObserver` with `rootMargin: '300px 0px'` targeting a sentinel element (`loadMoreRef`) to prefetch upcoming pages before reaching the bottom.
-  * Loading skeleton with shimmering cards and animated badges.
-  * End-of-feed notice when `hasNextPage === false` ("You're all caught up!").
-* **`PostDetails` (`frontend/src/features/posts/components/post-details.tsx`)**:
-  * Full single-post presentation view with author profile link, reaction counters, and conditional owner/admin Edit & Delete controls.
-* **`DeletePostModal` (`frontend/src/features/posts/components/delete-post-modal.tsx`)**:
-  * Custom theme-matching modal dialog for confirming soft-deletions with automatic feed cache invalidation.
-
-### 2. Frontend Architecture Refactor (Mandated Structure)
-* **Modular Feature Slices (`frontend/src/features/*`)**: Decomposed monolithic page files into discrete feature directories (`auth`, `posts`, `users`, `admin`), each containing dedicated `components/`, `queries/`, `mutations/`, `schemas/`, `types/`, and `utils/`.
-* **Dedicated API Services Layer (`frontend/src/services/api/*`)**: Clean, pure Axios API client functions with zero React or hook dependencies.
-* **Separation of Queries and Mutations**: Strict technical separation between read hooks (`queries/*.ts`) and write hooks (`mutations/*.ts`) with central query key serialization (`src/lib/tanstack/query-keys.ts`).
-* **BFF Cookie Preservation**: Maintained same-origin relative `/api/*` endpoints ensuring Next.js Route Handlers securely forward `httpOnly` JWT cookies server-side to NestJS.
-
----
-
-## 💬 Day 9 & 10 — Threaded Comments API & Dynamic Hierarchy
-
-### 1. Architecture & Self-Referencing Tree
-- **Self-Referencing Domain Model**: Mongoose `Comment` schema with `postId`, `authorId`, `parentCommentId` (nullable for top-level, ObjectId for nested reply), `body` (1–5,000 characters), and timestamps.
-- **Indexed Chronological Retrieval**: Compound index `{ postId: 1, createdAt: -1, _id: -1 }` supporting fast single-query retrieval with O(N) in-memory tree assembly.
-- **Strict Boundary Constraints**:
-  - Maximum depth of 1: Replies cannot have child replies.
-  - Cross-post boundary validation: Prevents replying to a parent comment belonging to another post.
-- **Thread Cascade Deletion**: Deleting a root comment cascade-deletes all its child replies, decrementing `Post.commentCount` and each respective author's `User.commentsCount` atomically.
-
-### 2. Accessible Frontend Threading Interface
-- **Recursive Hierarchy (`CommentItem`)**: Supports visual indentation (`level > 0`), graceful avatar fallbacks to initials gradient, and localized timestamps.
-- **Inline Reply Form (`InlineReplyForm`)**: Dedicated inline reply expansion under parent comments with automatic focus shifting, `Escape` key listener, and keyboard focus restoration.
-- **Accessible Deletion Modal (`DeleteCommentModal`)**: Clear cascade warnings for root comments versus single replies with focus trap and keyboard accessibility.
-
----
-
-## 👍 Day 11 — Reaction Engine & Data Integrity (Toggle Machine & Atomic Counters)
-
-### 1. Domain Modeling & Compound Unique Indexes
-- **`Reaction` Schema (`backend/src/reactions/schemas/reaction.schema.ts`)**:
-  - `userId`: ObjectId referencing `User` (`required: true`).
-  - `targetType`: Enum string (`'post' | 'comment'`).
-  - `targetId`: ObjectId referencing target post or comment (`required: true`).
-  - `reactionType`: Enum string (`'like' | 'dislike'`).
-  - `timestamps: true` producing `createdAt` and `updatedAt`.
-- **Compound Unique Index**:
-  - `{ userId: 1, targetType: 1, targetId: 1 }` with `{ unique: true }`.
-  - Guarantees at the database level that a user can have at most one active reaction per target entity, preventing duplicate reaction records under race conditions.
-
-### 2. Three-Way Reaction State Machine
-Executed inside `ReactionsService.toggleReaction`:
-1. **Create (First Reaction)**: If no reaction exists for the `(userId, targetType, targetId)` tuple, inserts a new `Reaction` document and atomically increments `target.reactionCounts[reactionType]` by `+1`.
-2. **Toggle Off (Cancel Reaction)**: If an identical reaction already exists (e.g. user clicks "like" on an already liked post), removes the `Reaction` document and atomically decrements `target.reactionCounts[reactionType]` by `-1`.
-3. **Switch Reaction**: If the opposite reaction exists (e.g. user clicks "dislike" on an already liked post), updates the `Reaction` document and atomically applies:
-   `$inc: { [oldReaction]: -1, [newReaction]: +1 }`.
-
-### 3. Concurrency Safety & Underflow Prevention
-- Uses native MongoDB `$inc` operators on `Post.reactionCounts` and `Comment.reactionCounts`.
-- Avoids read-modify-write race conditions, ensuring counters remain 100% synchronized even under concurrent high-throughput requests.
-- Validates target entity existence and active status (rejecting soft-deleted posts with `404 NotFoundException`).
-
-### 4. Endpoints Reference
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| `POST` | `/reactions` | Bearer JWT | Toggle like/dislike reaction on a post or comment |
-| `GET` | `/reactions/mine` | Bearer JWT | Retrieve current user's reaction map (`targetId -> reactionType`) |
-
----
-
-## ⚡ Day 12 — Optimistic Reaction Interface & Reliable UX
-
-### 1. Instant 0ms Optimistic UI Updates
-- **`useToggleReactionMutation` (`frontend/src/features/reactions/mutations/reaction-mutations.ts`)**:
-  - Cancels outgoing queries for the target entity to avoid race overwrites (`queryClient.cancelQueries`).
-  - Snapshots previous reaction counts and user reaction state for rollback safety.
-  - Computes expected new state instantaneously (0ms feedback), updating UI badge numbers and active color states immediately.
-  - Automatically rolls back to the snapshot if network transmission fails, displaying a friendly error toast.
-
-### 2. Rapid-Click Debounce & Ref Throttling
-- Integrated `inFlightRef` locks inside `ReactionButtons`:
-  - Rapid double/triple clicking is safely throttled, preventing multiple concurrent mutations from being dispatched.
-  - Eliminates the vulnerability where spam-clicking could cause counter drift or rapid state desynchronization.
-
-### 3. Cross-View Cache Reconciliation
-- Optimistic mutations surgically update:
-  - Infinite feed query cache (`postKeys.feed()`)
-  - Single post details cache (`postKeys.detail(id)`)
-  - Comment tree query cache (`commentKeys.byPost(postId)`)
-- Guarantees seamless consistency when navigating between the feed and individual post detail pages.
-
-### 4. Three-Dot (`FiMoreVertical`) Menu on Top-Right Position
-- Replaced cluttered inline Edit and Delete buttons across the entire platform:
-  - **Post Cards (`post-card.tsx`)**: Replaced raw buttons with a sleek top-right three-dot menu with event bubbling isolation (`stopPropagation`) to prevent card navigation.
-  - **Post Details (`post-details.tsx`)**: Consolidated header actions into a top-right three-dot menu.
-  - **Comments & Replies (`comment-item.tsx`)**: Standardized comment and reply options to use `FiMoreVertical` in the top-right position.
-- Built-in outside-click listener and `Escape` key dismissal.
-
-### 5. Direct Comment Navigation & Auto-Focus
-- Converted feed comment count pills into interactive links: `<Link href={`/posts/${post.id}?focus=comment#comments`}>`.
-- On post details pages, `CommentForm` detects incoming focus signals:
-  - Automatically scrolls down smoothly to the comments section.
-  - Centers and focuses the `#comment-body` textarea with active cursor, delivering an immediate "ready to comment" user experience.
-
----
-
-## 🌟 Post-Day 12 — Community Refinements: Reactions Transparency, Hover Peek Popovers, Flattened Replies & Profile Navigation
-
-### 1. Hover Peek Popover & Scalable Reactions Transparency (`ReactionPeekPopover`)
-- **Hover-to-Peek Interaction**:
-  - Hovering over any reaction count button (Likes or Dislikes on posts, comments, or replies) triggers a debounced floating frosted-glass preview (`reaction-peek-popover.tsx`) powered by `framer-motion`.
-  - Configured with a 200ms enter delay and 180ms leave buffer to prevent annoying flicker when mousing between elements.
-  - Queries `GET /reactions` with `limit: 3`, keeping overhead minimal and responses near-instantaneous.
-- **Graceful Scaling to 100+ Reactions**:
-  - Displays top 1–3 reactor mini-avatars and full names cleanly stacked.
-  - For high reaction counts (e.g. 50, 100, 1,000+), renders a sleek `+{count} others` pill and a highlighted `"View all {total} →"` call to action.
-  - Prevents comment and post action rows from stretching, wrapping, or overflowing narrow mobile screens.
-- **Seamless Modal Transition**:
-  - Clicking `"View all {count} →"` directly opens the full `ReactorsModal`.
-
-### 2. Paginated Reactors Modal (`ReactorsModal`)
-- **Full Transparency Dialog**:
-  - Clicking any reaction count button, summary text, or peek popover footer opens a full-screen, accessible modal dialog (`reactors-modal.tsx`).
-  - Rendered via React Portals directly into `document.body` with smooth backdrop blur (`backdrop-blur-md bg-black/40`).
-- **Granular Reaction Filter Tabs**:
-  - Interactive tabs for **All**, **Likes** (👍), and **Dislikes** (👎) showing live per-tab counts.
-- **Infinite/Paged Data Streaming**:
-  - Powered by `useReactors` query hook hitting `GET /reactions?targetType=...&targetId=...&type=...&page=...&limit=20`.
-  - Displays developer avatars with initials fallback, full name, headline/bio preview, and an external profile link button.
-  - Supports smooth "Load more" pagination for posts or comments with high community engagement (100+ reactions).
-
-### 3. Clickable Commenter & Author Profiles
-- **Ubiquitous Peer Discovery**:
-  - Commenter and replier avatars and display names in `comment-item.tsx` are now wrapped in Next.js `<Link href={`/developers/${comment.author.id}`}>`.
-  - Preserves event propagation isolation (`stopPropagation` on nested controls) to ensure clicking profile links doesn't trigger unexpected form toggles or card selections.
-  - Provides effortless peer discovery across posts, comments, and replies without disruptive navigation hurdles.
-
-### 4. Flattened Same-Depth Replies with Structured `@Mention`
-- **Elimination of Deep Staircase Nesting**:
-  - Replying to an existing reply flattens under the root comment (`parentCommentId = rootId`) rather than indenting infinitely, preventing narrow column squeeze on mobile devices.
-- **Structured Interactive Mentions**:
-  - Backend derives `mentionedUserId` from the target reply author and populates safe author fields (`name`, `avatarUrl`, `headline`).
-  - Frontend renders a distinct purple `@Username` badge linking directly to the recipient's developer profile (`/developers/[id]`), providing clear conversational context in busy threads.
-
-### 5. Optimistic Social Proof Reaction Summary (`PostReactorsSummary`)
-- **Real-Time Community Social Proof**:
-  - Renders a clean social proof line (e.g., *"Alex Chen, Sarah Connor and 2 others reacted to this post"*) resting directly above the action divider.
-  - Featuring a friendly, welcoming reaction icon (`FiSmile`) rather than a repetitive thumb icon.
-- **Optimistic 0ms Synchronization**:
-  - Toggling like or dislike instantaneously updates the social proof line without waiting for server response or requiring a manual page refresh.
-  - Handled by invalidating `reactorKeys.all` inside `useToggleReactionMutation` so reactor queries refetch immediately after cache snapshot reconciliation.
-- **Defensive Rendering**:
-  - Implements defensive item guards (`items?.[0]`, `items?.[1]`) preventing `Cannot read properties of undefined` runtime crashes when query results update asynchronously.
-
----
-
-## 📈 Day 13 — Ranked & Latest Feed APIs, Deterministic Scoring & Integration Verification
-
-Day 13 delivers deterministic ranking, pure mathematical scoring, MongoDB aggregation pipelines, and comprehensive replica-set integration testing for DevPulse community feeds:
-
-### 1. Mathematical Ranking Formula & Constant Weighting
-- **Scoring Equation**:
-  $$\text{rankScore} = (\text{likes} - \text{dislikes}) + (\text{commentCount} \times \text{COMMENT\_WEIGHT})$$
-  - Where `COMMENT_WEIGHT = 2` as defined in [`backend/src/posts/posts.constants.ts`](backend/src/posts/posts.constants.ts).
-  - Likes contribute $+1$, dislikes subtract $-1$, and each comment contributes $+2$ to reflect discussion density.
-- **Pure Function Implementation**:
-  - Encapsulated in [`calculatePostRankScore`](backend/src/posts/post-ranking.util.ts) with defensive type checks ensuring `NaN`, `null`, and undefined values safely default to $0$.
-  - Accommodates negative scores (posts with more dislikes than likes/comments) and cancels equal likes/dislikes cleanly.
-
-### 2. MongoDB Aggregation Pipeline (`buildTopPostsPipeline`)
-- **Pipeline Architecture** ([`backend/src/posts/post-ranking.pipeline.ts`](backend/src/posts/post-ranking.pipeline.ts)):
-  1. **`$match`**: Filters active posts excluding soft-deleted records (`deletedAt: { $exists: false }`).
-  2. **`$addFields`**: Dynamically computes `rankScore` in the database engine using `$add`, `$subtract`, `$multiply`, and `$ifNull`.
-  3. **`$sort` (Deterministic Tie-Breaker)**:
-     ```json
-     {
-       "rankScore": -1,
-       "createdAt": -1,
-       "_id": -1
-     }
-     ```
-     Resolves score ties deterministically using post creation timestamp, and breaks identical timestamps using the unique ObjectId.
-  4. **`$skip` & `$limit`**: Server-side pagination parameters ensuring lightweight memory overhead.
-
-### 3. Posts API Sort Query Parameter (`GET /posts?sort=latest|top`)
-- **Query DTO Validation** ([`GetPostsQueryDto`](backend/src/posts/dto/get-posts-query.dto.ts)):
-  - `@IsIn(['top', 'latest'])` validating the `sort` query option (defaults to `latest`).
-  - `@Transform` parsing `page` and `limit` strings into validated integers with `@Min(1)` and `@Max(100)` boundaries.
-  - Documented interactively in OpenAPI / Swagger UI at `http://localhost:5000/docs`.
-- **Hybrid Service Strategy** ([`PostsService.findAllPosts`](backend/src/posts/posts.service.ts)):
-  - When `sort === 'latest'`, executes indexed Mongoose query sorted by `{ createdAt: -1, _id: -1 }`.
-  - When `sort === 'top'`, executes `findTopPosts` running the aggregation pipeline, re-hydrating author profiles via `POPULATE_POST_LIST_AUTHOR`, and preserving computed `rankScore` in the output envelope without mutating original Mongoose schema documents.
-
-### 4. Controlled Seed Dataset & Database Safety Isolation
-- **Deterministic Seed Fixture** ([`backend/src/posts/testing/ranking-seed.fixture.ts`](backend/src/posts/testing/ranking-seed.fixture.ts)):
-  - Defines 10 controlled post documents (`Posts A` through `J`) with predetermined engagement metrics, negative scores, zero balances, and identical timestamps.
-- **Safety-Guarded Seeding & Cleanup Scripts**:
-  - `npm run seed:ranking` ([`backend/src/scripts/seed-ranking.ts`](backend/src/scripts/seed-ranking.ts)): Seeds controlled data only after verifying `connection.name === 'devpulse_day13_seed'`. Refuses execution on production or default database URIs.
-  - `npm run cleanup:ranking` ([`backend/src/scripts/cleanup-ranking-seed.ts`](backend/src/scripts/cleanup-ranking-seed.ts)): Cleans up seeded posts and author records safely.
-  - `npm run check:plans` ([`backend/src/scripts/check-post-query-plans.ts`](backend/src/scripts/check-post-query-plans.ts)): Inspects collection indexes and winning execution plans.
-
-### 5. Comprehensive Unit & Replica-Set Integration Test Matrix
-- **Pure Unit Tests** ([`backend/src/posts/post-ranking.util.spec.ts`](backend/src/posts/post-ranking.util.spec.ts)):
-  - 7 unit tests verifying positive rank scores, cancellation logic, negative scores, comment weighting, and zero engagement.
-- **In-Memory Replica Set Integration Tests** ([`backend/src/posts/post-ranking.integration.spec.ts`](backend/src/posts/post-ranking.integration.spec.ts)):
-  - 9 end-to-end integration tests running on `mongodb-memory-server` with transactions.
-  - Validates exact top order, latest order, tie-breaking, pagination stability across pages (zero duplicates or skipped items), soft-deleted post exclusion, and empty result handling.
-- **Total Backend Test Coverage**: **20 test files, 158 tests passing (`100% green`)**.
-
----
-
-## 🔄 End-to-End System Working Flow (As of Day 13)
-
-The complete end-to-end integration across frontend, Next.js BFF, NestJS core, and MongoDB comprises six interconnected operational flows:
-
-### 1. Authentication & Route Guarding Flow
-```
-User (Signup / Login)
-       │
-       ▼
-React Hook Form + Zod validation (mode: 'onTouched')
-       │
-       ▼
-Next.js BFF Route Handlers (app/api/auth/login)
-       │
-       ├── NestJS POST /auth/login -> verifies bcrypt hash -> returns signed JWT
-       │
-       ▼
-Next.js sets httpOnly, Secure, SameSite=Lax cookie ('devpulse_token')
-       │
-       ▼
-Edge Middleware (src/middleware.ts):
-       ├── Intercepts /dashboard, /profile, /posts/new, /posts/*/edit, /admin/*
-       ├── Decodes JWT claims & validates expiration
-       └── Redirects unauthenticated visitors to /login?redirect=<path>
-```
-
-### 2. Developer Profile & Portfolio Management Flow
-```
-1. Public Profile Discovery (GET /users/:id):
-   └── Unauthenticated peer discovery; sensitive fields (email, passwordHash, role) projected out.
-
-2. Authenticated Profile Management (GET /profile/me, PATCH /users/me):
-   ├── Basic Info: Headline, bio, social links (GitHub, LinkedIn, Website).
-   ├── Skills Management: POST /users/me/skills, DELETE /users/me/skills/:skill.
-   ├── Work Experience: POST /users/me/experiences, PATCH /experiences/:id, DELETE.
-   ├── Portfolio Projects: POST /profile/me/projects, PATCH /projects/:id, DELETE.
-   └── Avatar Media: POST /users/:id/avatar (canvas compressed image), GET /users/:id/avatar.
-```
-
-### 3. Community Feed & Posts Lifecycle Flow
-```
-1. Create Post (POST /posts):
-   ├── Validated title (3–120 chars) and body (10–10,000 chars).
-   ├── Author ID automatically bound from JWT claims (@CurrentUser()).
-   ├── Saved to MongoDB; atomically increments author's user.postsCount by 1.
-   └── Feed query cache invalidated (postKeys.feed()).
-
-2. Feed Infinite Pagination (GET /posts?page=X&limit=10&status=active):
-   ├── Indexed sort by { createdAt: -1, _id: -1 } for high throughput.
-   ├── Populated author summary (name, headline, avatarUrl).
-   ├── Client-side IntersectionObserver prefetches next page at 300px margin.
-   └── Unique post ID deduplication prevents duplicate cards.
-
-3. Soft-Delete & 5-Day Grace Period (DELETE /posts/:id):
-   ├── Sets deletedAt = now and deletedBy = userId.
-   ├── Decrements author's postsCount by 1.
-   ├── Immediately hidden from active feed queries.
-   ├── Recoverable within 5 days via POST /posts/:id/restore.
-   └── Background Cron (PostCleanupTask): Hourly sweep purges posts deleted > 5 days.
-```
-
-### 4. Admin User Directory & Moderation Flow
-```
-1. Access Verification:
-   └── GET /auth/admin-check validates @Roles('admin') via RolesGuard.
-
-2. Directory Management (/admin/users):
-   ├── Paginated directory with search (name, email, headline) and status filters.
-   ├── KPI metrics: Total Users, Active Accounts, Deleted Accounts, Admins.
-   ├── Edit User Modal: Modify user name, headline, bio, or promote to 'admin'.
-   └── Soft-Delete User: Revokes login capabilities and displays admin deletion notice.
-```
-
-### 5. Threaded Comments & Replies Flow (Days 9 & 10)
-```
-1. Client POST /posts/:postId/comments (or /comments/:commentId/replies) with Bearer token.
-2. JwtAuthGuard authenticates JWT claims and extracts userId.
-3. CommentsService enforces max depth 1 and cross-post boundaries.
-4. Atomically increments Post.commentCount and author User.commentsCount.
-5. In-memory single-query tree assembly serves nested hierarchy to frontend.
-6. Cascade deletion accurately decrements multi-author counters.
-```
-
-### 6. Reaction Engine & Concurrency-Safe State Machine Flow (Days 11 & 12)
-```
-1. Client initiates reaction (click like or dislike on post/comment).
-2. TanStack Query useToggleReactionMutation updates UI in 0ms (optimistic feedback).
-3. inFlightRef debounce locks rapid repeated clicks to prevent multi-increment exploits.
-4. Next.js BFF forwards request with httpOnly JWT to NestJS POST /reactions.
-5. ReactionsService verifies target exists and enforces atomic $inc updates.
-6. Compound index { userId, targetType, targetId } prevents duplicate entries.
-7. Success reconciles across feed, details, and comment query caches; failures roll back.
-```
-
-### 7. API Testing & Documentation
-- **Interactive OpenAPI Documentation**: `http://localhost:5000/docs`
-- **Complete Endpoint Specification (PDF)**: [`DevPulse_API_Endpoints_Day8.pdf`](file:///c:/Users/hp/Downloads/6senseHQ/DevPulse_API_Endpoints_Day8.pdf) detailing all 32 endpoints with methods, testing bodies, and expected outputs.
-
-
-### Backend (`backend/.env`)
-
-| Variable | Description | Example / Default |
-|---|---|---|
-| `PORT` | Port on which the NestJS HTTP API listens | `5000` |
-| `MONGODB_URI` | MongoDB connection URI (Atlas or local) | `mongodb+srv://<user>:<pass>@cluster.mongodb.net/dev_community` |
-| `JWT_SECRET` | Secret key used to sign and verify JWT tokens | `devpulse_super_secret_jwt_key_intern_2026_dev` |
-| `JWT_EXPIRES_IN` | JWT token lifespan / expiration | `7d` |
-| `ADMIN_NAME` | Display name for bootstrapped administrator | `DevPulse Administrator` |
-| `ADMIN_EMAIL` | Email address for bootstrapped administrator | `admin@devpulse.io` |
-| `ADMIN_PASSWORD` | Secure password for bootstrapped administrator | `<your_secure_admin_password>` |
-
-### Frontend (`frontend/.env.local`)
-
-| Variable | Description | Example / Default |
-|---|---|---|
-| `NEXT_PUBLIC_API_URL` | Base URL of the backend API | `http://localhost:5000` |
-
----
-
-## 🚀 Getting Started Locally
-
-### 1. Clone the Repository
-
-```bash
+# 1. Clone the repository
 git clone https://github.com/darksoul-atik/6S_Intern_Project.git
 cd 6S_Intern_Project
+
+# 2. Start all services in the background
+docker compose up --build -d
+
+# 3. Verify container health
+docker compose ps
 ```
 
-### 2. Backend Setup & Run
+* **Frontend**: Open [http://localhost:3000](http://localhost:3000)
+* **Backend API & Swagger Docs**: Open [http://localhost:5000/docs](http://localhost:5000/docs)
+* **Bootstrap Admin (First run)**:
+  ```bash
+  docker compose exec backend npm run seed:admin
+  ```
+* **Tear down stack**:
+  ```bash
+  docker compose down -v
+  ```
 
-In a new terminal:
+---
 
+### Option B: Local Development Setup
+
+#### 1. Prerequisites
+* **Node.js**: v20+ (tested on Node 24)
+* **MongoDB**: v6.0+ replica set (or a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster)
+* **npm**: v10+
+
+#### 2. Backend Setup
 ```bash
 cd backend
 
-# 1. Configure environment
-cp .env.example .env
-# Verify your MONGODB_URI and JWT_SECRET
-
-# 2. Install dependencies
+# Install dependencies
 npm install
 
-# 3. Bootstrap initial admin account (Optional/Recommended)
+# Configure environment
+cp .env.example .env
+# Edit .env and supply your MONGODB_URI and JWT secrets
+
+# (Optional) Seed initial administrator
 npm run seed:admin
 
-# 4. Start development server
+# Start development server
 npm run start:dev
 ```
+Backend will be listening at `http://localhost:5000`.
 
-The backend boots at `http://localhost:5000` (Swagger docs at `http://localhost:5000/docs`).
+#### 3. Frontend Setup
+```bash
+cd ../frontend
 
-### 3. Frontend Setup & Run
+# Install dependencies
+npm install
 
-In a second terminal:
+# Configure environment
+cp .env.example .env.local
 
+# Start Next.js development server
+npm run dev
+```
+Frontend will be running at `http://localhost:3000`.
+
+---
+
+## 🔑 Environment Variables Reference
+
+A unified template is provided in [.env.example](.env.example).
+
+| Variable | Target | Description | Example / Default |
+| :--- | :---: | :--- | :--- |
+| `PORT` | Backend | Port for NestJS HTTP server | `5000` |
+| `NODE_ENV` | Both | Runtime environment | `development` / `production` |
+| `FRONTEND_ORIGINS` | Backend | CORS allowed origins (comma-separated) | `http://localhost:3000` |
+| `MONGODB_URI` | Backend | Connection string to MongoDB replica set | `mongodb+srv://...` |
+| `JWT_SECRET` | Backend | Secret key for signing 15-minute access tokens | Min 32 random characters |
+| `JWT_EXPIRES_IN` | Backend | Access token duration | `15m` |
+| `JWT_REFRESH_SECRET` | Backend | Secret key for signing 7-day refresh tokens | Min 32 random characters |
+| `JWT_REFRESH_EXPIRES_IN`| Backend | Refresh token duration | `7d` |
+| `ADMIN_NAME` | Backend | Initial bootstrap administrator name | `DevPulse Administrator` |
+| `ADMIN_EMAIL` | Backend | Initial bootstrap administrator email | `admin@devpulse.io` |
+| `ADMIN_PASSWORD` | Backend | Initial bootstrap administrator password | `Admin@SecurePass2026` |
+| `GROQ_API_KEY` | Backend | Groq Cloud API key (falls back to mock if empty) | `gsk_...` |
+| `GROQ_MODEL` | Backend | Model identifier for summarization | `openai/gpt-oss-20b` |
+| `NEXT_PUBLIC_API_URL` | Frontend | Browser-facing API endpoint | `http://localhost:5000` |
+| `BACKEND_INTERNAL_URL`| Frontend | Server-side internal API endpoint for BFF | `http://localhost:5000` |
+
+---
+
+## ⚙️ Backend Architecture & Specifications
+
+### Modules
+* **`AuthModule`**: User registration, login, token rotation, and RBAC guards.
+* **`UsersModule`**: Developer profiles, skills, work experience, and admin user moderation.
+* **`PostsModule`**: Post authoring, feed aggregation pipelines, soft-delete, and hourly purge cron.
+* **`CommentsModule`**: Top-level comments and 1-level nested replies with `@mentions`.
+* **`ReactionsModule`**: Concurrency-safe post and comment like/dislike toggle engine.
+* **`SummarizerModule`**: Groq Cloud LLM integration with input truncation and mock fallback.
+* **`HealthModule`**: Diagnostic liveness probe (`GET /health`) checking MongoDB pool health.
+
+### Database Models & ER Diagram
+Full Mermaid diagrams and index specifications are documented in [Database Architecture](docs/db-diagram.md).
+* **`User`**: Accounts, profiles, skills array, work experiences, portfolio projects, and hashed refresh token.
+* **`Post`**: Title, body, author reference, reaction counts, comment count, and rank score.
+* **`Comment`**: Body, post reference, author reference, parent comment reference (depth 1), and mentioned user.
+* **`Reaction`**: Compound unique index `{ userId, targetType, targetId }` ensuring atomic single reactions.
+
+### Interactive API Documentation (Swagger)
+The OpenAPI 3.0 specification is available interactively at:
+$$\text{http://localhost:5000/docs}$$
+
+---
+
+## 💻 Frontend Architecture & Specifications
+
+### Mandated Feature-Driven Layout
+The frontend adheres to strict modularization under `frontend/src/features/`:
+* `admin/`: Moderation table, user management modals, role upgrade controls.
+* `auth/`: Login and signup forms, validation schemas, auth redirect helpers.
+* `comments/`: Comment hierarchy, reply forms, delete confirmation dialog.
+* `posts/`: Feed sorting dropdown, post cards, markdown editor, search input.
+* `reactions/`: Reaction buttons, reactors list modal, hover peek popover.
+* `users/`: Public profile view, profile edit forms, work experience modals.
+
+### Form Validation (React Hook Form + Zod)
+Forms use `mode: "onTouched"`, combining non-intrusive initial typing with instant validation once touched. All schemas are centralized in `schemas/` and validated via `@hookform/resolvers/zod`.
+
+### TanStack Query Patterns
+* **Cache Partitioning**: Feeds are isolated by query key:
+  ```typescript
+  postKeys.feed(sort, limit) // ['posts', 'feed', sort, { limit }]
+  ```
+  Switching between `Top`, `Latest`, and `Discussed` avoids refetch flickers.
+* **Optimistic Reactions**: Immediate UI feedback on like/dislike with automatic rollback on network failure.
+
+---
+
+## 🚀 Custom Features (Beyond the Original Plan)
+
+DevPulse contains four custom features implemented beyond the standard 20-day requirements. See [Custom Features Deep Dive](docs/custom-features.md) for complete technical breakdowns:
+
+1. **Clickable Commenter Profiles**:
+   Comment author avatars and names are interactive links to `/developers/[id]`, backed by lean projection queries that never expose sensitive user data.
+2. **Flattened Same-Depth Replies with @Mentions**:
+   Restricts reply nesting to depth = 1 to prevent mobile horizontal squishing, preserving conversational flow via structured `@Mention` tags linked to `mentionedUserId`.
+3. **Reactors List Modal & Hover Peek**:
+   Allows community transparency by revealing who liked or disliked any post/comment via a 300ms hover peek popover and a paginated dialog filterable by reaction type.
+4. **Groq Cloud AI Summarizer**:
+   On-demand post summarization powered by `openai/gpt-oss-20b`, featuring an 8-second timeout guard, 12,000-character input boundary truncation, and a fallback to `MockSummarizerProvider`.
+
+---
+
+## 🧪 Automated Testing & Verification
+
+### Running Backend Tests (Vitest)
+```bash
+cd backend
+
+# Run all unit and integration tests
+npm run test
+
+# Run with test coverage report
+npm run test:cov
+```
+* **Coverage**: 27 test files, 212 tests. 24 unit suites pass cleanly (200/200 unit tests).
+
+### Running Frontend Tests (Vitest)
 ```bash
 cd frontend
 
-# 1. Configure environment
-cp .env.example .env.local
-
-# 2. Install dependencies
-npm install
-
-# 3. Start development server
-npm run dev
+# Run frontend test suite (using threads pool for Windows stability)
+npx vitest run --pool=threads
 ```
-
-The frontend boots at `http://localhost:3000`.
-
----
-
-## 🔍 Day 2 Verification Guide
-
-### 1. Admin Account Bootstrap
-```bash
-cd backend
-npm run seed:admin
-```
-*Creates initial admin account (`admin@devpulse.io`). Rerunning proves idempotency.*
-
-### 2. Automated Test Suite
-```bash
-cd backend
-npm test
-```
-*Runs Vitest test suite covering auth service, users service (skills & experiences subdocuments), controllers, JWT strategies, guards (RolesGuard & ProfileOwnerOrAdminGuard), response transform interceptors, and exception filters (46/46 passing across 8 suites).*
-
-### 3. Live API Diagnostics (cURL)
-```bash
-# 1. User Signup
-curl -X POST http://localhost:5000/auth/signup \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Sarah Connor","email":"sarah@devpulse.io","password":"SecurePassword123"}'
-
-# 2. User Login
-curl -X POST http://localhost:5000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"sarah@devpulse.io","password":"SecurePassword123"}'
-
-# 3. Verify /auth/me without token -> 401 Unauthorized
-curl http://localhost:5000/auth/me
-
-# 4. Verify /auth/me with Bearer token -> 200 OK
-curl http://localhost:5000/auth/me -H "Authorization: Bearer <TOKEN>"
-
-# 5. Verify /auth/admin-check with user token -> 403 Forbidden
-curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <USER_TOKEN>"
-
-# 6. Verify /auth/admin-check with admin token -> 200 OK
-curl http://localhost:5000/auth/admin-check -H "Authorization: Bearer <ADMIN_TOKEN>"
-```
-
-### 4. Web UI Flow
-1. **Navigate to `http://localhost:3000/signup`**:
-   - Register a new account. Notice error validation alerts and success auto-redirect to `/login`.
-2. **Sign in at `http://localhost:3000/login`**:
-   - Authenticate with your new user credentials.
-   - Automatically establishes the `httpOnly` cookie and redirects to `/dashboard`.
-3. **Explore the Protected Dashboard (`http://localhost:3000/dashboard`)**:
-   - **Navbar**: Shows your user email and dynamic role badge (`USER` or `ADMIN`).
-   - **Welcome Developer Banner**: Interactive card with quick-test actions.
-   - Click **"Verify User Identity"**: Populates the User Identity Check card with live decoded JWT claims.
-   - Click **"Verify Admin Privileges"**: Populates the Admin Access Verification card with formatted `403 FORBIDDEN` for standard users, or `200 OK` for administrators.
-4. **Instant Logout**:
-   - Click **"Sign Out"**: Clears the `httpOnly` session and immediately transitions to the root landing page (`/`) without page reload or spinner flash.
-   - Attempting to revisit `/dashboard` triggers server-side middleware redirect to `/login`.
-
----
-
-## 🔍 Day 3 Verification Guide
-
-### 1. Developer Profiles Flow (`/profile/me` & `/profile/[id]`)
-1. **View Public Profile (`GET /profile/:id`)**:
-   - Open any user's profile URL directly in your browser.
-   - Verify public accessibility without requiring login.
-   - Verify avatar ring, name, title, role badge, email, join date, skills tags, and work experience timeline.
-   - Click **"Share Profile"**: Verifies URL copied to clipboard with visual confirmation.
-2. **Edit Profile (`GET /profile/:id/edit` or `/profile/me/edit`)**:
-   - Click **"Edit Profile"** on your own profile.
-   - **Basic Details**: Update display name and headline title.
-   - **Avatar Management**: Upload photo with automated client-side canvas compression; remove photo.
-   - **Skills Management**: Add new skills (instant optimistic addition, duplicate prevention); click `×` to delete skill.
-   - **Work Experiences**: Click `+ Add Position` to open modal; fill title, company, dates, or toggle "Currently Working Here"; click edit on existing entries or delete.
-3. **Security & Ownership Enforcement**:
-   - Log in as a standard user (`user@devpulse.io`).
-   - Try navigating to `/profile/<OTHER_USER_ID>/edit`.
-   - Verify that `ProfileOwnerOrAdminGuard` denies access with the dedicated `403 Permission Denied` interface.
-   - Log in as Admin (`admin@devpulse.io`) and verify that administrators are authorized to edit any profile.
-
-### 2. Admin User Directory Flow (`/admin/users`)
-1. **Access Control**:
-   - Standard users navigating to `/admin/users` are blocked or redirected.
-   - Administrators accessing `/admin/users` see the full developer directory.
-2. **KPI Analytics Cards**:
-   - View live counters for Total Users, Active Accounts, Deleted Accounts, and Admins.
-3. **Directory Features**:
-   - **Search**: Type keyword to filter by name, email, or title in real time.
-   - **Tabs**: Switch between "All", "Active", and "Deleted" user filters.
-   - **Shadcn Pagination**: Navigate multi-page user sets using responsive pagination controls.
-   - **Edit User Modal**: Click "Edit" to modify any user's name, email, title, or system role.
-   - **Soft Delete & Deletion Rejection Notice**: Click "Delete" on an active user. When that user subsequently attempts to log in, their sign-in is rejected with:
-     > *"Your profile has been deleted by an Admin. Please contact support if you believe this was an error."*
-   - **Restore User**: Click "Restore" in the admin directory; the account is instantly re-enabled.
-
-### 3. Mobile Responsiveness & Zero Overflow Verification
-- **Screen Widths 320px–640px**:
-  - Open browser DevTools (F12) and toggle device toolbar to 320px (iPhone SE / Galaxy Fold).
-  - **Zero Horizontal Overflow**: `scrollWidth === innerWidth` across all pages with zero clipping.
-  - **Navigation Hamburger Toggle**: Cleanly positioned at right edge with ample padding.
-  - **Mobile Menu Drawer**: Tap hamburger button to reveal full user name (no `Name.....` truncation), role badge, email, nav links, and full-width sign-out button.
-  - **Landing Page Hero**: "Continue as [Full Name]" button naturally wraps text across lines using `break-words`.
-
-### 4. Day 8 Community Feed & Infinite Scroll Verification Flow
-1. **Navigate to `/posts` (Community Feed)**:
-   - Initial feed loads page 1 with 10 cards using `useInfiniteQuery`.
-   - Verify post card layout: author initials avatar, name, headline, formatted timestamp, post title, post preview, and glass reaction pills.
-   - Hover over post cards to verify smooth background hover transition (`hover:bg-slate-50/80`) and dark theme "Read Post" button.
-2. **Infinite Pagination & Prefetching**:
-   - Open browser DevTools (F12) -> **Network** tab (filter by `posts`).
-   - Scroll down to within 300px of the feed bottom.
-   - Verify that the `IntersectionObserver` triggers `GET /api/posts?page=2&limit=10` seamlessly.
-   - Observe the loading skeleton and subsequent page cards appending cleanly with deduplication.
-   - When all pages are loaded, verify `"You're all caught up! You've reached the end of the feed."` displays.
-3. **Create Post Flow (`/posts/new`)**:
-   - Click **"Create Post"** in the top navigation bar.
-   - Enter title and body. Verify character counters and submit.
-   - Verify automatic feed cache invalidation and redirect to the newly created post details page (`/posts/[id]`).
-4. **Soft-Delete & Cache Invalidation**:
-   - On your own post, click **"Delete"** to open `DeletePostModal`.
-   - Confirm deletion. Verify the post vanishes immediately from the feed and author's `postsCount` decrements.
-   - Verify soft-deleted posts are excluded from the main feed and recoverable within 5 days.
-
-### 5. Day 9 Threaded Comments API & Data Integrity Verification Flow
-1. **Create Top-Level Comment**:
-   - `POST /posts/:postId/comments` with `{ "body": "Great article on architecture!" }` (Authenticated).
-   - Verify `201 Created` response returning comment object with `parentCommentId: null`.
-   - Verify parent post `commentCount` and author's user `commentsCount` both increment by 1.
-2. **Reply to Comment with Max Depth Enforcement**:
-   - `POST /posts/:postId/comments/:commentId/replies` with `{ "body": "I agree with your point." }`.
-   - Verify `201 Created` returning reply object referencing `parentCommentId: commentId`.
-   - Attempting to reply to a reply returns `400 Bad Request` with:
-     > *"Maximum reply depth exceeded. Replies cannot have child replies"*
-   - Attempting to reference a parent comment belonging to another post returns `400 Bad Request` with:
-     > *"Parent comment does not belong to this post"*
-3. **Hierarchical Tree Retrieval**:
-   - `GET /posts/:postId/comments` (Public).
-   - Returns chronological top-level comments with populated authors (`name`, `headline`, `avatarUrl`) and their nested `replies: []`.
-4. **Cascade Deletion & Counter Integrity**:
-   - **Delete Reply**: `DELETE /comments/:replyId` removes the single reply, decrementing post and author counts by 1.
-   - **Delete Root Comment**: `DELETE /comments/:rootId` cascade-deletes the root and all its replies, decrementing `post.commentCount` by `deletedCount` and each author's `commentsCount` accurately.
-   - Standard users cannot delete comments authored by others (`403 Forbidden`); administrators possess full override deletion rights via `CommentOwnerOrAdminGuard`.
-
-### 6. Day 10 Threaded Comments Interface Verification Flow
-1. **Navigate to Post Details (`/posts/[id]`)**:
-   - The post details card is cleanly presented followed by `<CommentsSection postId={id} />`.
-   - Live recursive comment count (`totalComments`) is computed across all root comments and nested replies.
-   - Skeletons display during initial load; empty state ("No comments yet") displays when no comments exist. Comments and nested replies are sorted chronologically newest-first.
-2. **Post Root Comment (`CommentForm`)**:
-   - Authenticated users see the rich comment input with real-time character counter (up to 5,000 characters).
-   - Unauthenticated visitors see a clear prompt with a redirect link to log in.
-   - Submitting a comment disables inputs with an animated loading spinner (`Posting...`), displays a success banner upon completion, and invalidates post and feed caches.
-3. **Nested Replies (`InlineReplyForm`)**:
-   - Click **"Reply"** on any top-level comment to expand the inline reply form.
-   - Keyboard focus automatically shifts to the textarea (`setFocus("body")`).
-   - Pressing **`Escape`** cancels and restores focus directly back to the triggering **"Reply"** button.
-   - Replies cannot be replied to, strictly maintaining a clean 1-level thread hierarchy.
-4. **Accessible Deletion Modal (`DeleteCommentModal`)**:
-   - Authorized users (comment author or admin) see a delete action button.
-   - Clicking **"Delete"** opens the accessible confirmation dialog (`role="dialog"`, `aria-modal="true"`).
-   - If deleting a root comment, the modal displays a clear cascade warning:
-     > *"This comment and every reply under it will be permanently deleted."*
-   - Traps focus to Cancel button, dismisses on backdrop click or `Escape` key, and shows spinner during in-flight deletion.
-
-### 7. Day 11 Reaction Engine Verification Flow
-1. **Toggle Reactions via cURL**:
-   - `POST http://localhost:5000/reactions` with `{ "targetType": "post", "targetId": "<POST_ID>", "reactionType": "like" }` and Bearer token.
-   - Verify `200 OK` response with `{ "success": true, "data": { "reactionCounts": { "like": 1, "dislike": 0 }, "userReaction": "like" } }`.
-2. **Toggle Off Verification**:
-   - Re-send identical payload `{ "targetType": "post", "targetId": "<POST_ID>", "reactionType": "like" }`.
-   - Verify `userReaction: null` and `reactionCounts.like` decrements back to 0.
-3. **Switch Reaction Verification**:
-   - Send `like` (count becomes 1), then send `dislike`.
-   - Verify `reactionCounts.like` becomes 0, `reactionCounts.dislike` becomes 1, and `userReaction: "dislike"`.
-4. **Current User Reactions Query**:
-   - `GET http://localhost:5000/reactions/mine?targetType=post&targetIds=<POST_ID>` with Bearer token.
-   - Returns `{ "<POST_ID>": "dislike" }`.
-5. **Soft-Deleted Post Target Protection**:
-   - Attempting to react to a soft-deleted post returns `404 Not Found`.
-
-### 8. Day 12 Optimistic Reaction Interface & Three-Dot Menu Navigation Verification Flow
-1. **Instant 0ms Reaction Feedback**:
-   - On `/posts` or `/posts/[id]`, click Like or Dislike on any post or comment.
-   - Badge counter and icon color state update instantaneously (0ms) without waiting for server response.
-   - In network offline mode, the reaction rolls back cleanly to previous state and displays an error alert.
-2. **Rapid-Click Throttling Verification**:
-   - Rapidly click Like 5 times in quick succession.
-   - Verify that `inFlightRef` locks incoming clicks; no double-counting or counter inflation occurs.
-3. **Cross-View Cache Consistency**:
-   - Like a post on the community feed (`/posts`), then click to view that post's detail page (`/posts/[id]`).
-   - The like count and active state remain perfectly synchronized across both views.
-4. **Three-Dot (`FiMoreVertical`) Menu on Top-Right**:
-   - Inspect post cards on the feed: notice the clean three-dot button in the top-right corner.
-   - Click the three-dot button: smooth dropdown menu opens with "Edit" and "Delete".
-   - Click outside or press `Escape`: menu closes immediately.
-   - Clicking options does not trigger card navigation (event bubbling prevented).
-   - Verify identical top-right three-dot menu on post detail headers and on comments/replies.
-5. **Direct Comment Navigation & "Ready to Comment" Auto-Focus**:
-   - On `/posts` feed, click the comment count pill on any post card.
-   - Browser navigates directly to `/posts/[id]?focus=comment#comments`.
-   - Page smoothly scrolls down to the comment box and automatically focuses the `#comment-body` textarea with active cursor, ready for immediate typing.
-
-### 9. Post-Day 12 Community Refinements & Reactions Transparency Verification Flow
-1. **Comment Hover Peek Popovers (`ReactionPeekPopover`)**:
-   - Hover over the Like or Dislike reaction button on any comment or nested reply.
-   - After a 200ms debounce, observe the floating frosted glass popover displaying the top 1–3 reactors with mini-avatars and full names.
-   - Move the cursor away; verify the popover dismisses cleanly after a 180ms buffer without flickering.
-2. **Streamlined Post Action Bar Reactions**:
-   - Post action bar Like and Dislike buttons feature clean, lightweight title tooltips (`Like • X likes`), keeping the post card uncluttered without intrusive peek popovers.
-   - Clicking the reaction digit toggles the reaction directly, preserving seamless mobile and desktop ergonomics.
-3. **Borderless Frosted Glass Social Proof Badge (`PostReactorsSummary`)**:
-   - Positioned directly above the post action divider, rendering inside a sleek borderless frosted glass badge (`bg-slate-100/60 dark:bg-white/[0.04] backdrop-blur-md`).
-   - Reactor names (e.g. "Tom Anderson", "DevPulse Lead Admin") are directly interactive links that navigate to their developer profile (`/developers/[id]`) with event bubbling isolated.
-   - Clicking anywhere on the sentence badge opens the full reactors modal (`ReactorsModal`).
-   - An inline right chevron icon (`FiChevronRight`) is vertically aligned with the text baseline as a visual affordance.
-   - Updates optimistically in 0ms latency when reactions are toggled.
-4. **Click-to-Open Reactors Modal (`ReactorsModal`)**:
-   - Click the post reactors summary badge or click `"View all {count} →"` inside comment peek popovers.
-   - Verify the full-screen accessible modal dialog opens over a frosted backdrop (`backdrop-blur-md`).
-   - Switch between **All**, **Likes**, and **Dislikes** tabs to filter reactors with live counts.
-   - Click outside or press `Escape` to close the modal.
-5. **Clickable Commenter Profiles (`/developers/[id]`)**:
-   - Click on any commenter's avatar or display name in the comments or replies section.
-   - Verify seamless client navigation to `/developers/[id]` displaying their full public profile, skills, and work history.
-6. **Flattened Same-Depth Replies & Structured `@Mention`**:
-   - Click **"Reply"** on an existing nested reply.
-   - Observe the reply input opening with `@Username` pre-filled.
-   - Submit the reply: verify it appears at depth 1 under the root comment (no infinite staircase indentation).
-   - Verify the recipient's name is rendered as an interactive purple `@Username` link directing to their developer profile.
-
-### 10. Day 13 Ranked, Latest & Most-Discussed Feed APIs Verification Flow
-1. **Latest Chronological Feed Verification (`GET /posts?sort=latest`)**:
-   - Send `GET http://localhost:5000/posts?sort=latest&page=1&limit=5`.
-   - Verify posts return sorted in strictly descending order by `createdAt` with secondary tie-breaker `_id: -1`.
-2. **Ranked Top Feed Verification (`GET /posts?sort=top`)**:
-   - Send `GET http://localhost:5000/posts?sort=top&page=1&limit=5`.
-   - Verify posts return ordered by computed `rankScore = (likes - dislikes) + (comments * 2)` descending.
-   - Verify each item includes `rankScore: number` alongside populated author information (`name`, `headline`).
-   - Tie-breaking: when rank scores match, ordered by `createdAt DESC`, then `_id DESC`.
-3. **Most-Discussed Feed Verification (`GET /posts?sort=most-discussed`)**:
-   - Send `GET http://localhost:5000/posts?sort=most-discussed&page=1&limit=5`.
-   - Verify posts return ordered strictly by `commentCount DESC` with tie-breaker `createdAt DESC`, then `_id DESC`.
-   - Supported by MongoDB compound index: `{ commentCount: -1, createdAt: -1, _id: -1 }`.
-4. **Query Plan Explain Verification (`npm run check:plans`)**:
-   - In `backend/`, run `npm run check:plans`.
-   - Verifies the compound index on `{ commentCount: -1, createdAt: -1, _id: -1 }` produces an `IXSCAN` query plan for `most-discussed`.
-   - Verifies `latest` uses `{ createdAt: -1, _id: -1 }` index scan.
-   - Verifies `top` executes the server-side aggregation pipeline cleanly.
-5. **Controlled Seed Dataset Verification**:
-   - In `backend/.env`, set `RANKING_SEED_MONGODB_URI` pointing to `devpulse_day13_seed`.
-   - Run `npm run seed:ranking`: verify 10 controlled posts (`A`–`J`) with known engagement and tie-breaker criteria are created.
-   - Run `npm run verify:seed`: verifies that `sort=top`, `sort=latest`, and `sort=most-discussed` orders match expected mathematical fixtures, tie-breakers hold, and 3-page pagination stays 100% stable with zero duplicates.
-   - Run `npm run cleanup:ranking`: cleanly unmounts all seeded test posts and author records.
-6. **Automated Vitest Test Matrix Verification**:
-   - In `backend/`, run `npm test`.
-   - Verify 20 test files pass and all **161 unit and integration tests** execute with 100% green status.
-
-### 11. Day 14 Community Feed Tabs & Multi-Sort Verification Flow
-1. **Interactive Feed Tabs Switching (`FeedTabs`)**:
-   - Navigate to `http://localhost:3000/posts`.
-   - By default, the **"Latest"** tab is active and highlighted, displaying posts chronologically descending (`createdAt DESC`).
-   - Click the **"Top Ranked"** tab: URL immediately updates to `/posts?sort=top`. Feed seamlessly switches to posts sorted by computed `rankScore = (likes - dislikes) + 2*comments` descending.
-   - Click the **"Most Discussed"** tab: URL immediately updates to `/posts?sort=most-discussed`. Feed seamlessly switches to posts sorted by `commentCount DESC`.
-2. **Direct Link & Bookmark Support**:
-   - Open a fresh browser window and navigate directly to `http://localhost:3000/posts?sort=top`.
-   - Verify that the page loads with the **"Top Ranked"** tab pre-selected and displays high-engagement posts immediately.
-   - Test navigating to `http://localhost:3000/posts?sort=most-discussed`: verify that the **"Most Discussed"** tab is active and shows posts with highest comment counts.
-   - Test an invalid sort parameter like `/posts?sort=xyz`: verify it automatically normalizes and redirects to `?sort=latest`.
-3. **Browser History Navigation**:
-   - Starting from `/posts?sort=latest`, click **"Top Ranked"**, then click **"Most Discussed"**.
-   - Click the browser **Back** button: active tab and feed immediately revert to **"Top Ranked"**.
-   - Click the browser **Back** button again: active tab and feed revert to **"Latest"**.
-   - Click the browser **Forward** button: restores the next tab and feed state without full page reloads.
-4. **TanStack Query Cache Segregation**:
-   - Scroll down to fetch page 2 on the **"Top Ranked"** tab.
-   - Switch to **"Latest"**, then switch back to **"Top Ranked"**.
-   - Verify that the previously fetched pages and scroll position are preserved immediately from cache with zero duplicate requests.
-5. **Mobile Responsiveness (down to 320px)**:
-   - In browser DevTools, switch device toolbar to 320px (e.g. mobile viewport).
-   - Verify that the tab bar buttons (`Top Ranked`, `Latest`, `Most Discussed`) maintain comfortable tap targets, clear active underlines, and zero horizontal screen overflow.
-
-### 12. Day 15 Full-Text Post Search Engine & Debounced Query Pipeline Verification Flow
-1. **Backend Full-Text Search Endpoint (`GET /posts/search?q=...`)**:
-   - Send `GET http://localhost:5000/posts/search?q=NestJS&page=1&limit=5`.
-   - Verify `200 OK` response with pagination envelope `{ posts: [...], total, page, limit, totalPages }`.
-   - Verify search results return active posts matching text terms, ordered primarily by text relevance score (`$meta: 'textScore'`), with secondary tie-breaker `createdAt DESC, _id DESC`.
-   - Verify weighted scoring prioritized title matches (weight 5) over body matches (weight 1).
-   - Verify soft-deleted posts (`deletedAt != null`) are completely excluded from search results.
-2. **Query DTO Sanitization & Validation (`SearchPostsQueryDto`)**:
-   - Test whitespace query: `GET /posts/search?q=%20%20%20%20` returns `400 Bad Request` (`Search query must not be empty`).
-   - Test missing query: `GET /posts/search` returns `400 Bad Request` (`q should not be empty`).
-   - Test query length > 100 characters: returns `400 Bad Request` (`q must be shorter than or equal to 100 characters`).
-   - Test negative or out-of-range pagination: `page=0` or `limit=101` returns `400 Bad Request`.
-3. **Debounced Search Bar UI (`PostSearch`)**:
-   - Navigate to `http://localhost:3000/posts`.
-   - Notice the frosted glass search input positioned seamlessly above the feed filter tabs.
-   - Type a search query (e.g., `Postgres` or `ORM`): observe the 300ms debounce buffer in action.
-   - While debouncing/fetching, an animated inline spinner displays inside the right of the search input.
-   - When results arrive, the feed seamlessly switches from the standard chronological/ranked feed to the search results view with zero page reload or screen jitter.
-4. **Single Clean Dismissal / Clear Button**:
-   - With text entered in the search bar, notice a single custom clear button (`FiX`) on the right.
-   - Native browser/WebKit search cancel decorations are hidden (`[&::-webkit-search-cancel-button]:hidden`), preventing dual/overlapping "X" buttons.
-   - Click the clear button or press `Escape`: input clears immediately, search state deactivates, and the feed instantly restores the previously active sort tab (`Top Ranked`, `Latest`, or `Most Discussed`).
-5. **Network Request Cancellation via `AbortSignal`**:
-   - In browser DevTools Network tab, type rapidly into the search input.
-   - Observe previous in-flight search requests being canceled (`canceled` / `status: canceled`) as new keystrokes are registered.
-   - Next.js Route Handler BFF proxy (`app/api/posts/search/route.ts`) cleanly forwards `request.signal` to NestJS, conserving server and network bandwidth.
-6. **Automated Vitest Test Matrix Verification**:
-   - In `backend/`, run `npm test`.
-   - Verify all test suites pass with 100% green status, including `search-posts-query.dto.spec.ts` (9 tests) and `post-search.integration.spec.ts` (6 tests).
-
-### 13. Day 16 AI-Assisted Post Summarization Verification Flow
-1. **On-Demand AI Summarization Endpoint (`POST /posts/:id/summarize`)**:
-   - Authenticated endpoint guarded with `JwtAuthGuard`.
-   - Generates summary on-demand without persisting to the database.
-   - Dynamic provider fallback: switches between Groq SDK (`openai/gpt-oss-20b`) and `MockSummarizerProvider` depending on whether `GROQ_API_KEY` is present in the environment.
-2. **Documented Behavior for Very Short and Very Long Posts**:
-   - **Very Short Posts** (e.g. 1 short sentence, minimal words, or empty body):
-     - *Groq Provider*: Strictly prompted with zero temperature and anti-hallucination constraint (`"Do not invent technologies or facts that are not present in the post."` and `"Return at most 5 tags."`). Short posts produce a concise 1-sentence summary matching the provided context and empty tags (`tags: []`) if no technologies are referenced.
-     - *Mock Provider*: Extracts the first 1–2 available sentences directly without error. If the body is empty or whitespace only, returns the standard fallback: `"No post content available to summarize."` with empty tags.
-     - *Runtime Schema Validator*: Accepts valid non-empty summaries and empty tag arrays (`tags: []`) without schema rejection.
-   - **Very Long Posts** (e.g. posts up to the schema maximum of 20,000 characters):
-     - *Input Truncation Guard*: `GroqSummarizerProvider` safely truncates `input.body` to the first 12,000 characters (`MAX_BODY_LENGTH = 12_000`) before constructing the prompt. This prevents token context window overflow, LLM context crashes, and rate-limit spikes.
-     - *Output Length Ceiling*: The runtime validator (`isSummarizerResult`) strictly enforces `MAX_SUMMARY_LENGTH = 1,000` characters and `MAX_TAGS = 10` (with max 50 chars per tag).
-     - *Mock Provider Summary Cap*: Bounds the heuristic lead summary to at most 280 characters (`MAX_SUMMARY_LENGTH = 280`), slicing cleanly at 279 characters and appending an ellipsis (`…`).
-     - *Timeout Ceiling*: An 8-second hard timeout (`SUMMARIZER_TIMEOUT_MS = 8_000`) prevents long-context LLM calls from hanging client connections indefinitely, returning a `504 Gateway Timeout`.
-3. **Domain Error Mappings**:
-   - `429 Too Many Requests`: Upstream provider rate limits mapped gracefully.
-   - `502 Bad Gateway`: Malformed or schema-invalid JSON from provider.
-   - `503 Service Unavailable`: Upstream provider outage or missing service.
-   - `504 Gateway Timeout`: Provider took longer than 8 seconds.
-4. **Frontend UX Verification (`PostSummaryPanel`)**:
-   - Mounted beneath post body in `/posts/[id]`.
-   - **Logged-Out Users**: Displays a clear locked prompt: `"Log in to generate an AI summary"`. Clicking redirects to `/login?redirect=/posts/[id]` with full post-login return preservation.
-   - **Concurrency Guard**: Duplicate clicks during generation are blocked while the request is in-flight.
-   - **Safe Plain-Text Rendering**: Summaries are rendered as plain text strings to prevent XSS or markdown injection vulnerabilities.
-   - **Retry Handling**: Status-mapped error alerts with a prominent retry button.
-5. **Automated Unit & Integration Test Matrix**:
-   - In `backend/`, run `npx vitest run src/summarizer src/posts`.
-   - Tests cover:
-     - `groq-summarizer.provider.spec.ts`: Very short posts, very long posts (>12k char truncation), 429 rate limit mapping, service unavailable error handling.
-     - `mock-summarizer.provider.spec.ts`: Very short posts, empty body fallback, very long posts (>280 char bounding with ellipsis), tag extraction.
-     - `summarizer.service.spec.ts`: Valid results, malformed schema rejection (502), service unavailable (503), rate limit (429), 8-second timeout (504).
-     - `post-summarization.integration.spec.ts`: Active post summarization, soft-deleted post rejection (404), non-existent post (404), invalid ObjectId (404), error propagation.
-
-### 14. Day 17 Automated Testing Matrix & E2E Verification Flow
-1. **Full-Stack Test Coverage Overview**:
-   - **Backend**: 207 automated tests (200 unit/integration across 27 suites + 7 Supertest/MongoMemoryServer E2E tests), achieving **81.7% line coverage** with zero flaky tests.
-   - **Frontend**: 45 Vitest tests across 4 test suites running in `jsdom` with `@testing-library/jest-dom` matchers, validating authentication, profile validation, and interactive form submissions.
-   - **Total Platform**: **252 / 252 tests passing (100% green)**.
-
-2. **Backend Automated Testing Architecture**:
-   - **Unit & Replica-Set Integration (`npm run test`)**:
-     * *Auth & RBAC*: Token issuance, password hashing, anti-enumeration, `JwtAuthGuard`, `RolesGuard` (admin vs user access).
-     * *Reactions Engine*: Atomic toggle concurrency, race condition resilience, reaction peeks, and paginated reactors.
-     * *Post Ranking*: Deterministic score calculation, tie-breaking (`createdAt DESC, _id DESC`), multi-page pagination stability.
-     * *Full-Text Search*: MongoDB text indexing (`$meta: 'textScore'`), query sanitization, and sorting integration.
-     * *Threaded Comments*: Max depth-1 tree assembly, cascade deletion, parent-reply integrity, and atomic counter synchronization.
-     * *AI Summarization*: Groq JSON-mode extraction, 12,000-char truncation guard, 8s timeout, and mock fallback.
-   - **End-to-End API Integration (`npm run test:e2e`)**:
-     * Executes `test/app.e2e-spec.ts` against an isolated in-memory MongoDB instance (`MongoMemoryServer`).
-     * Verifies complete user journeys: `/health` -> `/auth/signup` -> `/auth/login` -> `/auth/me` with Bearer JWT -> unauthenticated 401 rejection -> user 403 on `/auth/admin-check` -> admin role elevation & 200 OK.
-   - **Code Coverage Reporting (`npm run test:cov`)**:
-     * Vitest v8 coverage provider reports:
-       - **Statements**: `81.55%`
-       - **Branches**: `62.55%`
-       - **Functions**: `80.43%`
-       - **Lines**: `81.69%`
-
-3. **Frontend Automated Testing Architecture**:
-   - **Test Harness**: Vitest 4 + jsdom environment configured in `vitest.config.ts` with native `resolve.tsconfigPaths: true`.
-   - **DOM Matcher Augmentation**: Ambient declaration in `src/types/jest-dom.d.ts` extending Vitest's `Assertion` interface with `@testing-library/jest-dom` matchers (`toBeDisabled()`, `toHaveValue()`, `toBeInTheDocument()`).
-   - **Test Suites Executed (`npm run test` in `frontend/`)**:
-     * `src/features/auth/schemas/auth-schema.test.ts` (7 tests): Zod validation for signup & login (password strength, email normalization, whitespace trimming).
-     * `src/features/auth/components/login-form.test.tsx` (9 tests): Interactive React Hook Form lifecycle, loading states, validation error displays, API error alerts, and redirect navigation.
-     * `src/features/users/schemas/user-schema.test.ts` (28 tests): Profile Zod schema boundaries, URL protocols, date constraints (`startDate <= endDate`), and portfolio project fields.
-     * `src/features/users/components/profile-edit-form.test.tsx` (1 test): Form hydration from query cache, user-event typing, and normalized profile mutation dispatch.
-
-4. **Test Runbook Commands**:
-   - Backend unit & integration: `cd backend && npm test`
-   - Backend E2E: `cd backend && npm run test:e2e`
-   - Backend coverage report: `cd backend && npm run test:cov`
-   - Frontend test suite: `cd frontend && npm test`
-   - Frontend watch mode: `cd frontend && npm run test:watch`
-
----
-
-## 🔐 Day 18 — Refresh Token Rotation, Rate Limiting & Security Hardening
-
-### 1. Dual-Token Architecture & Security Model
-DevPulse implements a production-grade dual-token authentication lifecycle balancing short-lived credentials with frictionless session continuity:
-- **Short-Lived Access Token (`JWT_EXPIRES_IN=15m`)**: Grants access to protected endpoints (`JwtAuthGuard`). Its 15-minute expiration minimizes vulnerability windows in case of token interception.
-- **Long-Lived Cryptographically Secure Refresh Token (`JWT_REFRESH_EXPIRES_IN=7d`)**: Signed with a dedicated `JWT_REFRESH_SECRET` and stored exclusively in an `httpOnly`, `SameSite=Lax` cookie (`devpulse_refresh_token`).
-
-```
-[ Browser Client ]                     [ Next.js BFF ]                      [ NestJS Core API ]                 [ MongoDB Database ]
-       │                                      │                                      │                                   │
-       │─── 1. POST /api/auth/login ─────────▶│                                      │                                   │
-       │                                      │─── 2. POST /auth/login ─────────────▶│                                   │
-       │                                      │                                      │─── 3. Store SHA-256 hash ────────▶│
-       │                                      │◀── 4. { accessToken, refreshToken }──│                                   │
-       │◀── 5. Set httpOnly Cookies ──────────│                                      │                                   │
-       │       (devpulse_token: 15m)          │                                      │                                   │
-       │       (devpulse_refresh_token: 7d)   │                                      │                                   │
-       │                                      │                                      │                                   │
-       │─── 6. API call (401 Expired) ───────▶│                                      │                                   │
-       │                                      │                                      │                                   │
-       │─── 7. Interceptor catches 401 ───────│                                      │                                   │
-       │       POST /api/auth/refresh ───────▶│                                      │                                   │
-       │                                      │─── 8. POST /auth/refresh ───────────▶│                                   │
-       │                                      │       (atomic CAS rotation)          │─── 9. Match & replace hash ───────▶│
-       │                                      │◀── 10. New access & refresh tokens ──│                                   │
-       │◀── 11. Rotate both httpOnly cookies ─│                                      │                                   │
-       │─── 12. Replay original request ─────▶│                                      │                                   │
-```
-
-### 2. Key Architectural Decisions
-
-#### Decision A: Deterministic SHA-256 Hashing for Atomic Token Rotation
-- **Chosen Approach**: The database stores the deterministic SHA-256 hash of the current refresh token (`refreshTokenHash`). When a client requests a refresh, rotation is executed atomically via MongoDB `findOneAndUpdate`:
-  ```typescript
-  await this.userModel.findOneAndUpdate(
-    { _id: userId, refreshTokenHash: currentHash },
-    { $set: { refreshTokenHash: newHash } },
-    { new: true },
-  );
+* **Coverage**: 7 test files, 62 tests (**100% pass rate**).
+* **Linting**:
+  ```bash
+  npm run lint
   ```
-- **Why this was chosen over `bcrypt`**:
-  1. **Concurrency Safety & Race Condition Defense**: Refresh tokens are high-entropy, cryptographically random strings (UUIDs). Using deterministic SHA-256 allows atomic single-operation Compare-and-Swap (CAS) in MongoDB. If two concurrent requests present the same refresh token, only the first succeeds while the second receives `null` and is rejected with `401 Unauthorized`.
-  2. **Zero CPU Bottlenecks**: Bcrypt hashes require 10+ rounds of salting, causing 70–100ms of synchronous CPU blocking per refresh. SHA-256 computes in sub-millisecond time (<0.1ms), reducing integration test execution from 10.3s to 4.3s and scaling effortlessly under high concurrency.
-  3. **Strict Data Encapsulation**: The `refreshTokenHash` field is marked with `select: false` and explicitly removed in the Mongoose schema's `toJSON` transform, preventing accidental leakage in any API response.
-
-#### Decision B: Tiered Rate Limiting via `@nestjs/throttler`
-Rate limiting is enforced globally via `ThrottlerGuard` bound to `APP_GUARD`, with customized tier limits on sensitive routes:
-| Route | Limit | Window | Defense Purpose |
-|---|---|---|---|
-| **Global Default** | 120 requests | 60 seconds | Baseline protection against scrapers and denial-of-service |
-| **`POST /auth/login`** | 10 requests | 15 minutes | Anti-brute force and credential stuffing mitigation |
-| **`POST /auth/refresh`** | 30 requests | 15 minutes | Token harvesting and refresh abuse prevention |
-| **`GET /posts/search`** | 60 requests | 60 seconds | Database text indexing and compute protection |
-| **`POST /posts/:id/summarize`** | 10 requests | 60 seconds | Groq LLM API quota and credit exhaustion defense |
-
-#### Decision C: Production Security Hardening
-1. **Request Body Sizing (256kb Boundary Guard)**:
-   - Configured in `backend/src/main.ts` via `express.json({ limit: '256kb' })` and `express.urlencoded({ limit: '256kb', extended: true })`.
-   - Rejects payload stuffing attacks with `413 PayloadTooLargeError` before body processing.
-2. **Generic 500 Error Masking**:
-   - `HttpExceptionFilter` intercepts unhandled exceptions to prevent database connection strings, collection names, or internal stack traces from leaking to clients, returning a safe, standardized envelope:
-     ```json
-     {
-       "success": false,
-       "statusCode": 500,
-       "message": "Internal server error"
-     }
-     ```
-3. **Multi-Origin CORS Whitelist Normalization**:
-   - Supports both `FRONTEND_ORIGIN` (single origin) and `FRONTEND_ORIGINS` (comma-separated list).
-   - Automatically trims whitespace and strips trailing slashes (`.replace(/\/+$/, '')`), ensuring full compatibility between local development (`http://localhost:3000`) and Vercel production deployments (`https://frontend-lilac-beta-89.vercel.app`).
-4. **Sanitized Database Connection Logging**:
-   - Sanitized connection strings across all scripts (`seed-admin.ts`, `seed-ranking.ts`, `cleanup-ranking.ts`) to prevent exposing database credentials in deployment logs.
-
-#### Decision D: Next.js BFF Interceptor Replay Queue & Session Expiration UX
-1. **Concurrency-Safe Axios Interceptor Queue**:
-   - When an access token expires (401), the frontend Axios response interceptor holds incoming concurrent requests in a subscriber queue while dispatching a single `/api/auth/refresh` call.
-   - Upon successful refresh, queued requests are automatically replayed with the new credentials.
-   - If the refresh token is expired, revoked, or rejected, queued requests fail, both `devpulse_token` and `devpulse_refresh_token` cookies are cleared, and the user is redirected to `/login?reason=session-expired`.
-2. **Next.js Client Navigation Compliance (`@next/next/no-location-assign-relative-destination`)**:
-   - Avoids raw `window.location.assign()` inside client components.
-   - The `AuthProvider` registers Next.js App Router's `router.push()` via `setSessionExpiredHandler`, with a fallback to `window.location.replace()` if the handler is not yet registered.
-3. **Centered Session Expired Notice**:
-   - The login page renders an amber warning banner formatted with centered, middle-justified layout (`text-center justify-center`) notifying the user that their session has expired.
+* **Production Build**:
+  ```bash
+  npm run build
+  ```
 
 ---
 
-### 3. Day 18 Verification Flow & Runbook
+## ⚠️ Known Limitations & Roadmap
 
-1. **Verify Token Refresh Cycle**:
-   - Log in via `POST /api/auth/login`. Verify that both `devpulse_token` (15m) and `devpulse_refresh_token` (7d) cookies are set.
-   - Trigger `POST /api/auth/refresh` via the frontend BFF or directly to backend `POST /auth/refresh`. Confirm that both cookies are rotated and the database `refreshTokenHash` is updated atomically.
-2. **Verify Session Expired Banner & Navigation**:
-   - Navigate to `http://localhost:3000/login?reason=session-expired`.
-   - Confirm the amber alert displays centered, middle-justified text: *"Your session has expired. Please log in again to continue."*
-3. **Verify Rate Limiting (429 Too Many Requests)**:
-   - Run the automated rate-limit E2E spec:
-     ```bash
-     cd backend && npx vitest run test/rate-limit.e2e-spec.ts
-     ```
-   - Confirms that after 10 failed login attempts, the 11th request receives HTTP 429 Too Many Requests.
-4. **Verify Request Payload Boundary Guard (413 Payload Too Large)**:
-   - Run the automated request-size E2E spec:
-     ```bash
-     cd backend && npx vitest run test/request-size.e2e-spec.ts
-     ```
-   - Confirms that payloads exceeding 256kb receive HTTP 413.
-5. **Full Automated Test Matrix Verification**:
-   - Backend unit & integration (212 tests):
-     ```bash
-     cd backend && npm test
-     ```
-   - Backend E2E suites (13 tests across 3 suites):
-     ```bash
-     cd backend && npm run test:e2e
-     ```
-   - Frontend Vitest suite (45 tests across 4 suites):
-     ```bash
-     cd frontend && npm test
-     ```
-   - **Total Full-Stack Verification**: **270 / 270 passed tests (100% green)**.
+We believe in honest, transparent engineering. Current constraints identified during Day 20 smoke tests are logged in [Known Limitations](docs/known-issues.md):
+1. **Dual Database Contexts**: Docker Compose points to local MongoDB replica set `rs0`, while host dev servers read `backend/.env` pointing to MongoDB Atlas.
+2. **Next.js Standalone Image Rebuild**: UI changes in Docker require running `docker compose up --build frontend` to recompile the standalone bundle.
+3. **Frontend Vitest on Windows**: Requires the `--pool=threads` CLI flag to avoid Windows child process fork timeouts.
+4. **Future Roadmap**: Redis cache layer for feed ranking, WebSockets for live mention notifications, and direct-to-S3 avatar uploads.
 
+---
 
+## 📚 Documentation Index
+
+* [System Architecture Specification](docs/architecture.md) — BFF pattern, dual cookies, and security design.
+* [Database Architecture & ER Diagram](docs/db-diagram.md) — Schemas, indexes, and transaction boundaries.
+* [Custom Features Deep Dive](docs/custom-features.md) — Breakdown of features built beyond the original plan.
+* [Known Limitations & Roadmap](docs/known-issues.md) — Transparent limitation log and next steps.
+* [Day 17 Test Matrix](backend/docs/day-17-test-matrix.md) — Test suite inventory and coverage report.
