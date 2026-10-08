@@ -18,6 +18,8 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+    "start:worker": "node dist/worker.js",
+    "start:worker:dev": "nest start --entryFile worker --watch",
     "lint": "oxlint src/ test/",
     "test": "vitest run",
     "test:watch": "vitest",
