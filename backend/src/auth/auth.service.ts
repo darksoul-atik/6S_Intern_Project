@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -9,6 +10,7 @@ import bcrypt from 'bcryptjs';
 import { createHash, randomUUID } from 'crypto';
 
 import { UsersService } from '../users/users.service.js';
+import { MailProducerService } from '../mail-queue/mail-producer.service.js';
 import { SignupDto } from './dto/signup.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 
@@ -48,10 +50,13 @@ interface RefreshTokenPayload {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly mailProducerService: MailProducerService,
   ) {}
 
   async signup(signupDto: SignupDto): Promise<{
@@ -92,6 +97,25 @@ export class AuthService {
       passwordHash,
       role: 'user',
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resilient Welcome Email Enqueue
+    |--------------------------------------------------------------------------
+    |
+    | Queue dispatch must never block or fail signup registration.
+    | If Redis is unavailable, the error is safely caught and logged.
+    |
+    */
+    try {
+      await this.mailProducerService.enqueueWelcomeEmail(
+        newUser._id.toString(),
+      );
+    } catch {
+      this.logger.warn(
+        `Failed to enqueue welcome email for user: ${newUser._id.toString()}`,
+      );
+    }
 
     return {
       data: {

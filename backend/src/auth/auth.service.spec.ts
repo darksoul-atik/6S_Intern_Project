@@ -11,6 +11,7 @@ describe('AuthService', () => {
   let mockUsersService: any;
   let mockJwtService: any;
   let mockConfigService: any;
+  let mockMailProducerService: any;
 
   const sha256 = (value: string) =>
     createHash('sha256').update(value).digest('hex');
@@ -23,6 +24,10 @@ describe('AuthService', () => {
       create: vi.fn(),
       setRefreshTokenHash: vi.fn(),
       rotateRefreshTokenHash: vi.fn().mockResolvedValue(true),
+    };
+
+    mockMailProducerService = {
+      enqueueWelcomeEmail: vi.fn().mockResolvedValue(undefined),
     };
 
     mockJwtService = {
@@ -68,6 +73,7 @@ describe('AuthService', () => {
       mockUsersService,
       mockJwtService,
       mockConfigService,
+      mockMailProducerService,
     );
   });
 
@@ -115,12 +121,48 @@ describe('AuthService', () => {
 
       expect(isPasswordValid).toBe(true);
 
+      expect(mockMailProducerService.enqueueWelcomeEmail).toHaveBeenCalledWith(
+        '507f1f77bcf86cd799439011',
+      );
+
       expect(result.data.email).toBe('jane.doe@devpulse.io');
 
       expect(result.data.role).toBe('user');
 
       expect((result.data as any).passwordHash).toBeUndefined();
 
+      expect(result.message).toBe('User registered successfully');
+    });
+
+    it('should still succeed and return 201 response when enqueueWelcomeEmail throws', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(null);
+
+      mockUsersService.create.mockImplementation((dto: any) =>
+        Promise.resolve({
+          _id: '507f1f77bcf86cd799439011',
+          ...dto,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+
+      mockMailProducerService.enqueueWelcomeEmail.mockRejectedValue(
+        new Error('Redis is down'),
+      );
+
+      const signupDto = {
+        name: 'Jane Doe',
+        email: 'jane.offline@devpulse.io',
+        password: 'SuperSecret123',
+      };
+
+      const result = await authService.signup(signupDto);
+
+      expect(mockMailProducerService.enqueueWelcomeEmail).toHaveBeenCalledWith(
+        '507f1f77bcf86cd799439011',
+      );
+
+      expect(result.data.email).toBe('jane.offline@devpulse.io');
       expect(result.message).toBe('User registered successfully');
     });
 
