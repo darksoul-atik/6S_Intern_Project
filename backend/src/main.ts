@@ -33,13 +33,8 @@ async function createApp(): Promise<INestApplication> {
   // Allow browser requests only from the configured frontend origin(s)
   const rawFrontendOrigins =
     configService.get<string>('FRONTEND_ORIGIN') ||
-    configService.get<string>('FRONTEND_ORIGINS');
-
-  if (!rawFrontendOrigins) {
-    throw new Error(
-      'CRITICAL SECURITY CONFIGURATION ERROR: FRONTEND_ORIGIN (or FRONTEND_ORIGINS) environment variable is missing.',
-    );
-  }
+    configService.get<string>('FRONTEND_ORIGINS') ||
+    'https://frontend-lilac-beta-89.vercel.app,http://localhost:3000';
 
   const allowedOrigins = rawFrontendOrigins
     .split(',')
