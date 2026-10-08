@@ -99,6 +99,10 @@ async function handleRefreshFailure(originalRequestUrl?: string): Promise<void> 
     return;
   }
 
+  if (isPublicPath(currentPath)) {
+    return;
+  }
+
   if (!failurePromise) {
     failurePromise = (async () => {
       /*
