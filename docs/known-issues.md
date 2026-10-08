@@ -43,6 +43,16 @@ This document provides a transparent, un-sanitized log of current architectural 
 * **Impact**: Running automated test scripts in rapid succession from the same local IP address triggers `429 Too Many Requests`.
 * **Mitigation**: Automated regression runners must account for rate-limit cooldown windows or configure `THROTTLE_TTL` overrides in test environments.
 
+### 1.7. At-Least-Once Email Delivery & Worker Crash Window
+* **Description**: The email queue processing pipeline adheres to standard distributed systems **at-least-once** delivery semantics. The worker process performs idempotency checks against `User.welcomeEmailSentAt` prior to dispatching email via Nodemailer/SMTP, and records the timestamp immediately following successful transmission.
+* **Impact**: If the worker process or host container crashes or suffers power failure during the microsecond window between SMTP relay acceptance and the completion of `UsersService.setWelcomeEmailSentAt()` in MongoDB, BullMQ's automatic retry policy will re-dispatch the job when the worker recovers, resulting in a duplicate welcome email delivered to the recipient.
+* **Mitigation**: Accepted architectural trade-off. Duplicate welcome emails are benign compared to missing welcome emails. Strict pre-send idempotency guards and atomic database updates minimize the crash window to near zero.
+
+### 1.8. Omission of Durable Transactional Outbox Sweep for Complete Redis Outages
+* **Description**: To ensure that registration response times and availability are never compromised, `AuthService.signup` employs a non-blocking, resilient dispatch pattern: if Redis is unreachable or unresponsive during signup, the API logs an error and returns HTTP 201 Created without failing the registration.
+* **Impact**: Users who register during a prolonged, catastrophic Redis cluster outage will not have their welcome email job stored in Redis. Because the system currently omits a secondary transactional MongoDB outbox collection with a periodic poll-and-sweep recovery worker, those specific users will not receive a welcome email unless triggered via an administrative resend tool.
+* **Mitigation**: Accepted trade-off prioritizing signup availability over email non-loss during total infrastructure degradation. In high-availability environments, Redis Sentinel or Redis Cluster guarantees high uptime, and a durable MongoDB Transactional Outbox pattern can be introduced in future iterations.
+
 ---
 
 ## 2. Prioritized Roadmap & Future Improvements

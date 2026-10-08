@@ -6,6 +6,7 @@
 [![NestJS](https://img.shields.io/badge/Backend-NestJS%2011-ea284e?style=flat-square&logo=nestjs)](https://nestjs.com/)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016%20App%20Router-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![MongoDB](https://img.shields.io/badge/Database-MongoDB%207.0%20Replica%20Set-green?style=flat-square&logo=mongodb)](https://www.mongodb.com/)
+[![Redis](https://img.shields.io/badge/Queue-Redis%207%20%2B%20BullMQ-dc382d?style=flat-square&logo=redis)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Orchestration-Docker%20Compose-2496ed?style=flat-square&logo=docker)](https://www.docker.com/)
 [![TanStack Query](https://img.shields.io/badge/State-TanStack%20Query%20v5-ff4154?style=flat-square&logo=react-query)](https://tanstack.com/query)
 [![Groq](https://img.shields.io/badge/AI-Groq%20Cloud%20LLM-f55036?style=flat-square)](https://groq.com/)
@@ -36,6 +37,7 @@ Key engineering highlights:
 * **Production-Grade Security**: Dual `httpOnly` cookies managed via a Next.js BFF proxy; SHA-256 rotated refresh tokens in MongoDB.
 * **Deterministic Feed Ranking**: Multi-criteria sorting (`Top`, `Latest`, `Discussed`) with secondary tie-breakers to prevent feed jitter.
 * **ACID Concurrency Safety**: MongoDB replica-set transactions for atomic reaction counter syncing and thread cascade deletions.
+* **Asynchronous Resilient Queues**: Redis 7-backed BullMQ queue and dedicated standalone background worker for transactional welcome emails with idempotency tracking and exponential backoff.
 * **On-Demand AI Insights**: Groq Cloud inference (`openai/gpt-oss-20b`) generating instant executive summaries and extracted skill tags.
 
 ---
@@ -60,8 +62,17 @@ NestJS 11 REST API (Port 5000)
     │  • Global Envelope Filters & Validation Pipes
     │  • RBAC & Resource Ownership Guards
     │  • Throttler Rate Limiting (IP-based)
+    │  • Non-blocking Resilient Email Producer (BullMQ)
     │
     ├──▶ MongoDB 7.0 Replica Set (ACID Transactions, Compound Indexes)
+    ├──▶ Redis 7.0 (BullMQ Email Queue - maxmemory noeviction, AOF persistence)
+    │     │
+    │     ▼
+    │   DevPulse Background Worker (dist/worker.js)
+    │     │  • Idempotency Guard (welcomeEmailSentAt check & update)
+    │     │  • Modular Providers (SMTP Nodemailer / Ethereal / Console fallback)
+    │     │  • Automatic Retries (3 attempts with exponential backoff)
+    │     └──▶ SMTP / Email Delivery Gateway
     └──▶ Groq Cloud API (High-Speed LLM Inference with Mock Fallback)
 ```
 
@@ -72,7 +83,7 @@ For complete architectural details, see [System Architecture Specification](docs
 ## 🚀 Quick Start (Clean Checkout)
 
 ### Option A: Full Docker Stack (Recommended)
-Run the entire production stack (Frontend, Backend, MongoDB Replica Set, and Replica Init) with a single command:
+Run the entire production stack (Frontend, Backend, Worker, Redis, MongoDB Replica Set, and Replica Init) with a single command:
 
 ```bash
 # 1. Clone the repository
@@ -115,15 +126,21 @@ npm install
 
 # Configure environment
 cp .env.example .env
-# Edit .env and supply your MONGODB_URI and JWT secrets
+# Edit .env and supply your MONGODB_URI, REDIS_*, and SMTP_* configs
+
+# Start Redis (via Docker or local daemon)
+docker run -d --name devpulse-redis -p 6379:6379 redis:7-alpine redis-server --requirepass devpulse_redis_secret
 
 # (Optional) Seed initial administrator
 npm run seed:admin
 
-# Start development server
+# Start development API server
 npm run start:dev
+
+# In a separate terminal, start the background email worker
+npm run start:worker:dev
 ```
-Backend will be listening at `http://localhost:5000`.
+Backend API will be listening at `http://localhost:5000` and the email worker will actively listen for BullMQ jobs.
 
 #### 3. Frontend Setup
 ```bash
@@ -161,6 +178,17 @@ A unified template is provided in [.env.example](.env.example).
 | `ADMIN_PASSWORD` | Backend | Initial bootstrap administrator password | `Admin@SecurePass2026` |
 | `GROQ_API_KEY` | Backend | Groq Cloud API key (falls back to mock if empty) | `gsk_...` |
 | `GROQ_MODEL` | Backend | Model identifier for summarization | `openai/gpt-oss-20b` |
+| `REDIS_HOST` | Backend/Worker | Redis server hostname for BullMQ queue | `localhost` / `redis` |
+| `REDIS_PORT` | Backend/Worker | Redis port | `6379` |
+| `REDIS_PASSWORD` | Backend/Worker | Redis authentication secret | `devpulse_redis_secret` |
+| `MAIL_PROVIDER` | Backend/Worker | Mail provider implementation (`console` or `smtp`) | `console` (dev) / `smtp` |
+| `SMTP_HOST` | Backend/Worker | SMTP relay server host (e.g. Ethereal / Sendgrid) | `smtp.ethereal.email` |
+| `SMTP_PORT` | Backend/Worker | SMTP port (`587` for STARTTLS, `465` for SSL) | `587` |
+| `SMTP_SECURE` | Backend/Worker | Whether SMTP connection uses TLS wrapper | `false` |
+| `SMTP_USER` | Backend/Worker | SMTP account username / auth identifier | `username` |
+| `SMTP_PASSWORD` | Backend/Worker | SMTP account password / app password | `secret` |
+| `MAIL_FROM` | Backend/Worker | Branded sender email and display name | `DevPulse <no-reply@devpulse.io>` |
+| `FRONTEND_URL` | Backend/Worker | Public URL used in email action buttons & links | `http://localhost:3000` |
 | `NEXT_PUBLIC_API_URL` | Frontend | Browser-facing API endpoint | `http://localhost:5000` |
 | `BACKEND_INTERNAL_URL`| Frontend | Server-side internal API endpoint for BFF | `http://localhost:5000` |
 
@@ -169,17 +197,20 @@ A unified template is provided in [.env.example](.env.example).
 ## ⚙️ Backend Architecture & Specifications
 
 ### Modules
-* **`AuthModule`**: User registration, login, token rotation, and RBAC guards.
-* **`UsersModule`**: Developer profiles, skills, work experience, and admin user moderation.
+* **`AuthModule`**: User registration, login, token rotation, and RBAC guards. Integrates non-blocking welcome email producer dispatch upon successful signup.
+* **`UsersModule`**: Developer profiles, skills, work experience, admin moderation, and `welcomeEmailSentAt` idempotency mutations.
 * **`PostsModule`**: Post authoring, feed aggregation pipelines, soft-delete, and hourly purge cron.
 * **`CommentsModule`**: Top-level comments and 1-level nested replies with `@mentions`.
 * **`ReactionsModule`**: Concurrency-safe post and comment like/dislike toggle engine.
 * **`SummarizerModule`**: Groq Cloud LLM integration with input truncation and mock fallback.
+* **`MailModule`**: Provider abstraction (`ConsoleMailProvider` with masked PII logs, `SmtpMailProvider` via Nodemailer) and branded responsive HTML templates.
+* **`MailProducerModule`**: BullMQ producer service enqueuing welcome email jobs (`email` queue, job id: `welcome-email-<userId>`) with resilient fallback.
+* **`WorkerModule`**: Dedicated BullMQ queue processor running as an independent background worker (`worker.ts`) with graceful shutdown hooks and exponential backoff retry policies.
 * **`HealthModule`**: Diagnostic liveness probe (`GET /health`) checking MongoDB pool health.
 
 ### Database Models & ER Diagram
 Full Mermaid diagrams and index specifications are documented in [Database Architecture](docs/db-diagram.md).
-* **`User`**: Accounts, profiles, skills array, work experiences, portfolio projects, and hashed refresh token.
+* **`User`**: Accounts, profiles, skills array, work experiences, portfolio projects, hashed refresh token, and `welcomeEmailSentAt` idempotency timestamp.
 * **`Post`**: Title, body, author reference, reaction counts, comment count, and rank score.
 * **`Comment`**: Body, post reference, author reference, parent comment reference (depth 1), and mentioned user.
 * **`Reaction`**: Compound unique index `{ userId, targetType, targetId }` ensuring atomic single reactions.
@@ -216,7 +247,7 @@ Forms use `mode: "onTouched"`, combining non-intrusive initial typing with insta
 
 ## 🚀 Custom Features (Beyond the Original Plan)
 
-DevPulse contains four custom features implemented beyond the standard 20-day requirements. See [Custom Features Deep Dive](docs/custom-features.md) for complete technical breakdowns:
+DevPulse contains five custom features implemented beyond the standard 20-day requirements. See [Custom Features Deep Dive](docs/custom-features.md) for complete technical breakdowns:
 
 1. **Clickable Commenter Profiles**:
    Comment author avatars and names are interactive links to `/developers/[id]`, backed by lean projection queries that never expose sensitive user data.
@@ -226,6 +257,8 @@ DevPulse contains four custom features implemented beyond the standard 20-day re
    Allows community transparency by revealing who liked or disliked any post/comment via a 300ms hover peek popover and a paginated dialog filterable by reaction type.
 4. **Groq Cloud AI Summarizer**:
    On-demand post summarization powered by `openai/gpt-oss-20b`, featuring an 8-second timeout guard, 12,000-character input boundary truncation, and a fallback to `MockSummarizerProvider`.
+5. **Asynchronous Welcome Email Queue & Worker (Redis + BullMQ)**:
+   Decoupled background email system. User signup dispatches non-blocking jobs (`attempts: 3`, exponential backoff) into Redis. A dedicated background worker process handles job consumption, validates user status (soft-deletion skips), enforces strict idempotency using `welcomeEmailSentAt` timestamps, and delivers branded welcome emails via modular SMTP/Console providers.
 
 ---
 
@@ -241,7 +274,7 @@ npm run test
 # Run with test coverage report
 npm run test:cov
 ```
-* **Coverage**: 27 test files, 212 tests. 24 unit suites pass cleanly (200/200 unit tests).
+* **Coverage**: 34 test files, 240 tests (**100% pass rate**). Covers all controllers, services, guards, summarizers, mail providers, templates, and BullMQ worker processors.
 
 ### Running Frontend Tests (Vitest)
 ```bash
@@ -268,7 +301,8 @@ We believe in honest, transparent engineering. Current constraints identified du
 1. **Dual Database Contexts**: Docker Compose points to local MongoDB replica set `rs0`, while host dev servers read `backend/.env` pointing to MongoDB Atlas.
 2. **Next.js Standalone Image Rebuild**: UI changes in Docker require running `docker compose up --build frontend` to recompile the standalone bundle.
 3. **Frontend Vitest on Windows**: Requires the `--pool=threads` CLI flag to avoid Windows child process fork timeouts.
-4. **Future Roadmap**: Redis cache layer for feed ranking, WebSockets for live mention notifications, and direct-to-S3 avatar uploads.
+4. **Email Queue Outbox Recovery**: Registrations during complete Redis outages succeed gracefully without blocking users, but omit an outbox persistence sweep table.
+5. **Future Roadmap**: Redis cache layer for feed ranking, WebSockets for live mention notifications, and direct-to-S3 avatar uploads.
 
 ---
 
