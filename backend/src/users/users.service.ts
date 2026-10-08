@@ -142,6 +142,41 @@ export class UsersService {
     return this.userModel.findById(id).select('+refreshTokenHash').exec();
   }
 
+  async findByIdForEmailProcessing(id: string): Promise<UserDocument | null> {
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return null;
+    }
+
+    return this.userModel.findById(id).select('+welcomeEmailSentAt').exec();
+  }
+
+  async setWelcomeEmailSentAt(
+    userId: string,
+    sentAt: Date,
+  ): Promise<void> {
+    if (!/^[0-9a-fA-F]{24}$/.test(userId)) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    const result = await this.userModel
+      .updateOne(
+        {
+          _id: userId,
+          isDeleted: { $ne: true },
+        },
+        {
+          $set: {
+            welcomeEmailSentAt: sentAt,
+          },
+        },
+      )
+      .exec();
+
+    if (result.matchedCount === 0) {
+      throw new NotFoundException('User profile not found');
+    }
+  }
+
   async setRefreshTokenHash(
     userId: string,
     refreshTokenHash: string | null,

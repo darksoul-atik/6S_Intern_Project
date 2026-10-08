@@ -117,6 +117,7 @@ export const PortfolioProjectSchema =
 
       delete ret.passwordHash;
       delete ret.refreshTokenHash;
+      delete ret.welcomeEmailSentAt;
       delete ret.__v;
 
       return ret;
@@ -192,6 +193,13 @@ export class User {
 
   @Prop({ type: String, default: null })
   deletedReason?: string;
+
+  @Prop({
+    type: Date,
+    default: null,
+    select: false,
+  })
+  welcomeEmailSentAt?: Date | null;
 
   createdAt?: Date;
   updatedAt?: Date;

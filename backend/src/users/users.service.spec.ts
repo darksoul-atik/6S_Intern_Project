@@ -31,6 +31,7 @@ describe('UsersService', () => {
     mockUserModel.findById = vi.fn();
     mockUserModel.find = vi.fn();
     mockUserModel.countDocuments = vi.fn();
+    mockUserModel.updateOne = vi.fn();
 
     service = new UsersService(mockUserModel as any);
   });
@@ -542,4 +543,54 @@ describe('UsersService', () => {
       expect(result.headline).toBe('Senior Engineer');
     });
   });
+
+  describe('email processing methods', () => {
+    const validId = '507f1f77bcf86cd799439011';
+
+    it('should find user with welcomeEmailSentAt field selected', async () => {
+      const mockSelect = vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue({
+          _id: validId,
+          name: 'Ada',
+          welcomeEmailSentAt: null,
+        }),
+      });
+      mockUserModel.findById.mockReturnValue({ select: mockSelect });
+
+      const result = await service.findByIdForEmailProcessing(validId);
+      expect(mockUserModel.findById).toHaveBeenCalledWith(validId);
+      expect(mockSelect).toHaveBeenCalledWith('+welcomeEmailSentAt');
+      expect(result).toBeDefined();
+    });
+
+    it('should return null for invalid object id on findByIdForEmailProcessing', async () => {
+      const result = await service.findByIdForEmailProcessing('invalid-id');
+      expect(result).toBeNull();
+    });
+
+    it('should set welcomeEmailSentAt timestamp', async () => {
+      mockUserModel.updateOne.mockReturnValue({
+        exec: vi.fn().mockResolvedValue({ matchedCount: 1, modifiedCount: 1 }),
+      });
+
+      const now = new Date();
+      await service.setWelcomeEmailSentAt(validId, now);
+
+      expect(mockUserModel.updateOne).toHaveBeenCalledWith(
+        { _id: validId, isDeleted: { $ne: true } },
+        { $set: { welcomeEmailSentAt: now } },
+      );
+    });
+
+    it('should throw NotFoundException if user not matched on setWelcomeEmailSentAt', async () => {
+      mockUserModel.updateOne.mockReturnValue({
+        exec: vi.fn().mockResolvedValue({ matchedCount: 0, modifiedCount: 0 }),
+      });
+
+      await expect(
+        service.setWelcomeEmailSentAt(validId, new Date()),
+      ).rejects.toThrow();
+    });
+  });
 });
+

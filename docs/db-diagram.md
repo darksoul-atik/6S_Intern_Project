@@ -34,6 +34,7 @@ erDiagram
         number reactionsCount "default: 0"
         number topRankedCount "default: 0"
         string refreshTokenHash "SHA-256 digest"
+        date welcomeEmailSentAt "welcome email sent timestamp, select: false"
         boolean isDeleted "default: false"
         date createdAt
         date updatedAt
@@ -101,6 +102,8 @@ erDiagram
   * `{ email: 1 }` (unique, lowercase, sparse)
   * `{ role: 1 }` (for admin filter queries)
   * `{ isDeleted: 1 }` (for soft-deleted user filtering)
+* **Idempotency & Email Lifecycle**:
+  * `welcomeEmailSentAt`: Date or null (default `null`, `select: false`, marks successful dispatch of welcome email)
 
 ### 2.2. Post Schema (`Post`)
 * **Collection**: `posts`
