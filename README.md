@@ -39,6 +39,7 @@ Key engineering highlights:
 * **ACID Concurrency Safety**: MongoDB replica-set transactions for atomic reaction counter syncing and thread cascade deletions.
 * **Asynchronous Resilient Queues**: Redis 7-backed BullMQ queue and dedicated standalone background worker for transactional welcome emails with idempotency tracking and exponential backoff.
 * **On-Demand AI Insights**: Groq Cloud inference (`openai/gpt-oss-20b`) generating instant executive summaries and extracted skill tags.
+* **GitHub Changelog Integration**: Synchronizes the latest merged Pull Request into `main` directly to MongoDB via GitHub App authentication.
 
 ---
 
