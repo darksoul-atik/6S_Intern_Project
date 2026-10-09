@@ -317,3 +317,6 @@ We believe in honest, transparent engineering. Current constraints identified du
 * [Known Limitations & Roadmap](docs/known-issues.md) — Transparent limitation log and next steps.
 * [Day 17 Test Matrix](backend/docs/day-17-test-matrix.md) — Test suite inventory and coverage report.
 
+<!-- Changelog Verification Note -->
+I edit this
+
