@@ -83,6 +83,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-devpulse_redis_secret}
+    volumes:
+      - ./backend/secrets:/app/secrets:ro
     ports:
       - "5000:5000"
     depends_on:

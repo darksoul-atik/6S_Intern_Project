@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { AuthModule } from '../auth/auth.module.js';
 import { ChangelogController } from './changelog.controller.js';
 import { ChangelogService } from './changelog.service.js';
 import {
@@ -37,6 +38,7 @@ function resolvePrivateKey(keyPath: string): string | null {
 @Module({
   imports: [
     ConfigModule,
+    AuthModule,
     MongooseModule.forFeature([
       {
         name: ChangelogEntry.name,
