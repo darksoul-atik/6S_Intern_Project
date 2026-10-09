@@ -50,3 +50,9 @@ next-env.d.ts
 *.zip
 *.tar.gz
 *.pdf
+
+# Secrets and Keys
+secrets/
+*.pem
+backend/secrets/
+scratch/
