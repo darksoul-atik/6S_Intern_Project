@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   FiActivity,
+  FiGitCommit,
   FiGrid,
   FiLogOut,
   FiMenu,
@@ -63,6 +64,18 @@ export function Navbar() {
               }`}
             >
               Feed
+            </Link>
+
+            <Link
+              href={ROUTES.CHANGELOG}
+              id="navbar-changelog-link"
+              className={`rounded-lg px-3 py-1.5 font-manrope text-xs font-semibold transition-colors ${
+                pathname === "/changelog"
+                  ? "bg-white/10 text-white shadow-xs"
+                  : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+              }`}
+            >
+              Changelog
             </Link>
 
             {isAuthenticated && (
@@ -271,6 +284,20 @@ export function Navbar() {
             >
               <FiRss className="h-4 w-4 shrink-0 text-indigo-400" />
               <span>Feed</span>
+            </Link>
+
+            <Link
+              href={ROUTES.CHANGELOG}
+              id="navbar-mobile-changelog-link"
+              onClick={() => setMobileMenuPath(null)}
+              className={`flex min-h-11 items-center space-x-2.5 rounded-xl px-3.5 py-2.5 font-manrope text-xs font-semibold transition-colors ${
+                pathname === "/changelog"
+                  ? "bg-white/10 text-white shadow-xs"
+                  : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+              }`}
+            >
+              <FiGitCommit className="h-4 w-4 shrink-0 text-indigo-400" />
+              <span>Changelog</span>
             </Link>
 
             <Link

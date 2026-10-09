@@ -14,4 +14,5 @@ export const ROUTES = {
   ADMIN: '/admin',
   ADMIN_USERS: '/admin/users',
   STATUS: '/status',
+  CHANGELOG: '/changelog',
 } as const;
