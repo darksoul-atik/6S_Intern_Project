@@ -12,6 +12,7 @@ export interface StandardErrorResponse {
   statusCode: number;
   message: string;
   errors: string[];
+  code?: string;
 }
 
 @Catch()
@@ -23,6 +24,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'An unexpected internal server error occurred';
     let errors: string[] = [];
+    let code: string | undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -41,6 +43,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message = resObj.message;
         } else if (typeof resObj.error === 'string') {
           message = resObj.error;
+        }
+
+        if (typeof resObj.code === 'string') {
+          code = resObj.code;
         }
       }
     }
@@ -73,6 +79,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       statusCode: status,
       message,
       errors,
+      ...(code ? { code } : {}),
     };
 
     response.status(status).json(errorPayload);

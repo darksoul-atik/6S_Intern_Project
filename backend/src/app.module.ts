@@ -15,6 +15,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { PostsModule } from './posts/posts.module.js';
 import { CommentsModule } from './comments/comments.module.js';
 import { ReactionsModule } from './reactions/reactions.module.js';
+import { ChangelogModule } from './changelog/changelog.module.js';
 import { getRedisConfig } from './common/config/mail-queue.config.js';
 
 @Module({
@@ -66,6 +67,7 @@ import { getRedisConfig } from './common/config/mail-queue.config.js';
     PostsModule,
     CommentsModule,
     ReactionsModule,
+    ChangelogModule,
   ],
 
   controllers: [AppController],
