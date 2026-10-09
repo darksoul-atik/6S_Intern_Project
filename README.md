@@ -23,9 +23,10 @@
 5. [Backend Architecture & Specifications](#-backend-architecture--specifications)
 6. [Frontend Architecture & Specifications](#-frontend-architecture--specifications)
 7. [Custom Features (Beyond the Original Plan)](#-custom-features-beyond-the-original-plan)
-8. [Automated Testing & Verification](#-automated-testing--verification)
-9. [Known Limitations & Roadmap](#-known-limitations--roadmap)
-10. [Documentation Index](#-documentation-index)
+8. [GitHub Changelog Integration](#-github-changelog-integration)
+9. [Automated Testing & Verification](#-automated-testing--verification)
+10. [Known Limitations & Roadmap](#-known-limitations--roadmap)
+11. [Documentation Index](#-documentation-index)
 
 ---
 
@@ -260,6 +261,104 @@ DevPulse contains five custom features implemented beyond the standard 20-day re
    On-demand post summarization powered by `openai/gpt-oss-20b`, featuring an 8-second timeout guard, 12,000-character input boundary truncation, and a fallback to `MockSummarizerProvider`.
 5. **Asynchronous Welcome Email Queue & Worker (Redis + BullMQ)**:
    Decoupled background email system. User signup dispatches non-blocking jobs (`attempts: 3`, exponential backoff) into Redis. A dedicated background worker process handles job consumption, validates user status (soft-deletion skips), enforces strict idempotency using `welcomeEmailSentAt` timestamps, and delivers branded welcome emails via modular SMTP/Console providers.
+
+---
+
+## 🐙 GitHub Changelog Integration ("Changelog from Main")
+
+DevPulse includes an automated changelog pipeline that tracks production releases by synchronizing the latest Pull Request merged into the `main` branch.
+
+### 1. GitHub App Configuration
+* **App Name**: `devpulse-changelog-atik`
+* **App ID**: `5248659`
+* **Installation ID**: `169547332`
+* **Target Repository**: `darksoul-atik/6S_Intern_Project`
+* **Target Branch**: `main`
+* **Permissions Granted**:
+  * `Pull Requests`: Read-only
+  * `Repository Metadata`: Read-only
+  * `Repository Contents`: Read-only
+
+### 2. Environment Variables Reference
+Configure the following in `backend/.env`:
+
+```env
+# GitHub App Authentication
+GITHUB_APP_ID=5248659
+GITHUB_APP_INSTALLATION_ID=169547332
+GITHUB_APP_PRIVATE_KEY_PATH=./secrets/github-app.pem
+
+# Target Repository & Provider Mode
+CHANGELOG_REPO=darksoul-atik/6S_Intern_Project
+CHANGELOG_PROVIDER=auto
+```
+
+### 3. Secure Private Key Handling
+* **Server-Side Only**: The private RSA PEM key is located at `backend/secrets/github-app.pem` and is strictly consumed by the NestJS backend runtime.
+* **Excluded from Version Control**: Both `secrets/` and `*.pem` are globally ignored across all `.gitignore` files.
+* **Zero Client Exposure**: The private key, generated JWTs, and upstream GitHub installation tokens are never exposed via API responses, client bundles, or frontend logs.
+
+### 4. Provider Modes
+The changelog service implements a pluggable provider abstraction configured via `CHANGELOG_PROVIDER`:
+* `auto` (Default): Automatically utilizes the real GitHub App provider if all credentials and key files exist; otherwise gracefully falls back to deterministic mock data.
+* `github-app`: Enforces real GitHub App integration. Throws `PROVIDER_MISCONFIGURED` (HTTP 503) if credentials or the PEM key are missing or invalid. Never silently falls back to mock.
+* `mock`: Deterministic offline mode returning fixed fixture data (`prNumber: 42`, title `"fix login cookie flags"`, author `"alice"`, merge date `2026-01-15T10:30:00.000Z`) with zero external network overhead.
+
+### 5. GitHub JWT & Installation Token Authentication Flow
+```
+NestJS Backend (ChangelogService)
+       │
+       │ 1. Sign RS256 JWT (iat = now - 60s, exp = now + 540s, iss = GITHUB_APP_ID)
+       ▼
+GitHub App Auth API (POST /app/installations/:id/access_tokens)
+       │
+       │ 2. Short-lived Installation Token (ghs_...)
+       ▼
+GitHub Search / Pulls API (q = "repo:owner/repo is:pr is:merged base:main")
+       │
+       │ 3. Enforces shared 3-second hard deadline via AbortSignal
+       ▼
+MongoDB Upsert (Compound Unique Index: { source, owner, repo, prNumber })
+```
+
+### 6. API Endpoints
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `GET` | `/changelog` | **Public** | Reads up to 20 stored records directly from MongoDB sorted by `mergedAt: -1`. Never hits GitHub. Returns `lastSyncedAt`. |
+| `POST` | `/changelog/sync` | **Admin Only** | Requires valid JWT and admin role. Rate-limited to 5 requests/minute. Queries active provider, verifies `baseBranch === 'main'`, and executes atomic upsert in MongoDB. |
+
+### 7. How to Trigger Synchronization
+1. **Via Next.js Admin UI**:
+   * Navigate to `/changelog`.
+   * Logged-in administrators will see the **"Sync latest PR"** button in the header.
+   * Clicking the button dispatches `POST /api/changelog/sync` through the BFF proxy, updates the local TanStack Query cache on success, and presents real-time feedback.
+2. **Via REST API**:
+   ```bash
+   curl -X POST http://localhost:5000/changelog/sync \
+     -H "Authorization: Bearer <ADMIN_JWT>" \
+     -H "Content-Type: application/json"
+   ```
+
+### 8. Stable Error Codes & Mappings
+All upstream errors are classified into stable codes and sanitised:
+
+| Upstream Condition | HTTP Status | Error Code | Client Message |
+|---|---|---|---|
+| Invalid repo format / names | `400 Bad Request` | `INVALID_REPOSITORY` | Invalid repository format or name |
+| Repository inaccessible / 404 | `400 Bad Request` | `REPOSITORY_NOT_ACCESSIBLE` | Target repository is not accessible |
+| GitHub App JWT rejected / 401 | `502 Bad Gateway` | `UPSTREAM_AUTH_FAILED` | GitHub authentication failed |
+| Missing/unreadable PEM key | `503 Service Unavailable` | `PROVIDER_MISCONFIGURED` | Changelog provider credentials missing or misconfigured |
+| GitHub rate limit / 429 | `503 Service Unavailable` | `UPSTREAM_RATE_LIMITED` | GitHub API rate limit exceeded |
+| Permission denied / 403 | `502 Bad Gateway` | `UPSTREAM_FORBIDDEN` | Permission denied accessing GitHub repository |
+| Hard timeout (>3000ms) | `504 Gateway Timeout` | `UPSTREAM_TIMEOUT` | Upstream GitHub operation timed out |
+| Network / DNS outage | `502 Bad Gateway` | `UPSTREAM_UNAVAILABLE` | Upstream GitHub service unavailable or network failure |
+| Malformed response body | `502 Bad Gateway` | `UPSTREAM_INVALID_RESPONSE` | Invalid or malformed upstream response from GitHub |
+
+### 9. Intentional Non-Goals & Scope Limitations
+In accordance with system design constraints:
+* **No Webhooks**: The system avoids public webhook endpoints and tunnels (`ngrok`), utilizing deterministic on-demand admin synchronization.
+* **No Full PR History Backfill**: The integration syncs the *latest merged PR* into `main` rather than pagination of entire multi-year PR histories.
+* **Single Active Repository**: The service targets the configured community repository rather than a multi-tenant dashboard.
 
 ---
 

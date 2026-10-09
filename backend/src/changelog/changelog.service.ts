@@ -120,7 +120,7 @@ export class ChangelogService {
           },
           {
             upsert: true,
-            new: true,
+            returnDocument: 'after',
             setDefaultsOnInsert: true,
           },
         )

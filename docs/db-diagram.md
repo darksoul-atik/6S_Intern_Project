@@ -75,6 +75,22 @@ erDiagram
         date createdAt
         date updatedAt
     }
+
+    CHANGELOG_ENTRY {
+        ObjectId _id PK
+        string owner "lowercase, indexed"
+        string repo "lowercase, indexed"
+        number prNumber "indexed"
+        string title "max 500 chars"
+        string authorLogin "default: unknown"
+        date mergedAt "indexed"
+        string htmlUrl
+        string baseBranch "main"
+        string source "enum: github-app, mock, indexed"
+        date syncedAt
+        date createdAt
+        date updatedAt
+    }
 ```
 
 ---
@@ -142,6 +158,16 @@ erDiagram
   * Ensures that a single user cannot submit multiple reactions to the same target entity simultaneously.
 * **Indexes**:
   * `{ targetType: 1, targetId: 1, type: 1 }` — optimized reactors listing and filtering
+
+### 2.5. Changelog Entry Schema (`ChangelogEntry`)
+* **Collection**: `changelogentries`
+* **File**: `backend/src/changelog/schemas/changelog-entry.schema.ts`
+* **JSON Serialization**: Maps `_id` $\rightarrow$ `id`, strips `__v`.
+* **Compound Unique Constraint**:
+  * `{ source: 1, owner: 1, repo: 1, prNumber: 1 }` (unique)
+  * Ensures idempotent synchronization; repeated pulls of the same PR update the entry without creating duplicates.
+* **Indexes**:
+  * `{ source: 1, mergedAt: -1 }` — optimized chronological changelog feed retrieval filtered by active provider.
 
 ---
 
