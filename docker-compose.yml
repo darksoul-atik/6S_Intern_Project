@@ -75,10 +75,7 @@ services:
       - ./backend/.env
     environment:
       PORT: 5000
-      # Local containerized MongoDB replica set (commented out):
-      # MONGODB_URI: mongodb://mongo:27017/devpulse?replicaSet=rs0
-      # MongoDB Atlas Cloud Database (contains original posts, comments, replies & users):
-      MONGODB_URI: ${MONGODB_URI:-mongodb+srv://6s_Intern_Project:KlCLxxKjmQB90qcl@darksoul.5bywpqf.mongodb.net/dev_community?appName=DarkSoul}
+      MONGODB_URI: ${MONGODB_URI}
       FRONTEND_ORIGINS: http://localhost:3000
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -128,10 +125,7 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      # Local containerized MongoDB replica set (commented out):
-      # MONGODB_URI: mongodb://mongo:27017/devpulse?replicaSet=rs0
-      # MongoDB Atlas Cloud Database (contains original posts, comments, replies & users):
-      MONGODB_URI: ${MONGODB_URI:-mongodb+srv://6s_Intern_Project:KlCLxxKjmQB90qcl@darksoul.5bywpqf.mongodb.net/dev_community?appName=DarkSoul}
+      MONGODB_URI: ${MONGODB_URI}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-devpulse_redis_secret}
